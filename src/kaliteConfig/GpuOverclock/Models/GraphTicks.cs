@@ -1,0 +1,19 @@
+using System;
+
+namespace kaliteConfig.GpuOverclock.Models
+{
+    public static class GraphTicks
+    {
+        public static (double Step, double First) NiceTicks(double min, double max, int maxTicks)
+        {
+            double span = Math.Max(1e-9, max - min);
+            double raw = span / Math.Max(1, maxTicks);
+            double mag = Math.Pow(10, Math.Floor(Math.Log10(raw)));
+            double norm = raw / mag;
+            double step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+            return (step, Math.Ceiling(min / step) * step);
+        }
+
+        public static string Label(double v) => v % 1 == 0 ? ((int)v).ToString() : v.ToString("0.#");
+    }
+}

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="kaliteConfig.Controls.GameModeDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:gamemode="using:kaliteConfig.Gaming.GameMode"
+    Title="Game Mode"
+    CloseButtonText="Close"
+    DefaultButton="Close"
+    CornerRadius="12">
+
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">1400</x:Double>
+    </ContentDialog.Resources>
+
+    <ScrollViewer Width="1080" MaxHeight="620" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" Padding="0,0,18,0">
+        <StackPanel Spacing="14">
+            <InfoBar IsOpen="True" IsClosable="False" Severity="{Binding StatusSeverity}"
+                     Message="{Binding StatusText}" />
+
+            <Grid ColumnSpacing="18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="320" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Preview" Click="Preview_Click" AutomationProperties.Name="Preview planned actions" />
+                        <Button Content="Resume everything now" Click="Resume_Click" AutomationProperties.Name="Resume everything now" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding PreviewSummary}" Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <TextBlock Text="Every process and service that is not important is demoted to Low or Below normal with efficiency mode (EcoQoS), and every process in the system except the game tree, dwm and the internet, Wi-Fi, WWAN and Bluetooth services has its priority boost turned off, including anti-cheat. The shell, audio, security and GPU driver services are still demoted but keep enough boost to stay responsive, and your Never touch list and rules marked Protected are left alone. Inside the game process only useless threads (telemetry, crash reporting and embedded-browser helpers) get boost disabled and Low priority; gameplay threads and the game's own priority stay untouched."
+                               Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+
+                    <Grid ColumnSpacing="12" Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="1.6*" />
+                            <ColumnDefinition Width="2.4*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Process" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <TextBlock Grid.Column="1" Text="Category" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <TextBlock Grid.Column="2" Text="Action" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <TextBlock Grid.Column="3" Text="State" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        <TextBlock Grid.Column="4" Text="Detail" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    </Grid>
+                    <ListView ItemsSource="{Binding Affected}" SelectionMode="None" MaxHeight="240"
+                              Background="Transparent" BorderThickness="0">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="gamemode:GameModeAffectedRow">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="1.2*" />
+                                        <ColumnDefinition Width="1.4*" />
+                                        <ColumnDefinition Width="1.6*" />
+                                        <ColumnDefinition Width="2.4*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Category}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Action}" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind State}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Grid.Column="4" Text="{x:Bind Message}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+
+                <Border Grid.Column="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="16" VerticalAlignment="Top"
+                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Settings" Style="{StaticResource GallerySectionTitle}" />
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Game Mode" Style="{StaticResource BodyTextBlockStyle}" />
+                                <TextBlock Text="Watches for a listed game and applies the plan below while it runs."
+                                           Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" Style="{StaticResource KaliteToggleSwitchStyle}" AutomationProperties.Name="Game Mode"
+                                          IsOn="{Binding Enabled, Mode=OneWay}"
+                                          Toggled="Enabled_Toggled"
+                                          ToolTipService.ToolTip="Turns the Game Mode session engine on or off. No process needs to be selected." />
+                        </Grid>
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Suspend background wake" Style="{StaticResource BodyTextBlockStyle}" />
+                                <TextBlock Text="Freezes background apps so their timers cannot wake the CPU."
+                                           Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" Style="{StaticResource KaliteToggleSwitchStyle}" AutomationProperties.Name="Suspend background wake"
+                                          IsOn="{Binding SuspendBackgroundWake, Mode=OneWay}"
+                                          Toggled="SuspendWake_Toggled"
+                                          ToolTipService.ToolTip="Suspends the threads of background apps so their timers cannot wake the CPU. The shell, audio, security, service and game processes are left alone." />
+                        </Grid>
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Suspend background input" Style="{StaticResource BodyTextBlockStyle}" />
+                                <TextBlock Text="Freezes background apps that own a window, so they cannot take input."
+                                           Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" Style="{StaticResource KaliteToggleSwitchStyle}" AutomationProperties.Name="Suspend background input"
+                                          IsOn="{Binding SuspendBackgroundInput, Mode=OneWay}"
+                                          Toggled="SuspendInput_Toggled"
+                                          ToolTipService.ToolTip="Suspends background apps that own a window, so they cannot process the input aimed at them. The compositor keeps running." />
+                        </Grid>
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Enter Background Mode" Style="{StaticResource BodyTextBlockStyle}" />
+                                <TextBlock Text="Drops background apps to Idle priority and their threads to the lowest priority, without freezing them."
+                                           Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" Style="{StaticResource KaliteToggleSwitchStyle}" AutomationProperties.Name="Enter Background Mode"
+                                          IsOn="{Binding BackgroundMode, Mode=OneWay}"
+                                          Toggled="BackgroundMode_Toggled"
+                                          ToolTipService.ToolTip="Idle priority plus lowest thread priority for background apps. The suspension options take precedence." />
+                        </Grid>
+                        <NumberBox Header="Activation delay (ms)" Minimum="250" Maximum="5000" SmallChange="50"
+                                   SpinButtonPlacementMode="Inline" Value="{Binding DebounceMs, Mode=OneWay}"
+                                   ValueChanged="Debounce_ValueChanged"
+                                   ToolTipService.ToolTip="How long a listed game must stay in the foreground before Game Mode activates." />
+                        <TextBlock Text="Game Mode starts when a listed game comes to the foreground and restores every change when it exits. The three options above are off by default and only add to the normal plan; when two are on, suspension wins over Background Mode. Shell, audio, security, service and game processes are never touched."
+                                   Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding JournalText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Header="Game list">
+                <StackPanel Spacing="8">
+                    <InfoBar IsOpen="{Binding HasListFeedback}" Severity="{Binding ListFeedbackSeverity}"
+                             Message="{Binding ListFeedback}" CloseButtonClick="ListFeedback_Close" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="{Binding RestorePopularGamesText}" Click="AddPopularGames_Click"
+                                ToolTipService.ToolTip="Re-adds any popular game executables you removed; nothing is installed or launched" />
+                        <TextBlock Text="Popular games are added automatically on first run and matched by executable name." VerticalAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Add focused app" Click="AddFocused_Click" ToolTipService.ToolTip="Adds the app you used just before kaliteConfig" />
+                        <ComboBox MinWidth="150" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" SelectedIndex="{Binding AddKindIndex, Mode=TwoWay}" AutomationProperties.Name="Entry type">
+                            <ComboBoxItem Content="Game" />
+                            <ComboBoxItem Content="Never touch" />
+                        </ComboBox>
+                        <TextBox Text="{Binding GamePathInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="340"
+                                 PlaceholderText="{Binding InputPlaceholder}" AutomationProperties.Name="Entry to add"
+                                 KeyDown="PathBox_KeyDown" />
+                        <Button Content="{Binding AddButtonText}" Click="AddGame_Click"
+                                ToolTipService.ToolTip="Adds the entry in the box, or opens a file picker when it is empty; Enter works too" />
+                    </StackPanel>
+                    <ListView ItemsSource="{Binding ListItems}" SelectionMode="None" MaxHeight="320"
+                              Background="Transparent" BorderThickness="0">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="gamemode:GameModeListRow">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="8,2"
+                                            Visibility="{x:Bind GamePillVis}"
+                                            Background="{ThemeResource AccentFillColorSecondaryBrush}">
+                                        <TextBlock Text="Game" Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                    </Border>
+                                    <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="8,2"
+                                            Visibility="{x:Bind NeverTouchPillVis}"
+                                            Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                                        <TextBlock Text="Never touch" Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Border>
+                                    <Button Grid.Column="2" Content="Remove" Click="RemoveItem_Click" Tag="{x:Bind}" AutomationProperties.Name="Remove entry" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Expander>
+
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Header="Activity log">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ComboBox MinWidth="180" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" ItemsSource="{Binding LogFilters}" SelectedIndex="{Binding LogFilterIndex, Mode=TwoWay}" AutomationProperties.Name="Log filter" />
+                        <Button Content="Copy" Click="CopyLog_Click" />
+                        <Button Content="Export" Click="ExportLog_Click" />
+                        <Button Content="Clear" Click="ClearLog_Click" />
+                    </StackPanel>
+                    <ListView ItemsSource="{Binding LogRows}" SelectionMode="None" MaxHeight="280"
+                              Background="Transparent" BorderThickness="0">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="gamemode:GameModeLogRow">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="1.4*" />
+                                        <ColumnDefinition Width="1.2*" />
+                                        <ColumnDefinition Width="1.6*" />
+                                        <ColumnDefinition Width="2.6*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Time}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Process}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Action}" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind Result}" />
+                                    <TextBlock Grid.Column="4" Text="{x:Bind Message}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

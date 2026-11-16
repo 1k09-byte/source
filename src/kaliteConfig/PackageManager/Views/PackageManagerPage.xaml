@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="kaliteConfig.PackageManager.Views.PackageManagerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:kaliteConfig.PackageManager.Views"
+    mc:Ignorable="d"
+    Background="Transparent"
+    NavigationCacheMode="Disabled">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="32,24,32,0" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="Apps" Style="{StaticResource TitleLargeTextBlockStyle}" />
+                    <InfoBadge Value="{x:Bind Module.UpdateCount, Mode=OneWay}"
+                               VerticalAlignment="Center"
+                               Visibility="{x:Bind local:PackageManagerPage.BadgeVis(Module.UpdateCount), Mode=OneWay}" />
+                </StackPanel>
+                <TextBlock Text="Discover, install and update packages from every configured source."
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+
+        <SelectorBar x:Name="SectionBar"
+                     Grid.Row="1"
+                     Margin="32,16,32,0"
+                     HorizontalAlignment="Left"
+                     SelectionChanged="SectionBar_SelectionChanged">
+            <SelectorBarItem x:Name="SectionDiscover" Text="Discover" Tag="Discover" IsSelected="True">
+                <SelectorBarItem.Icon>
+                    <FontIcon Glyph="&#xE738;" />
+                </SelectorBarItem.Icon>
+            </SelectorBarItem>
+            <SelectorBarItem x:Name="SectionInstalled" Text="Installed" Tag="Installed">
+                <SelectorBarItem.Icon>
+                    <FontIcon Glyph="&#xE7B3;" />
+                </SelectorBarItem.Icon>
+            </SelectorBarItem>
+            <SelectorBarItem x:Name="SectionUpdates" Text="Updates" Tag="Updates">
+                <SelectorBarItem.Icon>
+                    <FontIcon Glyph="&#xE72C;" />
+                </SelectorBarItem.Icon>
+            </SelectorBarItem>
+            <SelectorBarItem x:Name="SectionBundles" Text="Bundles" Tag="Bundles">
+                <SelectorBarItem.Icon>
+                    <FontIcon Glyph="&#xE8B7;" />
+                </SelectorBarItem.Icon>
+            </SelectorBarItem>
+            <SelectorBarItem x:Name="SectionManagers" Text="Managers" Tag="Managers">
+                <SelectorBarItem.Icon>
+                    <FontIcon Glyph="&#xE713;" />
+                </SelectorBarItem.Icon>
+            </SelectorBarItem>
+        </SelectorBar>
+
+        <Border Grid.Row="2"
+                Margin="32,16,32,24"
+                Style="{StaticResource CardBorder}"
+                Padding="0">
+            <Frame x:Name="ContentFrame"
+                   CacheSize="0"
+                   HorizontalAlignment="Stretch"
+                   VerticalAlignment="Stretch" />
+        </Border>
+    </Grid>
+</Page>

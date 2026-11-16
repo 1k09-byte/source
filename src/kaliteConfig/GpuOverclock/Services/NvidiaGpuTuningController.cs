@@ -1,0 +1,1072 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using kaliteConfig.GpuOverclock.Models;
+using kaliteConfig.Services;
+using NvAPIWrapper;
+using NvAPIWrapper.Native;
+using NvAPIWrapper.Native.Exceptions;
+using NvAPIWrapper.Native.General;
+using NvAPIWrapper.Native.GPU;
+using NvAPIWrapper.Native.GPU.Structures;
+using NvAPIWrapper.Native.Interfaces.GPU;
+using NvAPIWrapper.GPU;
+
+namespace kaliteConfig.GpuOverclock.Services
+{
+    public sealed class NvidiaGpuTuningController : IGpuTuningController
+    {
+        private bool _initialized;
+        private PhysicalGPU? _gpu;
+
+        public bool IsInitialized
+        {
+            get { lock (NvApiSession.Gate) return _initialized; }
+        }
+
+        public GpuResult Initialize()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (_initialized) return GpuResult.Ok();
+                try
+                {
+                    NVIDIA.Initialize();
+                    _initialized = true;
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.NvApiInitFailed, $"NVAPI status: {ex.Status}");
+                }
+                catch (Exception ex)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.NvApiInitFailed, ex.GetType().Name);
+                }
+            }
+        }
+
+        public GpuResult<GpuIdentity> GetIdentity()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return GpuResult<GpuIdentity>.Fail(fail.ErrorKind, fail.Detail);
+                try
+                {
+                    var gpu = _gpu!;
+                    uint devId = 0;
+                    try { devId = gpu.BusInformation?.PCIIdentifiers?.DeviceId ?? 0; } catch {  }
+                    return GpuResult<GpuIdentity>.Ok(new GpuIdentity
+                    {
+                        FullName = gpu.FullName ?? "NVIDIA GPU",
+                        DriverVersion = FormatDriverVersion(NVIDIA.DriverVersion),
+                        IsNotebook = gpu.SystemType == SystemType.Laptop,
+                        PciDeviceId = devId & 0xFFFF,
+                    });
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult<GpuIdentity>.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        internal static string FormatDriverVersion(uint raw)
+        {
+            return raw == 0 ? "unknown" : $"{raw / 100}.{raw % 100:00}";
+        }
+
+        public GpuResult<GpuTelemetrySnapshot> ReadTelemetry()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return GpuResult<GpuTelemetrySnapshot>.Fail(fail.ErrorKind, fail.Detail);
+                try
+                {
+                    var gpu = _gpu!;
+
+                    double? coreMhz = null, memMhz = null;
+                    try
+                    {
+                        var clocks = gpu.CurrentClockFrequencies;
+                        if (clocks.GraphicsClock.IsPresent) coreMhz = clocks.GraphicsClock.Frequency / 1000.0;
+                        if (clocks.MemoryClock.IsPresent) memMhz = clocks.MemoryClock.Frequency / 1000.0;
+                    }
+                    catch (NVIDIAApiException) {  }
+
+                    int? gpuTemp = null, hotspot = null, memTemp = null;
+                    try
+                    {
+                        var sensors = gpu.ThermalInformation?.ThermalSensors?.ToList();
+                        var core = sensors?.FirstOrDefault(s => s.Target == ThermalSettingsTarget.GPU);
+                        if (core != null) gpuTemp = core.CurrentTemperature;
+                        var second = sensors?.Where(s => s.Target == ThermalSettingsTarget.GPU).Skip(1).FirstOrDefault();
+                        if (second != null) hotspot = second.CurrentTemperature;
+                        var mem = sensors?.FirstOrDefault(s => s.Target == ThermalSettingsTarget.Memory);
+                        if (mem != null) memTemp = mem.CurrentTemperature;
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    double? voltageMv = null;
+                    try
+                    {
+                        voltageMv = GPUApi.GetCurrentVoltage(gpu.Handle).ValueInMicroVolt / 1000.0;
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    double? powerPct = null;
+                    try
+                    {
+                        var entry = gpu.PowerTopologyInformation?.PowerTopologyEntries?
+                            .FirstOrDefault(e => e.Domain == PowerTopologyDomain.GPU);
+                        if (entry != null) powerPct = entry.PowerUsageInPercent;
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    double? powerW = null;
+                    if (NvmlBridge.TryReadPowerDrawMw(out var mw))
+                    {
+                        powerW = mw / 1000.0;
+                    }
+
+                    var (pcieTx, pcieRx) = ReadPcieRates();
+
+                    int? fanRpm = null, fanPct = null;
+                    try
+                    {
+                        var fanEntries = GPUApi.GetClientFanCoolersStatus(gpu.Handle).FanCoolersStatusEntries;
+                        if (fanEntries is { Length: > 0 })
+                        {
+                            var fe = fanEntries[0];
+                            fanPct = (int)fe.CurrentLevel;
+                            fanRpm = fe.CurrentRPM > 0 ? (int)fe.CurrentRPM : null;
+                        }
+                    }
+                    catch (NVIDIAApiException) { }
+                    if (fanPct is null)
+                    {
+                        try
+                        {
+                            var coolerInfo = gpu.CoolerInformation;
+                            fanRpm = coolerInfo.CurrentFanSpeedInRPM;
+                            fanPct = coolerInfo.CurrentFanSpeedLevel;
+                        }
+                        catch (NVIDIAApiException) { }
+                    }
+                    if (fanPct is < 0) fanPct = null;
+                    if (fanRpm is < 0) fanRpm = null;
+
+                    int? usage = null;
+                    try { usage = gpu.UsageInformation?.GPU?.Percentage; } catch (NVIDIAApiException) { }
+
+                    double? vramUsedMb = null;
+                    try
+                    {
+                        var mem = gpu.MemoryInformation;
+                        if (mem != null)
+                        {
+                            var totalKb = (double)mem.DedicatedVideoMemoryInkB;
+                            var availKb = (double)mem.CurrentAvailableDedicatedVideoMemoryInkB;
+                            vramUsedMb = Math.Max(0.0, totalKb - availKb) / 1024.0;
+                        }
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    int? pcieGen = null, pcieWidth = null;
+                    try
+                    {
+                        var state = gpu.PerformanceStatesInfo?.CurrentPerformanceState;
+                        var pcie = state?.PCIeInformation;
+                        if (pcie != null) { pcieGen = (int)pcie.Generation; pcieWidth = (int)pcie.Lanes; }
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    return GpuResult<GpuTelemetrySnapshot>.Ok(new GpuTelemetrySnapshot
+                    {
+                        Timestamp = DateTime.Now,
+                        CoreClockMHz = coreMhz,
+                        MemClockMHz = memMhz,
+                        GpuTempC = gpuTemp,
+                        HotspotTempC = hotspot,
+                        MemTempC = memTemp,
+                        VoltageMv = voltageMv,
+                        PowerDrawW = powerW,
+                        PowerDrawPercentOfLimit = powerPct,
+                        FanRpm = fanRpm,
+                        FanPercent = fanPct,
+                        GpuUsagePercent = usage,
+                        VramUsageMb = vramUsedMb,
+                        PcieGen = pcieGen,
+                        PcieWidth = pcieWidth,
+                        PcieTxKBs = pcieTx,
+                        PcieRxKBs = pcieRx,
+                    });
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult<GpuTelemetrySnapshot>.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+                catch (Exception ex)
+                {
+                    return GpuResult<GpuTelemetrySnapshot>.Fail(OverclockErrorKind.Unknown, ex.GetType().Name);
+                }
+            }
+        }
+
+        internal double? _powerLimitWCache;
+
+        private uint? _pciePrevTxKb, _pciePrevRxKb;
+        private DateTime _pciePrevAt = DateTime.MinValue;
+
+        private (double? TxKBs, double? RxKBs) ReadPcieRates()
+        {
+            try
+            {
+                if (!NvmlBridge.TryReadPcieThroughputKb(0, out uint tx)
+                    || !NvmlBridge.TryReadPcieThroughputKb(1, out uint rx))
+                    return (null, null);
+                var now = DateTime.UtcNow;
+                double? txRate = null, rxRate = null;
+                if (_pciePrevTxKb.HasValue && _pciePrevRxKb.HasValue)
+                {
+                    double dt = (now - _pciePrevAt).TotalSeconds;
+                    if (dt > 0.2 && tx >= _pciePrevTxKb.Value && rx >= _pciePrevRxKb.Value)
+                    {
+                        txRate = (tx - _pciePrevTxKb.Value) / dt;
+                        rxRate = (rx - _pciePrevRxKb.Value) / dt;
+                    }
+                }
+                _pciePrevTxKb = tx;
+                _pciePrevRxKb = rx;
+                _pciePrevAt = now;
+                return (txRate, rxRate);
+            }
+            catch
+            {
+                return (null, null);
+            }
+        }
+
+        public GpuResult<GpuCapabilities> ReadCapabilities()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return GpuResult<GpuCapabilities>.Fail(fail.ErrorKind, fail.Detail);
+                try
+                {
+                    var gpu = _gpu!;
+
+                    OverclockControlRange? coreRange = null, memRange = null;
+                    double? powerPctCur = null;
+                    OverclockControlRange? powerRange = null;
+                    OverclockControlRange? tempRange = null;
+                    int? tempCur = null;
+                    bool fanSupported = false;
+
+                    try
+                    {
+                        var info = GPUApi.GetPerformanceStates20(gpu.Handle);
+                        if (info.PerformanceStates != null)
+                        {
+                            var p0 = info.PerformanceStates.FirstOrDefault(s => s.StateId == PerformanceStateId.P0_3DPerformance);
+                            if (p0 != null && info.Clocks.TryGetValue(p0.StateId, out var entries))
+                            {
+                                foreach (var e in entries)
+                                {
+                                    if (e.DomainId == PublicClockDomain.Graphics && e.IsEditable)
+                                        coreRange = DeltaRangeToMhz(e);
+                                    if (e.DomainId == PublicClockDomain.Memory && e.IsEditable)
+                                        memRange = DeltaRangeToMhz(e);
+                                }
+                            }
+                        }
+                    }
+                    catch (NVIDIANotSupportedException) { }
+                    catch (NVIDIAApiException ex) when (ex.Status == Status.NotSupported) { }
+
+                    try
+                    {
+                        var pc = gpu.PerformanceControl;
+                        var pl = pc.PowerLimitInformation?.FirstOrDefault();
+                        if (pl != null && pl.MaximumPowerInPercent > pl.MinimumPowerInPercent)
+                            powerRange = new OverclockControlRange(
+                                Math.Round(pl.MinimumPowerInPercent, 1),
+                                Math.Round(pl.MaximumPowerInPercent, 1),
+                                1);
+                        powerPctCur = pc.PowerLimitPolicies?.FirstOrDefault()?.PowerTargetInPercent;
+
+                        var tl = pc.ThermalLimitInformation?.FirstOrDefault();
+                        if (tl != null && tl.MaximumTemperature > tl.MinimumTemperature)
+                            tempRange = new OverclockControlRange(tl.MinimumTemperature, tl.MaximumTemperature, 1);
+                        tempCur = pc.ThermalLimitPolicies?.FirstOrDefault()?.TargetTemperature;
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    try
+                    {
+                        var coolers = gpu.CoolerInformation?.Coolers?.ToList();
+                        fanSupported = coolers?.Any(c => c.CoolerController != CoolerController.None
+                                                          && c.ControlMode != CoolerControlMode.None) == true;
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    if (!fanSupported)
+                    {
+                        try
+                        {
+                            var fs = GPUApi.GetClientFanCoolersStatus(gpu.Handle);
+                            fanSupported = fs.FanCoolersStatusEntries is { Length: > 0 };
+                        }
+                        catch (NVIDIAApiException) { }
+                    }
+
+                    if (NvmlBridge.TryReadDefaultPowerLimitMw(out var defMw)) _powerLimitWCache = defMw / 1000.0;
+
+                    bool vfSupported = false;
+                    int vfCount = 0;
+                    try
+                    {
+                        var gr = BoostTableRange(PublicClockDomain.Graphics);
+                        if (gr is not null && gr.Value.Last > gr.Value.First)
+                        {
+                            try
+                            {
+                                var st = GPUApi.GetClientClkVFPointsStatus(gpu.Handle, 1);
+                                if (st.Points is { Length: > 0 }) vfSupported = true;
+                            }
+                            catch (NVIDIAApiException) { }
+                            if (!vfSupported)
+                            {
+                                try
+                                {
+                                    var vfp = GPUApi.GetVFPCurve(gpu.Handle);
+                                    if (vfp.GPUCurveEntries is { Length: > 0 }) vfSupported = true;
+                                }
+                                catch (NVIDIAApiException) { }
+                            }
+                            if (vfSupported) vfCount = gr.Value.Last - gr.Value.First + 1;
+                        }
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    bool vbSupported = false;
+                    try
+                    {
+                        _ = GPUApi.GetCoreVoltageBoostPercent(gpu.Handle);
+                        vbSupported = true;
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    return GpuResult<GpuCapabilities>.Ok(new GpuCapabilities
+                    {
+                        GpuName = gpu.FullName ?? "NVIDIA GPU",
+                        DriverVersion = FormatDriverVersion(NVIDIA.DriverVersion),
+                        IsNotebook = gpu.SystemType == SystemType.Laptop,
+                        CoreOffsetRangeMHz = coreRange,
+                        MemOffsetRangeMHz = memRange,
+                        PowerLimitRangePercent = powerRange,
+                        TempLimitRangeC = tempRange,
+                        CurrentPowerLimitPercent = powerPctCur,
+                        CurrentTempLimitC = tempCur,
+
+                        SystemOffsetRangeMHz = QueryDeltaRangeMhz(PublicClockDomain.Processor) is { } sys
+                            ? new OverclockControlRange(sys.MinMhz, sys.MaxMhz, 1) : null,
+
+                        XbarOffsetRangeMHz = null,
+                        FanControlSupported = fanSupported,
+                        ZeroRpmSupported = false,
+                        VfCurveSupported = vfSupported,
+                        VfCurvePointCount = vfCount,
+                        VoltageBoostSupported = vbSupported,
+                    });
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult<GpuCapabilities>.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        private static OverclockControlRange? DeltaRangeToMhz(IPerformanceStates20ClockEntry e)
+        {
+            var d = e.FrequencyDeltaInkHz;
+            var r = d.DeltaRange;
+            if (r.Maximum <= r.Minimum) return null;
+            return new OverclockControlRange(r.Minimum / 1000.0, r.Maximum / 1000.0, 1);
+        }
+
+        public GpuResult<(int CoreOffsetMHz, int MemOffsetMHz)> ReadCurrentOffsets()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return GpuResult<(int, int)>.Fail(fail.ErrorKind, fail.Detail);
+
+                try
+                {
+                    var coreRange = BoostTableRange(PublicClockDomain.Graphics);
+                    var memRange = BoostTableRange(PublicClockDomain.Memory);
+                    if (coreRange is not null || memRange is not null)
+                    {
+                        var table = GPUApi.GetClockBoostTable(_gpu!.Handle, 1);
+                        var deltas = table.GPUDeltas;
+
+                        static int DomainDelta(PrivateClockBoostTableV1.GPUDelta[] d, int first, int last)
+                        {
+                            int best = 0;
+                            for (int i = Math.Max(0, first); i < d.Length && i <= last; i++)
+                            {
+                                int v = d[i].FrequencyDeltaInkHz;
+                                if (Math.Abs(v) > Math.Abs(best)) best = v;
+                            }
+                            return best / 1000;
+                        }
+
+                        int core = coreRange is { } cr ? DomainDelta(deltas, cr.First, cr.Last) : 0;
+                        int mem = memRange is { } mr ? DomainDelta(deltas, mr.First, mr.Last) : 0;
+                        return GpuResult<(int, int)>.Ok((core, mem));
+                    }
+                }
+                catch (NVIDIAApiException) {  }
+
+                try
+                {
+                    var info = GPUApi.GetPerformanceStates20(_gpu!.Handle);
+                    int core = 0, mem = 0;
+                    var p0 = info.PerformanceStates?.FirstOrDefault(s => s.StateId == PerformanceStateId.P0_3DPerformance);
+                    if (p0 != null && info.Clocks.TryGetValue(p0.StateId, out var entries))
+                    {
+                        foreach (var e in entries)
+                        {
+                            var d = e.FrequencyDeltaInkHz;
+                            if (e.DomainId == PublicClockDomain.Graphics) core = d.DeltaValue;
+                            if (e.DomainId == PublicClockDomain.Memory) mem = d.DeltaValue;
+                        }
+                    }
+                    return GpuResult<(int, int)>.Ok((core / 1000, mem / 1000));
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult<(int, int)>.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult<(double PowerLimitPercent, int? TempLimitC)> ReadCurrentLimits()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return GpuResult<(double, int?)>.Fail(fail.ErrorKind, fail.Detail);
+                try
+                {
+                    double? power = null;
+                    int? temp = null;
+                    try { power = _gpu!.PerformanceControl.PowerLimitPolicies?.FirstOrDefault()?.PowerTargetInPercent; }
+                    catch (NVIDIAApiException) { }
+                    try { temp = _gpu!.PerformanceControl.ThermalLimitPolicies?.FirstOrDefault()?.TargetTemperature; }
+                    catch (NVIDIAApiException) { }
+                    return GpuResult<(double, int?)>.Ok((power ?? 100, temp));
+                }
+                catch (Exception ex)
+                {
+                    return GpuResult<(double, int?)>.Fail(OverclockErrorKind.Unknown, ex.GetType().Name);
+                }
+            }
+        }
+
+        public GpuResult SetCoreOffsetMhz(int offsetMhz)
+            => SetClockOffset(PublicClockDomain.Graphics, offsetMhz);
+
+        public GpuResult SetMemoryOffsetMhz(int offsetMhz)
+            => SetClockOffset(PublicClockDomain.Memory, offsetMhz);
+
+        public GpuResult SetSystemOffsetMhz(int offsetMhz)
+            => SetClockOffset(PublicClockDomain.Processor, offsetMhz);
+
+        private (int First, int Last)? BoostTableRange(PublicClockDomain domain)
+        {
+            try
+            {
+                var ranges = GPUApi.GetClockBoostRanges(_gpu!.Handle);
+                foreach (var r in ranges.ClockBoostRanges)
+                {
+                    if (r.ClockDomain == domain)
+                        return ((int)r.FirstPointIndex, (int)r.LastPointIndex);
+                }
+                return null;
+            }
+            catch (NVIDIAApiException)
+            {
+                return null;
+            }
+        }
+
+        private (int MinMhz, int MaxMhz)? QueryDeltaRangeMhz(PublicClockDomain domain)
+        {
+            try
+            {
+                var info = GPUApi.GetPerformanceStates20(_gpu!.Handle);
+                var p0 = info.PerformanceStates?.FirstOrDefault(s => s.StateId == PerformanceStateId.P0_3DPerformance);
+                if (p0 != null && info.Clocks.TryGetValue(p0.StateId, out var entries))
+                {
+                    foreach (var e in entries)
+                    {
+                        if (e.DomainId != domain || !e.IsEditable) continue;
+                        var r = e.FrequencyDeltaInkHz.DeltaRange;
+                        if (r.Maximum > r.Minimum)
+                            return ((int)Math.Round(r.Minimum / 1000.0), (int)Math.Round(r.Maximum / 1000.0));
+                    }
+                }
+            }
+            catch (NVIDIAApiException) { }
+            return null;
+        }
+
+        private GpuResult SetClockOffset(PublicClockDomain domain, int offsetMhz)
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return fail;
+                try
+                {
+                    var allowed = QueryDeltaRangeMhz(domain);
+                    if (allowed is { } al)
+                        offsetMhz = Math.Clamp(offsetMhz, al.MinMhz, al.MaxMhz);
+
+                    var range = BoostTableRange(domain);
+                    if (range is null) return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+
+                    var table = GPUApi.GetClockBoostTable(_gpu!.Handle, 1);
+                    var src = table.GPUDeltas;
+                    var deltas = new PrivateClockBoostTableV1.GPUDelta[src.Length];
+                    int deltaKhz = offsetMhz * 1000;
+                    for (int i = 0; i < src.Length; i++)
+                    {
+                        bool inDomain = i >= range.Value.First && i <= range.Value.Last;
+                        deltas[i] = new PrivateClockBoostTableV1.GPUDelta(inDomain ? deltaKhz : src[i].FrequencyDeltaInkHz);
+                    }
+
+                    GPUApi.SetClockBoostTable(_gpu.Handle, new PrivateClockBoostTableV1(deltas), 1);
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult SetPowerLimitPercent(double percent)
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return fail;
+                try
+                {
+                    var pl = _gpu!.PerformanceControl.PowerLimitInformation?.FirstOrDefault();
+                    if (pl != null && pl.MaximumPowerInPercent > pl.MinimumPowerInPercent)
+                        percent = Math.Clamp(percent, pl.MinimumPowerInPercent, pl.MaximumPowerInPercent);
+
+                    var status = GPUApi.ClientPowerPoliciesGetStatus(_gpu!.Handle);
+                    var entries = status.PowerPolicyStatusEntries;
+                    if (entries is null || entries.Length == 0)
+                        return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+
+                    uint pcm = (uint)Math.Round(Math.Clamp(percent, 1, 200) * 1000);
+                    var newEntries = entries
+                        .Select(e => e.PerformanceStateId == PerformanceStateId.P0_3DPerformance
+                            ? new PrivatePowerPoliciesStatusV1.PowerPolicyStatusEntry(pcm)
+                            : e)
+                        .ToArray();
+                    GPUApi.ClientPowerPoliciesSetStatus(_gpu.Handle, new PrivatePowerPoliciesStatusV1(newEntries));
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult SetTempLimitC(int tempLimitC)
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return fail;
+                try
+                {
+                    var tl = _gpu!.PerformanceControl.ThermalLimitInformation?.FirstOrDefault();
+                    if (tl != null && tl.MaximumTemperature > tl.MinimumTemperature)
+                        tempLimitC = (int)Math.Clamp((double)tempLimitC, tl.MinimumTemperature, tl.MaximumTemperature);
+
+                    var status = GPUApi.GetThermalPoliciesStatus(_gpu!.Handle);
+                    var entries = status.ThermalPoliciesStatusEntries;
+                    if (entries is null || entries.Length == 0)
+                        return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+
+                    var newEntries = entries.Select((e, i) => i == 0
+                        ? new PrivateThermalPoliciesStatusV2.ThermalPoliciesStatusEntry(e.Controller, tempLimitC)
+                        : e).ToArray();
+                    GPUApi.SetThermalPoliciesStatus(_gpu.Handle, new PrivateThermalPoliciesStatusV2(newEntries));
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult SetFanStaticPercent(int percent)
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return fail;
+                percent = Math.Clamp(percent, 0, 100);
+
+                try
+                {
+                    var status = GPUApi.GetClientFanCoolersStatus(_gpu!.Handle);
+                    var entries = status.FanCoolersStatusEntries;
+                    if (entries is { Length: > 0 })
+                    {
+                        var control = entries
+                            .Select(e => new PrivateFanCoolersControlV1.FanCoolersControlEntry(
+                                e.CoolerId, FanCoolersControlMode.Manual, (uint)percent))
+                            .ToArray();
+                        GPUApi.SetClientFanCoolersControl(_gpu.Handle, new PrivateFanCoolersControlV1(control, 0));
+                        return GpuResult.Ok();
+                    }
+                }
+                catch (NVIDIANotSupportedException) { }
+                catch (NVIDIAApiException) { }
+
+                try
+                {
+                    var cooler = _gpu!.CoolerInformation.Coolers?.FirstOrDefault();
+                    if (cooler is null) return GpuResult.Fail(OverclockErrorKind.FanControlUnsupported);
+                    GPUApi.SetCoolerLevels(_gpu.Handle, (uint)cooler.CoolerId,
+                        new PrivateCoolerLevelsV1(new[] { new PrivateCoolerLevelsV1.CoolerLevel(CoolerPolicy.Manual, (uint)percent) }),
+                        1);
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.FanControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult<bool> IsZeroRpmEnabled()
+            => GpuResult<bool>.Fail(
+                OverclockErrorKind.ControlUnsupported,
+                "Zero RPM needs NVAPI zero-fan support, which this build's NVAPI wrapper does not expose.");
+
+        public GpuResult SetZeroRpmEnabled(bool enabled)
+            => GpuResult.Fail(
+                OverclockErrorKind.ControlUnsupported,
+                "Zero RPM needs NVAPI zero-fan support, which this build's NVAPI wrapper does not expose.");
+
+        public GpuResult RestoreFanAuto()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return fail;
+
+                try
+                {
+                    var status = GPUApi.GetClientFanCoolersStatus(_gpu!.Handle);
+                    var entries = status.FanCoolersStatusEntries;
+                    if (entries is { Length: > 0 })
+                    {
+                        var control = entries
+                            .Select(e => new PrivateFanCoolersControlV1.FanCoolersControlEntry(
+                                e.CoolerId, FanCoolersControlMode.Auto, 0))
+                            .ToArray();
+                        GPUApi.SetClientFanCoolersControl(_gpu.Handle, new PrivateFanCoolersControlV1(control, 0));
+                        return GpuResult.Ok();
+                    }
+                }
+                catch (NVIDIANotSupportedException) { }
+                catch (NVIDIAApiException) { }
+
+                try
+                {
+                    _gpu!.CoolerInformation.RestoreCoolerSettingsToDefault();
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.FanControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult<GpuVoltageFrequencyCurve> ReadVoltageFrequencyCurve()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return GpuResult<GpuVoltageFrequencyCurve>.Fail(fail.ErrorKind, fail.Detail);
+                try
+                {
+                    var range = BoostTableRange(PublicClockDomain.Graphics);
+                    if (range is null) return GpuResult<GpuVoltageFrequencyCurve>.Fail(OverclockErrorKind.ControlUnsupported);
+                    int first = range.Value.First, last = range.Value.Last;
+                    int n = last - first + 1;
+                    if (n <= 0) return GpuResult<GpuVoltageFrequencyCurve>.Fail(OverclockErrorKind.ControlUnsupported);
+
+                    if (!TryReadVfBaseLabels(out var voltsMv, out var baseMhz))
+                        return GpuResult<GpuVoltageFrequencyCurve>.Fail(OverclockErrorKind.ControlUnsupported);
+
+                    var pointRanges = QueryPointRangesMhz(PublicClockDomain.Graphics, first, last);
+                    if (pointRanges is null) return GpuResult<GpuVoltageFrequencyCurve>.Fail(OverclockErrorKind.ControlUnsupported);
+
+                    int[] curDeltaMhz = new int[n];
+                    try
+                    {
+                        var table = GPUApi.GetClockBoostTable(_gpu!.Handle, 1);
+                        var src = table.GPUDeltas;
+                        for (int i = 0; i < n && first + i < src.Length; i++)
+                            curDeltaMhz[i] = src[first + i].FrequencyDeltaInkHz / 1000;
+                    }
+                    catch (NVIDIAApiException) {  }
+
+                    bool vbSupported = false;
+                    uint vbCurrent = 0;
+                    try
+                    {
+                        vbCurrent = GPUApi.GetCoreVoltageBoostPercent(_gpu!.Handle).Percent;
+                        vbSupported = true;
+                    }
+                    catch (NVIDIAApiException) { }
+
+                    var curve = new GpuVoltageFrequencyCurve
+                    {
+                        VoltageBoostSupported = vbSupported,
+                        CurrentVoltageBoostPercent = vbCurrent,
+                    };
+                    for (int i = 0; i < n; i++)
+                    {
+                        int srcIdx = voltsMv.Length == n ? i
+                            : (int)((long)i * (voltsMv.Length - 1) / Math.Max(1, n - 1));
+                        curve.Points.Add(new VfCurvePoint
+                        {
+                            VoltageMv = voltsMv[srcIdx],
+                            BaseFrequencyMHz = baseMhz[srcIdx],
+                            OffsetMHz = curDeltaMhz[i],
+                            MinOffsetMHz = pointRanges[i].MinMhz,
+                            MaxOffsetMHz = pointRanges[i].MaxMhz,
+                        });
+                    }
+                    return GpuResult<GpuVoltageFrequencyCurve>.Ok(curve);
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult<GpuVoltageFrequencyCurve>.Fail(OverclockErrorKind.ControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult<GpuVoltageFrequencyCurve>.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        private bool TryReadVfBaseLabels(out int[] voltsMv, out int[] baseMhz)
+        {
+            voltsMv = Array.Empty<int>();
+            baseMhz = Array.Empty<int>();
+            try
+            {
+                var status = GPUApi.GetClientClkVFPointsStatus(_gpu!.Handle, 1);
+                var pts = status.Points;
+                if (pts is { Length: > 0 })
+                {
+                    var valid = new List<(int V, int F)>();
+                    for (int i = 0; i < pts.Length; i++)
+                    {
+                        int v = pts[i].VoltageInMilliV > 0
+                            ? (int)pts[i].VoltageInMilliV
+                            : (int)(pts[i].VoltageInMicroV / 1000);
+                        int f = (int)Math.Round(pts[i].FrequencyInkHz / 1000.0);
+                        if (v > 0 && v < 3000 && f > 0 && f < 6000)
+                            valid.Add((v, f));
+                    }
+                    if (valid.Count > 0)
+                    {
+                        valid.Sort((a, b) => a.V.CompareTo(b.V));
+                        MakeVfBaseMonotonic(valid);
+                        voltsMv = valid.Select(p => p.V).ToArray();
+                        baseMhz = valid.Select(p => p.F).ToArray();
+                        return true;
+                    }
+                }
+            }
+            catch (NVIDIAApiException) { }
+            try
+            {
+                var vfp = GPUApi.GetVFPCurve(_gpu!.Handle);
+                var entries = vfp.GPUCurveEntries;
+                if (entries is { Length: > 0 })
+                {
+                    var valid = new List<(int V, int F)>();
+                    for (int i = 0; i < entries.Length; i++)
+                    {
+                        int v = (int)(entries[i].VoltageInMicroV / 1000);
+                        int f = (int)Math.Round(entries[i].FrequencyInkHz / 1000.0);
+                        if (v > 0 && v < 3000 && f > 0 && f < 6000)
+                            valid.Add((v, f));
+                    }
+                    if (valid.Count > 0)
+                    {
+                        valid.Sort((a, b) => a.V.CompareTo(b.V));
+                        MakeVfBaseMonotonic(valid);
+                        voltsMv = valid.Select(p => p.V).ToArray();
+                        baseMhz = valid.Select(p => p.F).ToArray();
+                        return true;
+                    }
+                }
+            }
+            catch (NVIDIAApiException) { }
+            return false;
+        }
+
+        private static void MakeVfBaseMonotonic(List<(int V, int F)> pts)
+        {
+            for (int i = 1; i < pts.Count; i++)
+                if (pts[i].F < pts[i - 1].F) pts[i] = (pts[i].V, pts[i - 1].F);
+        }
+
+        private List<(int MinMhz, int MaxMhz)>? QueryPointRangesMhz(PublicClockDomain domain, int first, int last)
+        {
+            int n = last - first + 1;
+            if (n <= 0) return null;
+
+            try
+            {
+                var ranges = GPUApi.GetClockBoostRanges(_gpu!.Handle);
+                var list = new List<(int, int)>(n);
+                bool allCovered = true;
+                for (int i = first; i <= last; i++)
+                {
+                    bool found = false;
+                    foreach (var r in ranges.ClockBoostRanges)
+                    {
+                        if (r.ClockDomain != domain) continue;
+                        if (i < r.FirstPointIndex || i > r.LastPointIndex) continue;
+                        if (r.MaximumInkHz > r.MinimumInkHz
+                            && r.MinimumInkHz <= 0
+                            && Math.Abs((long)r.MaximumInkHz) <= 2_000_000
+                            && Math.Abs((long)r.MinimumInkHz) <= 2_000_000)
+                        {
+                            list.Add(((int)Math.Round(r.MinimumInkHz / 1000.0),
+                                      (int)Math.Round(r.MaximumInkHz / 1000.0)));
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) { allCovered = false; break; }
+                }
+                if (allCovered && list.Count == n) return list;
+            }
+            catch (NVIDIAApiException) { }
+
+            var uniform = QueryDeltaRangeMhz(domain);
+            if (uniform is null) return null;
+            var result = new List<(int, int)>(n);
+            for (int i = 0; i < n; i++) result.Add((uniform.Value.MinMhz, uniform.Value.MaxMhz));
+            return result;
+        }
+
+        public GpuResult SetVoltageFrequencyCurveOffsets(IReadOnlyList<int> offsetsMhz)
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return fail;
+                try
+                {
+                    var range = BoostTableRange(PublicClockDomain.Graphics);
+                    if (range is null) return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+                    int first = range.Value.First, last = range.Value.Last;
+                    int n = last - first + 1;
+                    if (offsetsMhz.Count != n)
+                        return GpuResult.Fail(OverclockErrorKind.WriteRejected,
+                            $"V/F curve point count changed (expected {n}, got {offsetsMhz.Count}) - re-read the curve and retry.");
+
+                    var pointRanges = QueryPointRangesMhz(PublicClockDomain.Graphics, first, last);
+                    if (pointRanges is null) return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+
+                    var table = GPUApi.GetClockBoostTable(_gpu!.Handle, 1);
+                    var src = table.GPUDeltas;
+                    var deltas = new PrivateClockBoostTableV1.GPUDelta[src.Length];
+                    for (int i = 0; i < src.Length; i++)
+                    {
+                        if (i >= first && i <= last)
+                        {
+                            int k = i - first;
+                            int clamped = Math.Clamp(offsetsMhz[k], pointRanges[k].MinMhz, pointRanges[k].MaxMhz);
+                            deltas[i] = new PrivateClockBoostTableV1.GPUDelta(clamped * 1000);
+                        }
+                        else
+                        {
+                            deltas[i] = new PrivateClockBoostTableV1.GPUDelta(src[i].FrequencyDeltaInkHz);
+                        }
+                    }
+
+                    GPUApi.SetClockBoostTable(_gpu.Handle, new PrivateClockBoostTableV1(deltas), 1);
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult<int[]> ReadVfCurveOffsets()
+        {
+            lock (NvApiSession.Gate)
+            {
+                try
+                {
+                    if (!EnsureGpu(out var fail)) return GpuResult<int[]>.Fail(fail.ErrorKind, fail.Detail);
+                    var range = BoostTableRange(PublicClockDomain.Graphics);
+                    if (range is null) return GpuResult<int[]>.Ok(Array.Empty<int>());
+                    var table = GPUApi.GetClockBoostTable(_gpu!.Handle, 1);
+                    var src = table.GPUDeltas;
+                    int count = range.Value.Last - range.Value.First + 1;
+                    if (range.Value.First < 0 || range.Value.Last >= src.Length || count <= 0)
+                        return GpuResult<int[]>.Fail(OverclockErrorKind.ControlUnsupported);
+                    var anchor = new int[count];
+                    for (int i = 0; i < anchor.Length && range.Value.First + i < src.Length; i++)
+                        anchor[i] = src[range.Value.First + i].FrequencyDeltaInkHz / 1000;
+                    return GpuResult<int[]>.Ok(anchor);
+                }
+                catch (NVIDIAApiException ex) { return GpuResult<int[]>.Fail(MapStatus(ex), ex.Status.ToString()); }
+            }
+        }
+
+        public GpuResult<uint> ReadVoltageBoostPercent()
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return GpuResult<uint>.Fail(fail.ErrorKind, fail.Detail);
+                try
+                {
+                    return GpuResult<uint>.Ok(GPUApi.GetCoreVoltageBoostPercent(_gpu!.Handle).Percent);
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult<uint>.Fail(OverclockErrorKind.ControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult<uint>.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        public GpuResult SetVoltageBoostPercent(uint percent)
+        {
+            lock (NvApiSession.Gate)
+            {
+                if (!EnsureGpu(out var fail)) return fail;
+                try
+                {
+                    percent = Math.Min(percent, 100);
+                    GPUApi.SetCoreVoltageBoostPercent(_gpu!.Handle, new PrivateVoltageBoostPercentV1(percent));
+                    return GpuResult.Ok();
+                }
+                catch (NVIDIANotSupportedException)
+                {
+                    return GpuResult.Fail(OverclockErrorKind.ControlUnsupported);
+                }
+                catch (NVIDIAApiException ex)
+                {
+                    return GpuResult.Fail(MapStatus(ex), ex.Status.ToString());
+                }
+            }
+        }
+
+        private bool EnsureGpu(out GpuResult fail)
+        {
+            fail = GpuResult.Ok();
+            if (!_initialized)
+            {
+                var init = InitializeNoLock();
+                if (!init.IsSuccess) { fail = init; return false; }
+            }
+
+            if (_gpu != null) return true;
+
+            PhysicalGPU[] gpus;
+            try { gpus = PhysicalGPU.GetPhysicalGPUs(); }
+            catch (NVIDIAApiException ex)
+            {
+                fail = GpuResult.Fail(OverclockErrorKind.GpuNotDetected, ex.Status.ToString());
+                return false;
+            }
+
+            if (gpus.Length == 0)
+            {
+                fail = GpuResult.Fail(OverclockErrorKind.GpuNotDetected);
+                return false;
+            }
+
+            _gpu = gpus.FirstOrDefault(g => g.GPUType == GPUType.Discrete) ?? gpus[0];
+            return true;
+        }
+
+        public void InvalidateGpu()
+        {
+            lock (NvApiSession.Gate) _gpu = null;
+        }
+
+        private GpuResult InitializeNoLock()
+        {
+            if (_initialized) return GpuResult.Ok();
+            try
+            {
+                NVIDIA.Initialize();
+                _initialized = true;
+                return GpuResult.Ok();
+            }
+            catch (NVIDIAApiException ex)
+            {
+                return GpuResult.Fail(OverclockErrorKind.NvApiInitFailed, $"NVAPI status: {ex.Status}");
+            }
+            catch (Exception ex)
+            {
+                return GpuResult.Fail(OverclockErrorKind.NvApiInitFailed, ex.GetType().Name);
+            }
+        }
+
+        private static OverclockErrorKind MapStatus(NVIDIAApiException ex) => ex.Status switch
+        {
+            Status.NotSupported => OverclockErrorKind.ControlUnsupported,
+            _ => OverclockErrorKind.WriteRejected,
+        };
+    }
+}

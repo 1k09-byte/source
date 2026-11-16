@@ -1,0 +1,72 @@
+<Page
+    x:Class="kaliteConfig.Pages.ReservedCpuSetsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:kaliteConfig.Pages"
+    xmlns:models="using:kaliteConfig.ViewModels">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Tick the cores the scheduler should keep away from normal work. At least one core must stay available and a restart is required. Needs administrator rights."
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextWrapping="Wrap" />
+
+        <StackPanel Grid.Row="1" Spacing="8">
+            <InfoBar IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+                     Severity="Error"
+                     Title="Error"
+                     Message="{x:Bind ViewModel.ErrorText, Mode=OneWay}"
+                     IsClosable="True" />
+
+            <InfoBar IsOpen="{x:Bind ViewModel.HasSuccess, Mode=OneWay}"
+                     Severity="Success"
+                     Title="Success"
+                     Message="{x:Bind ViewModel.SuccessText, Mode=OneWay}"
+                     IsClosable="True" />
+
+            <InfoBar IsOpen="{x:Bind ViewModel.IsNotElevated, Mode=OneWay}"
+                     Severity="Warning"
+                     Title="Elevation Required"
+                     Message="You must run kaliteConfig as Administrator to save reserved CPU sets."
+                     IsClosable="False" />
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ItemsControl Grid.Column="0" ItemsSource="{x:Bind ViewModel.Cores}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VariableSizedWrapGrid Orientation="Horizontal"
+                                               ItemWidth="104"
+                                               ItemHeight="44" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:CpuCoreItem">
+                        <ToggleButton Content="{x:Bind Name}"
+                                      IsChecked="{x:Bind IsReserved, Mode=TwoWay}"
+                                      Margin="0,0,8,8" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Grid.Column="1"
+                    Content="Apply"
+                    Command="{x:Bind ViewModel.SaveCommand}"
+                    IsEnabled="{x:Bind ViewModel.HasPendingChanges, Mode=OneWay}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Margin="8,0,0,32"
+                    VerticalAlignment="Bottom" />
+        </Grid>
+
+    </Grid>
+</Page>

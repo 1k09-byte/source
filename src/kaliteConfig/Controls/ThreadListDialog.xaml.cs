@@ -1,0 +1,807 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using kaliteConfig.Native;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace kaliteConfig.Controls;
+
+public sealed partial class ThreadRow : ObservableObject
+{
+    [ObservableProperty]
+    public partial int Tid { get; set; }
+    [ObservableProperty]
+    public partial string CurrentText { get; set; } = "-";
+    [ObservableProperty]
+    public partial int CurrentLevel { get; set; } = int.MinValue;
+    [ObservableProperty]
+    public partial int Base { get; set; }
+    [ObservableProperty]
+    public partial string Description { get; set; } = string.Empty;
+    [ObservableProperty]
+    public partial bool IsNamed { get; set; }
+    [ObservableProperty]
+    public partial string StartAddress { get; set; } = string.Empty;
+    [ObservableProperty]
+    public partial bool CanEdit { get; set; } = true;
+    [ObservableProperty]
+    public partial bool Suspended { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BoostBoxVis))]
+    [NotifyPropertyChangedFor(nameof(BoostUnknownVis))]
+    [NotifyPropertyChangedFor(nameof(BoostTip))]
+    public partial bool? BoostAllowed { get; set; }
+    public string ProcessName { get; set; } = string.Empty;
+    public string StartAddressValue { get; set; } = string.Empty;
+
+    public Visibility BoostBoxVis => BoostAllowed.HasValue ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility BoostUnknownVis => BoostAllowed.HasValue ? Visibility.Collapsed : Visibility.Visible;
+    public string BoostTip => BoostAllowed switch
+    {
+        true => "Priority boost - enabled",
+        false => "Priority boost - off (kept off for this thread)",
+        _ => "Priority boost - state unknown, this thread could not be read",
+    };
+
+    [ObservableProperty] public partial string CpuText { get; set; } = "-";
+
+    [ObservableProperty] public partial string? IdealCpuText { get; set; }
+
+    [ObservableProperty] public partial string CpuTimeText { get; set; } = "-";
+
+    [ObservableProperty] public partial string RunningCpuText { get; set; } = "-";
+
+    [ObservableProperty] public partial double? CpuShare { get; set; }
+
+}
+
+public sealed partial class ThreadListDialog : ContentDialog
+{
+    public ObservableCollection<ThreadRow> Rows { get; } = new();
+
+    private readonly List<ThreadRow> _allRows = new();
+
+    private int _pid;
+    private string _processName = string.Empty;
+    private ThreadRow? _selected;
+    private bool _loadingEditor;
+    private bool _loadingList;
+    private bool _endArmed;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _cpuTimer;
+
+    private volatile bool _busy;
+    private bool _boostReadable = true;
+    private bool _ecoReadable = true;
+    private bool _memoryReadable = true;
+    private bool _idealUserPicked;
+    private int _idealCpu = -1;
+    private const int CpuBoxColumns = 8;
+
+    private Services.ThreadTuningService Tuner => App.Current.ThreadTuning;
+
+    public Func<Models.TunerThreadRule, Task<int>>? SaveRuleAsync { get; set; }
+
+    public ThreadListDialog()
+    {
+        InitializeComponent();
+        kaliteConfig.Services.Theming.ThemeHelper.ApplyTheme(this);
+        ThreadList.ItemsSource = Rows;
+
+        try { Services.CpuObservationService.AddRef(); } catch { }
+        _cpuTimer = DispatcherQueue.CreateTimer();
+        _cpuTimer.Interval = TimeSpan.FromSeconds(1);
+        _cpuTimer.Tick += (_, _) =>
+        {
+            if (_busy) return;
+            foreach (var r in _allRows)
+                try { r.RunningCpuText = Services.CpuObservationService.DescribeThreadCpu(r.Tid); } catch { }
+        };
+        _cpuTimer.Start();
+        Closed += (_, _) =>
+        {
+            try { _cpuTimer?.Stop(); } catch { }
+            try { Services.CpuObservationService.Release(); } catch { }
+        };
+    }
+
+    public async Task ShowForProcessAsync(int pid, string processName, XamlRoot root)
+    {
+        _pid = pid;
+        _processName = processName;
+        Title = $"Threads - {processName} ({pid})";
+        XamlRoot = root;
+        var shown = ShowAsync().AsTask();
+        await LoadThreadsAsync();
+        await shown;
+    }
+
+    private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+        => await LoadThreadsAsync();
+
+    private int _loadGeneration;
+    private CancellationTokenSource? _loadCts;
+
+    private async Task LoadThreadsAsync()
+    {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _loadCts = cts;
+        var token = cts.Token;
+        int generation = ++_loadGeneration;
+        _busy = true;
+
+        SetLoading(true);
+        EditorStatus("Loading threads…", false);
+        try
+        {
+            _loadingList = true;
+            try
+            {
+                Rows.Clear();
+                _allRows.Clear();
+                SelectRow(null);
+
+                var details = await Services.ThreadQueryService.ListThreadsDetailedAsync(_pid);
+
+                if (token.IsCancellationRequested || generation != _loadGeneration) return;
+
+                double parentCpuSeconds = 0;
+                foreach (var d in details) parentCpuSeconds += d.CpuSeconds;
+
+                var suppressed = Services.BoostPreferenceService.Instance;
+                var liveTids = details.Select(d => d.Tid).ToList();
+
+                foreach (var t in details
+                    .OrderByDescending(t => !string.IsNullOrWhiteSpace(t.Description) && t.Description != "(unnamed)")
+                    .ThenBy(t => t.Tid))
+                {
+                    if (token.IsCancellationRequested || generation != _loadGeneration) return;
+
+                    bool named = !string.IsNullOrWhiteSpace(t.Description) && t.Description != "(unnamed)";
+                    var row = new ThreadRow
+                    {
+                        Tid = t.Tid,
+                        Description = t.Description,
+                        StartAddress = t.StartAddress,
+                        IsNamed = named,
+                        ProcessName = _processName,
+                        CanEdit = t.PriorityLevel.HasValue,
+                    };
+
+                    if (t.PriorityLevel is int level)
+                    {
+                        row.CurrentLevel = level;
+                        row.CurrentText = DescribePriority(level);
+                    }
+                    else row.CurrentText = "-";
+
+                    row.BoostAllowed = t.BoostAllowed;
+                    if (suppressed.IsSuppressed(_processName, t.Tid, t.Description, t.StartAddress, liveTids))
+                        row.BoostAllowed = false;
+
+                    row.CpuText = FormatAffinity(t.AffinityMask);
+                    row.IdealCpuText = t.IdealCpu is int ic
+                        ? $"CPU {ic}" + (t.IdealGroup is int g && g != 0 ? $" (group {g})" : "")
+                        : "none (scheduler picks)";
+
+                    row.CpuTimeText = FormatCpuSeconds(t.CpuSeconds);
+                    if (parentCpuSeconds > 0)
+                        row.CpuShare = Math.Round(100.0 * t.CpuSeconds / parentCpuSeconds, 1);
+
+                    try { row.RunningCpuText = Services.CpuObservationService.DescribeThreadCpu(row.Tid); } catch { }
+                    _allRows.Add(row);
+                }
+
+                ApplyThreadFilter();
+
+                if (_allRows.Count == 0)
+                {
+                    Title = $"Threads - {_processName} ({_pid}) — 0 threads";
+                }
+                else
+                {
+                    Title = $"Threads - {_processName} ({_pid})  —  {_allRows.Count} threads - select one to tune it";
+                }
+            }
+            catch (Exception ex)
+            {
+                HeaderText.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+                HeaderText.Text = "Failed to read threads.";
+                EditorStatus(ex.Message, true);
+            }
+            finally
+            {
+                _loadingList = false;
+            }
+        }
+        finally
+        {
+            if (generation == _loadGeneration)
+            {
+                _busy = false;
+                SetLoading(false);
+                cts.Dispose();
+                if (ReferenceEquals(_loadCts, cts)) _loadCts = null;
+
+                if (ThreadList.SelectedItem == null && Rows.Count > 0)
+                    ThreadList.SelectedItem = Rows[0];
+            }
+        }
+    }
+
+    private void SetLoading(bool on)
+    {
+        try
+        {
+            LoadingRing.IsActive = on;
+            LoadingText.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            LoadingOverlay.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            RefreshButton.IsEnabled = !on;
+        }
+        catch {  }
+    }
+
+    private void ThreadSearch_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        => ApplyThreadFilter();
+
+    private void ApplyThreadFilter()
+    {
+        string query = (ThreadSearchBox.Text ?? string.Empty).Trim();
+        var tokens = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var keep = ThreadList.SelectedItem as ThreadRow;
+
+        _loadingList = true;
+        try
+        {
+            Rows.Clear();
+            foreach (var row in _allRows)
+                if (MatchesFilter(row, tokens)) Rows.Add(row);
+
+            var next = keep != null && Rows.Contains(keep) ? keep : (Rows.Count > 0 ? Rows[0] : null);
+            if (!ReferenceEquals(next, keep)) ThreadList.SelectedItem = next;
+            else if (next == null) SelectRow(null);
+        }
+        finally { _loadingList = false; }
+
+        HeaderText.Visibility = Visibility.Visible;
+        if (_allRows.Count == 0)
+            HeaderText.Text = "No threads readable (process may have exited or access was denied).";
+        else if (Rows.Count == 0)
+            HeaderText.Text = $"No threads match \"{query}\" - search checks TID, thread name and start address.";
+        else if (tokens.Length > 0)
+            HeaderText.Text = $"{Rows.Count} of {_allRows.Count} threads match \"{query}\".";
+        else
+            HeaderText.Visibility = Visibility.Collapsed;
+    }
+
+    private static bool MatchesFilter(ThreadRow row, string[] tokens)
+    {
+        foreach (var token in tokens)
+        {
+            bool hit = row.Description.Contains(token, StringComparison.OrdinalIgnoreCase)
+                || row.Tid.ToString().Contains(token, StringComparison.OrdinalIgnoreCase)
+                || row.StartAddress.Contains(token, StringComparison.OrdinalIgnoreCase)
+                || row.CurrentText.Contains(token, StringComparison.OrdinalIgnoreCase);
+            if (!hit) return false;
+        }
+        return true;
+    }
+
+    private static string FormatCpuSeconds(double secs) =>
+        secs < 60 ? $"{secs:0.0}s"
+        : secs < 3600 ? $"{secs / 60:0}m {secs % 60:0}s"
+        : $"{secs / 3600:0}h {(secs % 3600) / 60:0}m";
+
+    private static string FormatAffinity(ulong? mask)
+    {
+        if (mask is not ulong m) return "unknown";
+        int coreCount = Math.Max(1, Environment.ProcessorCount);
+        if (m == 0) return $"all {coreCount}";
+        var parts = new List<string>();
+        for (int i = 0; i < 64; i++)
+            if ((m & (1UL << i)) != 0) parts.Add(i.ToString());
+        return parts.Count > 0 ? string.Join(", ", parts) : "none";
+    }
+
+    private async void ThreadList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        try { await SelectRowAsync(ThreadList.SelectedItem as ThreadRow); }
+        catch (Exception ex) { try { EditorStatus($"Could not inspect thread: {Short(ex)}", true); } catch { } }
+    }
+
+    private void SelectRow(ThreadRow? row)
+    {
+        _selected = row;
+        _endArmed = false;
+        _idealUserPicked = false;
+        EndButton.Content = "End thread";
+        bool has = row != null;
+        NoSelectionText.Visibility = has ? Visibility.Collapsed : Visibility.Visible;
+        EditorPanel.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task SelectRowAsync(ThreadRow? row)
+    {
+        try
+        {
+            await SelectRowInnerAsync(row);
+        }
+        catch (Exception ex)
+        {
+            try { _loadingEditor = false; EditorStatus($"Could not inspect thread: {Short(ex)}", true); }
+            catch { }
+        }
+    }
+
+    private async Task SelectRowInnerAsync(ThreadRow? row)
+    {
+        SelectRow(row);
+        EditorStatus(null, false);
+        if (row == null) return;
+        _loadingEditor = true;
+        try
+        {
+            EditorTitle.Text = $"TID {row.Tid}";
+            EditorSub.Text = $"{row.Description} - {row.StartAddress}";
+            PriorityCurrent.Text = "Current: " + row.CurrentText;
+            SelectComboByTag(PriorityCombo, row.CurrentLevel);
+            _memoryReadable = true;
+            try
+            {
+                uint memory = await Tuner.GetMemoryPriorityAsync((uint)row.Tid);
+                SelectComboByTag(MemoryCombo, (int)memory);
+                MemoryCurrent.Text = "Current: " + DescribeMemoryPriority(memory);
+            }
+            catch (Exception ex)
+            {
+                _memoryReadable = false;
+                MemoryCombo.SelectedItem = null;
+                MemoryCurrent.Text = "Current: unreadable (" + Short(ex) + ")";
+            }
+            _boostReadable = true;
+            _ecoReadable = true;
+            try { row.BoostAllowed = await Tuner.GetBoostAsync((uint)row.Tid); }
+            catch { row.BoostAllowed = null; _boostReadable = false; }
+            
+            if (Services.BoostPreferenceService.Instance.IsSuppressed(
+                    _processName, row.Tid, row.Description, row.StartAddress, _allRows.Select(r => r.Tid).ToList()))
+                row.BoostAllowed = false;
+
+            try { EcoToggle.IsOn = await Tuner.GetEfficiencyAsync((uint)row.Tid); }
+            catch { EcoToggle.IsEnabled = false; _ecoReadable = false; }
+            try
+            {
+                AffinityCurrent.Text = "Current: " + await Tuner.GetAffinityDescriptionAsync((uint)row.Tid);
+                var (g, m) = await Tuner.GetAffinityStateAsync((uint)row.Tid);
+                BuildAffinityBoxes(m);
+            }
+            catch (Exception ex)
+            {
+                AffinityCurrent.Text = "Current: unreadable (" + Short(ex) + ")";
+                BuildAffinityBoxes(0);
+            }
+            _idealCpu = -1;
+            IdealCurrent.Text = string.Empty;
+            BuildIdealBoxes();
+            try
+            {
+                var (ig, cpu) = await Tuner.GetIdealProcessorAsync((uint)row.Tid);
+                IdealCurrent.Text = $"Current: group {ig} CPU {cpu}";
+                if (ig == 0)
+                {
+                    _idealCpu = cpu;
+                    foreach (var box in IdealCpuGrid.Children.OfType<ToggleButton>())
+                        box.IsChecked = box.Tag is int t && t == cpu;
+                }
+                else
+                {
+                    IdealCurrent.Text += " - only processor group 0 is tuneable here, pick a CPU below.";
+                }
+            }
+            catch { IdealCurrent.Text = "Current: unreadable - pick a CPU below."; }
+            SuspendButton.Content = row.Suspended ? "Resume" : "Suspend";
+            bool editable = row.CanEdit;
+            PriorityCombo.IsEnabled = editable;
+            MemoryCombo.IsEnabled = editable && _memoryReadable;
+            EcoToggle.IsEnabled = editable && _ecoReadable;
+            AffinityCpuGrid.Opacity = editable ? 1 : 0.5;
+            IdealCpuGrid.Opacity = editable ? 1 : 0.5;
+            SetCpuBoxesEnabled(AffinityCpuGrid, editable);
+            SetCpuBoxesEnabled(IdealCpuGrid, editable);
+            SuspendButton.IsEnabled = editable;
+            EndButton.IsEnabled = editable;
+            if (!editable)
+                EditorStatus("Protected thread - Windows does not allow changes.", true);
+        }
+        finally { _loadingEditor = false; }
+    }
+
+    private void BuildAffinityBoxes(ulong liveMask)
+    {
+        AffinityCpuGrid.Children.Clear();
+        AffinityCpuGrid.ColumnDefinitions.Clear();
+        AffinityCpuGrid.RowDefinitions.Clear();
+        int count = Math.Min(Environment.ProcessorCount, 64);
+        for (int c = 0; c < CpuBoxColumns; c++)
+            AffinityCpuGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        for (int r = 0; r < (count + CpuBoxColumns - 1) / CpuBoxColumns; r++)
+            AffinityCpuGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (int i = 0; i < count; i++)
+        {
+            int cpu = i;
+            var box = new ToggleButton
+            {
+                Content = cpu.ToString(),
+                Width = 44,
+                IsChecked = (liveMask & (1UL << cpu)) != 0,
+                Tag = cpu,
+            };
+            Grid.SetColumn(box, cpu % CpuBoxColumns);
+            Grid.SetRow(box, cpu / CpuBoxColumns);
+            AffinityCpuGrid.Children.Add(box);
+        }
+    }
+
+    private void BuildIdealBoxes()
+    {
+        IdealCpuGrid.Children.Clear();
+        IdealCpuGrid.ColumnDefinitions.Clear();
+        IdealCpuGrid.RowDefinitions.Clear();
+        int count = Math.Min(Environment.ProcessorCount, 64);
+        for (int c = 0; c < CpuBoxColumns; c++)
+            IdealCpuGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        for (int r = 0; r < (count + CpuBoxColumns - 1) / CpuBoxColumns; r++)
+            IdealCpuGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (int i = 0; i < count; i++)
+        {
+            int cpu = i;
+            var box = new ToggleButton
+            {
+                Content = cpu.ToString(),
+                Width = 44,
+                Tag = cpu,
+            };
+            box.Click += (_, _) =>
+            {
+                _idealCpu = cpu;
+                _idealUserPicked = true;
+                foreach (var other in IdealCpuGrid.Children.OfType<ToggleButton>())
+                    other.IsChecked = ReferenceEquals(other, box);
+            };
+            Grid.SetColumn(box, cpu % CpuBoxColumns);
+            Grid.SetRow(box, cpu / CpuBoxColumns);
+            IdealCpuGrid.Children.Add(box);
+        }
+    }
+
+    private ulong ReadAffinityMask()
+    {
+        ulong mask = 0;
+        foreach (var box in AffinityCpuGrid.Children.OfType<ToggleButton>())
+        {
+            if (box.IsChecked == true && box.Tag is int cpu && cpu < 64)
+                mask |= 1UL << cpu;
+        }
+        return mask;
+    }
+
+    private static void SetCpuBoxesEnabled(Grid grid, bool enabled)
+    {
+        foreach (var box in grid.Children.OfType<ToggleButton>())
+            box.IsEnabled = enabled;
+    }
+
+    private static void SelectComboByTag(ComboBox box, int level)
+    {
+        box.SelectedItem = null;
+        foreach (var item in box.Items.OfType<ComboBoxItem>())
+        {
+            if (item.Tag is string s && int.TryParse(s, out int v) && v == level)
+            {
+                box.SelectedItem = item;
+                return;
+            }
+        }
+    }
+
+    private static int? ComboLevel(ComboBox box)
+    {
+        if (box.SelectedItem is not ComboBoxItem item || item.Tag is not string s) return null;
+        if (s == "auto") return 0;
+        return int.TryParse(s, out int v) ? v : null;
+    }
+
+    private uint? ComboMemoryLevel()
+    {
+        int? level = ComboLevel(MemoryCombo);
+        return level is >= 1 and <= 5 ? (uint)level.Value : null;
+    }
+
+    private static string DescribeMemoryPriority(uint level) => level switch
+    {
+        1 => "Very low (1)",
+        2 => "Low (2)",
+        3 => "Medium (3)",
+        4 => "Below normal (4)",
+        5 => "Normal (5)",
+        _ => $"Level {level}",
+    };
+
+    private async void MemoryCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingEditor || _selected == null) return;
+        int? level = ComboLevel(MemoryCombo);
+        if (level is not (>= 1 and <= 5)) return;
+        try
+        {
+            await Tuner.SetMemoryPriorityAsync((uint)_selected.Tid, (uint)level!.Value);
+            MemoryCurrent.Text = "Current: " + DescribeMemoryPriority((uint)level.Value);
+            EditorStatus(null, false);
+        }
+        catch (Exception ex) { EditorStatus($"Memory priority: {Short(ex)}", true); }
+    }
+
+    private async void PriorityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingEditor || _selected == null) return;
+        string? tag = (PriorityCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+        if (string.IsNullOrEmpty(tag)) return;
+
+        int level = ComboLevel(PriorityCombo) ?? 0;
+        try
+        {
+            await Tuner.SetPriorityAsync((uint)_selected.Tid, level);
+            _selected.CurrentLevel = level;
+            _selected.CurrentText = DescribePriority(level);
+            PriorityCurrent.Text = "Current: " + _selected.CurrentText;
+            if (tag == "auto")
+            {
+                try { await Tuner.SetBoostAsync((uint)_selected.Tid, true); } catch { }
+                EditorStatus("System default restored: Normal priority, boost on.", false);
+                return;
+            }
+            EditorStatus(null, false);
+        }
+        catch (Exception ex) { EditorStatus($"Priority: {Short(ex)}", true); }
+    }
+
+    private async void PermanentButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected == null) return;
+        var row = _selected;
+        try
+        {
+            int? prio = ComboLevel(PriorityCombo) ?? (row.CurrentLevel != int.MinValue ? row.CurrentLevel : null);
+            if (prio == null)
+            {
+                EditorStatus("Cannot read the live priority - pick one from the dropdown first.", true);
+                return;
+            }
+            var rule = new Models.TunerThreadRule
+            {
+                Description = row.Description == "(unnamed)" ? string.Empty : row.Description,
+                StartAddress = row.StartAddress == "-" ? string.Empty : row.StartAddress,
+                Priority = prio.Value,
+                BoostEnabled = _boostReadable ? row.BoostAllowed : null,
+                EfficiencyMode = _ecoReadable ? EcoToggle.IsOn : null,
+                MemoryPriority = _memoryReadable ? ComboMemoryLevel() : null,
+            };
+            ulong uiMask = ReadAffinityMask();
+            if (uiMask != 0)
+            {
+                rule.AffinityGroup = 0;
+                rule.AffinityMask = uiMask;
+            }
+            if (_idealUserPicked && _idealCpu >= 0 && _idealCpu < 64)
+            {
+                rule.IdealGroup = 0;
+                rule.IdealIndex = (byte)_idealCpu;
+            }
+            if (string.IsNullOrWhiteSpace(rule.Description) && string.IsNullOrWhiteSpace(rule.StartAddress))
+                rule.MatchAllThreads = true;
+            if (SaveRuleAsync is { } save)
+            {
+                int appliedNow = await save(rule);
+                bool everyThread = string.IsNullOrEmpty(rule.Description) && string.IsNullOrEmpty(rule.StartAddress);
+                EditorStatus(everyThread
+                    ? $"Added to this rule - applies to ALL threads of {_processName} ({appliedNow} now) and on every launch."
+                    : $"Added to this rule - applied to {appliedNow} matching thread(s) of {_processName} now, and on every launch.", false);
+                return;
+            }
+
+            var watcher = App.Current.ProfileWatcher;
+            var existing = watcher.ActiveProfiles.FirstOrDefault(p =>
+                string.Equals(p.Name, _processName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(p.Pattern, _processName, StringComparison.OrdinalIgnoreCase));
+            if (existing == null)
+            {
+                existing = new Models.TunerProfile
+                {
+                    Name = _processName,
+                    Pattern = _processName,
+                    AutoApply = true,
+                    Enabled = true,
+                };
+            }
+            existing.ThreadRules.Add(rule);
+            existing.RefreshSummaries();
+            await watcher.AddOrUpdate(existing);
+
+            int applied = 0;
+            try
+            {
+                var result = await watcher.ApplyToProcessAsync(existing, _pid);
+                applied = result.Succeeded;
+            }
+            catch { }
+
+            bool wide = string.IsNullOrEmpty(rule.Description) && string.IsNullOrEmpty(rule.StartAddress);
+            EditorStatus(wide
+                ? $"Saved - applies to ALL threads of {_processName} ({applied} thread(s) now) and on every launch."
+                : $"Saved - applied to {applied} matching thread(s) of {_processName} now, and on every launch.", false);
+        }
+        catch (Exception ex) { EditorStatus($"Save rule: {Short(ex)}", true); }
+    }
+
+    private async void BoostBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (_loadingEditor || _loadingList) return;
+        if (sender is not CheckBox cb || cb.DataContext is not ThreadRow row) return;
+
+        bool want = cb.IsChecked == true;
+        if (want == row.BoostAllowed) return;
+        bool? before = row.BoostAllowed;
+        try
+        {
+            if (want)
+                await Services.BoostPreferenceService.Instance.RestoreAsync(
+                    _processName, row.Tid, row.Description, row.StartAddress);
+            else
+                await Services.BoostPreferenceService.Instance.SuppressAsync(
+                    _processName, row.Tid, row.Description, row.StartAddress);
+            row.BoostAllowed = want;
+        }
+        catch (Exception ex)
+        {
+            row.BoostAllowed = before;
+            EditorStatus($"Boost: {Short(ex)}", true);
+        }
+    }
+    private async void EcoToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_loadingEditor || _selected == null) return;
+        try
+        {
+            await Tuner.SetEfficiencyAsync((uint)_selected.Tid, EcoToggle.IsOn);
+            EditorStatus(null, false);
+        }
+        catch (Exception ex) { EditorStatus($"Efficiency mode: {Short(ex)}", true); }
+    }
+
+    private async void AffinityApply_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected == null) return;
+        try
+        {
+            ulong mask = ReadAffinityMask();
+            if (mask == 0)
+            {
+                EditorStatus("Affinity: tick at least one CPU.", true);
+                return;
+            }
+            await Tuner.SetAffinityAsync((uint)_selected.Tid, null, mask);
+            AffinityCurrent.Text = "Current: " + await Tuner.GetAffinityDescriptionAsync((uint)_selected.Tid);
+            EditorStatus(null, false);
+        }
+        catch (Exception ex) { EditorStatus($"Affinity: {Short(ex)}", true); }
+    }
+
+    private async void IdealApply_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected == null) return;
+        if (_idealCpu < 0)
+        {
+            EditorStatus("Ideal processor: pick one CPU box first.", true);
+            return;
+        }
+        try
+        {
+            await Tuner.SetIdealProcessorAsync((uint)_selected.Tid, 0, (byte)_idealCpu);
+            _idealUserPicked = true;
+            EditorStatus($"Ideal processor set to CPU {_idealCpu}.", false);
+            try
+            {
+                var (ig, cpu) = await Tuner.GetIdealProcessorAsync((uint)_selected.Tid);
+                IdealCurrent.Text = $"Current: group {ig} CPU {cpu}";
+            }
+            catch { IdealCurrent.Text = $"Current: group 0 CPU {_idealCpu}."; }
+        }
+        catch (Exception ex) { EditorStatus($"Ideal processor: {Short(ex)}", true); }
+    }
+
+    private async void SuspendButton_Click(object sender, RoutedEventArgs e) => await ToggleSuspendAsync();
+
+    private async Task ToggleSuspendAsync()
+    {
+        if (_selected == null) return;
+        try
+        {
+            if (_selected.Suspended)
+            {
+                await Tuner.ResumeThreadAsync((uint)_selected.Tid);
+                _selected.Suspended = false;
+                SuspendButton.Content = "Suspend";
+            }
+            else
+            {
+                await Tuner.SuspendThreadAsync((uint)_selected.Tid);
+                _selected.Suspended = true;
+                SuspendButton.Content = "Resume";
+            }
+            EditorStatus(null, false);
+        }
+        catch (Exception ex) { EditorStatus($"Suspend/resume: {Short(ex)}", true); }
+    }
+
+    private async void EndButton_Click(object sender, RoutedEventArgs e) => await EndThreadAsync();
+
+    private async Task EndThreadAsync()
+    {
+        if (_selected == null) return;
+        if (!_endArmed)
+        {
+            _endArmed = true;
+            EndButton.Content = "Click again to confirm kill";
+            EditorStatus("Ending a thread can crash the process. Select End thread again, or click the button, to confirm.", true);
+            return;
+        }
+        try
+        {
+            await Tuner.TerminateThreadAsync((uint)_selected.Tid);
+            EditorStatus($"TID {_selected.Tid} terminated - refreshing list.", false);
+            await LoadThreadsAsync();
+        }
+        catch (Exception ex) { EditorStatus($"End thread: {Short(ex)}", true); }
+        finally { _endArmed = false; EndButton.Content = "End thread"; }
+    }
+
+    private void EditorStatus(string? message, bool warn)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            EditorStatusBox.Visibility = Visibility.Collapsed;
+            EditorStatusBox.Text = string.Empty;
+        }
+        else
+        {
+            EditorStatusBox.Text = message;
+            EditorStatusBox.Visibility = Visibility.Visible;
+        }
+    }
+
+    private static string DescribePriority(int level) => level switch
+    {
+        -15 => "Idle (-15)",
+        -2 => "Lowest (-2)",
+        -1 => "Below normal (-1)",
+        0 => "Normal (0)",
+        1 => "Above normal (+1)",
+        2 => "Highest (+2)",
+        15 => "Time critical (+15)",
+        > 2 => $"High ({level})",
+        _ => $"Level {level}",
+    };
+
+    private static string Short(Exception ex) =>
+        ex is UnauthorizedAccessException
+            ? "Access denied - protected thread."
+            : ex.Message.Split('\n')[0];
+}

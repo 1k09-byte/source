@@ -1,0 +1,106 @@
+# Build artifacts
+bin/
+obj/
+Build/
+AppPackages/
+.vs/
+
+# User-specific files
+*.user
+*.suo
+*.rsuser
+
+# Publish output
+publish/
+
+# Local reference clones (kept outside this repo)
+_gallery-reference/
+
+# Temp/dev assets not part of the shipped app
+Assets/_temp/
+
+# Temporary build logs
+*.log
+build.txt
+build2.log
+compile.txt
+msbuild.binlog
+
+# Test/scratch files
+test.cs
+
+# Perf investigation traces (large binaries, regenerable) and local tool installs
+perf/*.nettrace
+perf/*.nettrace.etlx
+perf/*.speedscope.json
+perf/tools/
+test.png
+
+# IDE files
+kaliteConfig.csproj.user
+
+# Distribution artifacts (built installers - published as GitHub release assets)
+dist/
+# MSIX pack helper leftovers (sideload scripts, test certs, mangled pack dirs)
+*_x64_Test/
+Add-AppDevPackage.ps1
+Install.ps1
+
+# Old layout backups
+_backup-oldlayout/
+
+# Crash dumps
+ExceptionDump.txt
+threadtune_*.txt
+
+# ETW traces and probe/reflection dumps (never commit debug output)
+*.etl
+device_props.txt
+dump_types.txt
+colordata.txt
+disp_types.txt
+build_out.txt
+out*.txt
+output*.txt
+dump.il
+
+# Pasted build logs
+build_error*.txt
+b.txt
+
+# Scratch patch/test programs and binaries at repo root
+fix_optim.*
+test_opt.cs
+test4.cs
+testLog.cs
+test*.exe
+
+# Vendored tool archives (fetch on demand, don't commit blobs)
+*.zip
+
+# Code-signing private keys (never commit; the public KaliteOS-Test.cer is safe to share)
+*.pfx
+*.pvk
+*.snk
+/src/kaliteConfig/Assets/_imgcheck
+
+# IDE / agent scratch state
+/.freebuff/
+/src/out/
+/perf/PERF-REPORT.md
+
+# Generated site snapshot (rebuilt by tools/build-site-data.mjs on every deploy)
+site/data/
+/toolkit-tauri/src-tauri/target/release/.fingerprint/raw-window-handle-0eb80332882f27f2
+
+# Toolkit vendor/build output (sources only, fetch dependencies with pnpm)
+/toolkit-tauri/node_modules/
+/toolkit-tauri/dist/
+/toolkit-tauri/src-tauri/target/
+/toolkit-tauri/*.log
+
+# Local agent conversation attachments
+/.cloud-attachments/
+
+# Vendored third-party installers (downloaded on demand, not source)
+/Installer/redist/

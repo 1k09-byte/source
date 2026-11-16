@@ -1,0 +1,372 @@
+using Microsoft.Win32;
+using kaliteConfig.Models;
+using kaliteConfig.Native;
+using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace kaliteConfig.Services;
+
+public sealed class PowerService
+{
+    private const string PowerSettingsPath = @"SYSTEM\CurrentControlSet\Control\Power\PowerSettings";
+
+    public void UnhideAllSettings()
+    {
+        try
+        {
+        using var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+        using var powerKey = baseKey.OpenSubKey(PowerSettingsPath, true);
+        if (powerKey == null) return;
+
+        foreach (var subgroupId in powerKey.GetSubKeyNames())
+        {
+            using var subgroupKey = powerKey.OpenSubKey(subgroupId, true);
+            if (subgroupKey == null) continue;
+
+            ClearHiddenBit(subgroupKey);
+
+            foreach (var settingId in subgroupKey.GetSubKeyNames())
+            {
+                using var settingKey = subgroupKey.OpenSubKey(settingId, true);
+                if (settingKey == null) continue;
+                try { ClearHiddenBit(settingKey); }
+                catch { }
+            }
+        }
+        }
+        catch { }
+    }
+
+    private static void ClearHiddenBit(RegistryKey key)
+    {
+        key.SetValue("Attributes", 2, RegistryValueKind.DWord);
+    }
+
+    public System.Collections.Generic.List<Guid> ListSchemeIds()
+    {
+        var guids = new System.Collections.Generic.List<Guid>();
+        uint index = 0;
+        uint bufferSize = 16;
+        while (PowrProf.PowerEnumerate(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, PowrProf.ACCESS_SCHEME, index, out Guid schemeGuid, ref bufferSize) == 0)
+        {
+            guids.Add(schemeGuid);
+            index++;
+            bufferSize = 16;
+        }
+        return guids;
+    }
+
+    public ObservableCollection<PowerScheme> GetAllSchemes(IProgress<string>? progress = null)
+    {
+        var schemes = new ObservableCollection<PowerScheme>();
+        
+        Guid activeSchemeGuid = Guid.Empty;
+        if (PowrProf.PowerGetActiveScheme(IntPtr.Zero, out IntPtr activeSchemePtr) == 0 && activeSchemePtr != IntPtr.Zero)
+        {
+            try { activeSchemeGuid = Marshal.PtrToStructure<Guid>(activeSchemePtr); }
+            finally { PowrProf.LocalFree(activeSchemePtr); }
+        }
+
+        var guids = ListSchemeIds();
+        progress?.Report($"Found {guids.Count} power schemes - reading settings…");
+        for (int i = 0; i < guids.Count; i++)
+        {
+            var guid = guids[i];
+            progress?.Report($"Reading scheme {i + 1} of {guids.Count}…");
+            var scheme = new PowerScheme
+            {
+                Id = guid,
+                Name = GetSchemeFriendlyName(guid),
+                Description = GetSchemeDescription(guid),
+                IsActive = activeSchemeGuid == guid
+            };
+            if (string.IsNullOrWhiteSpace(scheme.Name)) scheme.Name = guid.ToString();
+            
+            PopulateSubgroups(scheme);
+            schemes.Add(scheme);
+        }
+
+        return schemes;
+    }
+
+    private void PopulateSubgroups(PowerScheme scheme)
+    {
+        uint index = 0;
+        uint bufferSize = 16;
+        Guid schemeGuid = scheme.Id;
+        
+        while (PowrProf.PowerEnumerate(IntPtr.Zero, ref schemeGuid, IntPtr.Zero, PowrProf.ACCESS_SUBGROUP, index, out Guid subgroupGuid, ref bufferSize) == 0)
+        {
+            var subgroup = new PowerSubgroup
+            {
+                Id = subgroupGuid,
+                Name = GetSubgroupFriendlyName(subgroupGuid),
+                Description = GetSubgroupDescription(subgroupGuid)
+            };
+            if (string.IsNullOrWhiteSpace(subgroup.Name)) subgroup.Name = subgroupGuid.ToString();
+            
+            PopulateSettings(schemeGuid, subgroup);
+
+            if (subgroup.Settings.Count > 0)
+                scheme.Subgroups.Add(subgroup);
+                
+            index++;
+            bufferSize = 16;
+        }
+    }
+
+    private void PopulateSettings(Guid schemeGuid, PowerSubgroup subgroup)
+    {
+        uint index = 0;
+        uint bufferSize = 16;
+        Guid subgroupGuid = subgroup.Id;
+        
+        while (PowrProf.PowerEnumerate(IntPtr.Zero, ref schemeGuid, ref subgroupGuid, PowrProf.ACCESS_INDIVIDUAL_SETTING, index, out Guid settingGuid, ref bufferSize) == 0)
+        {
+            var setting = new PowerSetting
+            {
+                Id = settingGuid,
+                Name = GetSettingFriendlyName(subgroupGuid, settingGuid),
+                Description = GetSettingDescription(subgroupGuid, settingGuid)
+            };
+            if (string.IsNullOrWhiteSpace(setting.Name)) setting.Name = settingGuid.ToString();
+
+            if (PowrProf.PowerReadACValueIndex(IntPtr.Zero, ref schemeGuid, ref subgroupGuid, ref settingGuid, out uint acValue) == 0)
+                setting.AcValueIndex = acValue;
+
+            if (PowrProf.PowerReadDCValueIndex(IntPtr.Zero, ref schemeGuid, ref subgroupGuid, ref settingGuid, out uint dcValue) == 0)
+                setting.DcValueIndex = dcValue;
+
+            PopulatePossibleValues(subgroupGuid, setting);
+            
+            subgroup.Settings.Add(setting);
+            index++;
+            bufferSize = 16;
+        }
+    }
+
+    private void PopulatePossibleValues(Guid subgroupGuid, PowerSetting setting)
+    {
+        uint index = 0;
+        const uint MaxChoices = 512;
+        bool anyChoice = false;
+        Guid settingGuid = setting.Id;
+        try
+        {
+            while (index < MaxChoices)
+            {
+                string name = GetPossibleFriendlyName(subgroupGuid, settingGuid, index);
+                if (string.IsNullOrEmpty(name)) break;
+                anyChoice = true;
+                setting.PossibleChoices.Add(new PowerSettingChoice { ValueIndex = index, Name = name });
+                index++;
+            }
+        }
+        catch { }
+
+        if (!anyChoice)
+        {
+            if (PowerSettingCatalog.TryGet(setting.Id, setting.Name, out var entry))
+            {
+                if (entry.IsEnum)
+                {
+                    for (uint i = 0; i < entry.Labels.Length; i++)
+                        setting.PossibleChoices.Add(new PowerSettingChoice { ValueIndex = i, Name = entry.Labels[i] });
+                    anyChoice = true;
+                }
+                else if (entry.Presets.Length > 0)
+                {
+                    foreach (var p in entry.Presets)
+                        setting.PossibleChoices.Add(new PowerSettingChoice { ValueIndex = p.ValueIndex, Name = p.Label });
+                    setting.IsPresetList = true;
+                    anyChoice = true;
+                }
+            }
+
+            if (!anyChoice)
+            {
+                try
+                {
+                    using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Control\Power\PowerSettings\{subgroupGuid}\{settingGuid}");
+                    if (key != null)
+                    {
+                        var maxObj = key.GetValue("ValueMax");
+                        if (maxObj != null && Convert.ToUInt32(maxObj) == 1)
+                        {
+                            setting.PossibleChoices.Add(new PowerSettingChoice { ValueIndex = 0, Name = "Disabled" });
+                            setting.PossibleChoices.Add(new PowerSettingChoice { ValueIndex = 1, Name = "Enabled" });
+                            anyChoice = true;
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            if (anyChoice)
+            {
+                var curAc = (uint)setting.AcValueIndex;
+                var curDc = (uint)setting.DcValueIndex;
+
+                if (!System.Linq.Enumerable.Any(setting.PossibleChoices, c => c.ValueIndex == curAc))
+                    setting.PossibleChoices.Add(new PowerSettingChoice { ValueIndex = curAc, Name = DescribeCustom(curAc) });
+
+                if (curDc != curAc && !System.Linq.Enumerable.Any(setting.PossibleChoices, c => c.ValueIndex == curDc))
+                    setting.PossibleChoices.Add(new PowerSettingChoice { ValueIndex = curDc, Name = DescribeCustom(curDc) });
+            }
+        }
+
+        setting.Type = anyChoice ? 2u : 0u;
+    }
+
+    private static string DescribeCustom(uint value) => value switch
+    {
+        0 => "Never",
+        PowerSettingCatalog.NeverTimeout => "Never",
+        _ => $"Custom value ({value:N0})",
+    };
+
+    private delegate uint ReadFn(IntPtr buf, ref uint size);
+    private static string AllocRead(ref uint size, ReadFn read)
+    {
+        if (size == 0) return string.Empty;
+        IntPtr buffer = Marshal.AllocHGlobal((int)size);
+        try
+        {
+            if (read(buffer, ref size) == 0)
+                return Marshal.PtrToStringUni(buffer) ?? string.Empty;
+            return string.Empty;
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+    }
+
+    public string GetSchemeFriendlyName(Guid scheme)
+    {
+        var s = scheme; uint sz = 0;
+        PowrProf.PowerReadFriendlyNameScheme(IntPtr.Zero, ref s, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref sz);
+        return AllocRead(ref sz, (IntPtr b, ref uint z) => PowrProf.PowerReadFriendlyNameScheme(IntPtr.Zero, ref s, IntPtr.Zero, IntPtr.Zero, b, ref z));
+    }
+
+    private string GetSchemeDescription(Guid scheme)
+    {
+        var s = scheme; uint sz = 0;
+        PowrProf.PowerReadDescriptionScheme(IntPtr.Zero, ref s, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref sz);
+        return AllocRead(ref sz, (IntPtr b, ref uint z) => PowrProf.PowerReadDescriptionScheme(IntPtr.Zero, ref s, IntPtr.Zero, IntPtr.Zero, b, ref z));
+    }
+
+    private string GetSubgroupFriendlyName(Guid subgroup)
+    {
+        var g = subgroup; uint sz = 0;
+        PowrProf.PowerReadFriendlyNameSubgroup(IntPtr.Zero, IntPtr.Zero, ref g, IntPtr.Zero, IntPtr.Zero, ref sz);
+        return AllocRead(ref sz, (IntPtr b, ref uint z) => PowrProf.PowerReadFriendlyNameSubgroup(IntPtr.Zero, IntPtr.Zero, ref g, IntPtr.Zero, b, ref z));
+    }
+
+    private string GetSubgroupDescription(Guid subgroup)
+    {
+        var g = subgroup; uint sz = 0;
+        PowrProf.PowerReadDescriptionSubgroup(IntPtr.Zero, IntPtr.Zero, ref g, IntPtr.Zero, IntPtr.Zero, ref sz);
+        return AllocRead(ref sz, (IntPtr b, ref uint z) => PowrProf.PowerReadDescriptionSubgroup(IntPtr.Zero, IntPtr.Zero, ref g, IntPtr.Zero, b, ref z));
+    }
+
+    public string GetSettingFriendlyName(Guid subgroup, Guid setting)
+    {
+        var sg = subgroup; var st = setting; uint sz = 0;
+        PowrProf.PowerReadFriendlyNameSetting(IntPtr.Zero, IntPtr.Zero, ref sg, ref st, IntPtr.Zero, ref sz);
+        return AllocRead(ref sz, (IntPtr b, ref uint z) => PowrProf.PowerReadFriendlyNameSetting(IntPtr.Zero, IntPtr.Zero, ref sg, ref st, b, ref z));
+    }
+
+    private string GetSettingDescription(Guid subgroup, Guid setting)
+    {
+        var sg = subgroup; var st = setting; uint sz = 0;
+        PowrProf.PowerReadDescriptionSetting(IntPtr.Zero, IntPtr.Zero, ref sg, ref st, IntPtr.Zero, ref sz);
+        return AllocRead(ref sz, (IntPtr b, ref uint z) => PowrProf.PowerReadDescriptionSetting(IntPtr.Zero, IntPtr.Zero, ref sg, ref st, b, ref z));
+    }
+
+    private string GetPossibleFriendlyName(Guid subgroup, Guid setting, uint index)
+    {
+        uint bufferSize = 0;
+        PowrProf.PowerReadPossibleFriendlyName(IntPtr.Zero, IntPtr.Zero, ref subgroup, ref setting, index, IntPtr.Zero, ref bufferSize);
+        if (bufferSize == 0) return string.Empty;
+
+        IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
+        try
+        {
+            if (PowrProf.PowerReadPossibleFriendlyName(IntPtr.Zero, IntPtr.Zero, ref subgroup, ref setting, index, buffer, ref bufferSize) == 0)
+                return Marshal.PtrToStringUni(buffer) ?? string.Empty;
+            return string.Empty;
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+    }
+
+    public void SetActiveScheme(Guid schemeGuid)
+    {
+        uint res = PowrProf.PowerSetActiveScheme(IntPtr.Zero, ref schemeGuid);
+        if (res != 0)
+            throw new InvalidOperationException($"PowerSetActiveScheme failed (Win32 error {res}). Try running the app as administrator.");
+    }
+    
+    public static readonly Guid BalancedGuid = new("381b4222-f694-41f0-9685-ff5bb260df2e");
+    public static readonly Guid HighPerformanceGuid = new("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+    public static readonly Guid PowerSaverGuid = new("a1841308-3541-4fab-bc81-f71556f20b4a");
+    public static readonly Guid UltimatePerformanceGuid = new("e9a42b02-d5df-448d-aa00-03f14749eb61");
+
+    public static bool IsBuiltInScheme(Guid id) =>
+        id == BalancedGuid || id == HighPerformanceGuid || id == PowerSaverGuid || id == UltimatePerformanceGuid;
+
+    public static void RestoreDefaultSchemes()
+    {
+        using var p = Process.Start(new ProcessStartInfo("powercfg", "/restoredefaultschemes")
+        {
+            CreateNoWindow = true, UseShellExecute = false
+        });
+        p?.WaitForExit(30000);
+    }
+
+    public void DeleteScheme(Guid schemeGuid)
+    {
+        if (IsBuiltInScheme(schemeGuid))
+            throw new InvalidOperationException("Built-in Windows plans (Balanced / High performance / Power saver) cannot be deleted - duplicate one instead. Deleting them breaks Control Panel on laptops.");
+        PowrProf.PowerDeleteScheme(IntPtr.Zero, ref schemeGuid);
+    }
+
+    public Guid DuplicateScheme(Guid sourceScheme)
+    {
+        if (PowrProf.PowerDuplicateScheme(IntPtr.Zero, ref sourceScheme, out IntPtr destPtr) == 0)
+        {
+            try { return Marshal.PtrToStructure<Guid>(destPtr); }
+            finally { PowrProf.LocalFree(destPtr); }
+        }
+        throw new InvalidOperationException("Failed to duplicate power scheme.");
+    }
+    
+    public void WriteACValue(Guid scheme, Guid subgroup, Guid setting, uint val)
+    {
+        uint res = PowrProf.PowerWriteACValueIndex(IntPtr.Zero, ref scheme, ref subgroup, ref setting, val);
+        if (res != 0)
+            throw new InvalidOperationException($"PowerWriteACValueIndex failed (Win32 error {res}).");
+    }
+
+    public void WriteDCValue(Guid scheme, Guid subgroup, Guid setting, uint val)
+    {
+        uint res = PowrProf.PowerWriteDCValueIndex(IntPtr.Zero, ref scheme, ref subgroup, ref setting, val);
+        if (res != 0)
+            throw new InvalidOperationException($"PowerWriteDCValueIndex failed (Win32 error {res}).");
+    }
+
+    public void WritePlanName(Guid scheme, string name)
+    {
+        var bytes = Encoding.Unicode.GetBytes(name + "\0");
+        PowrProf.PowerWriteFriendlyName(IntPtr.Zero, ref scheme, IntPtr.Zero, IntPtr.Zero, bytes, (uint)bytes.Length);
+    }
+
+    public void WritePlanDescription(Guid scheme, string desc)
+    {
+        var bytes = Encoding.Unicode.GetBytes(desc + "\0");
+        PowrProf.PowerWriteDescription(IntPtr.Zero, ref scheme, IntPtr.Zero, IntPtr.Zero, bytes, (uint)bytes.Length);
+    }
+}

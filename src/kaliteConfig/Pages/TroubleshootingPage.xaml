@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="kaliteConfig.Pages.TroubleshootingPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent"
+    NavigationCacheMode="Required"
+    Loaded="OnLoaded">
+
+    <ScrollViewer HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Padding="28,16,28,20" Spacing="12">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Troubleshooting" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Recovery restarts for this PC. Save your work first."
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <InfoBar x:Name="StatusBar" IsOpen="False" IsClosable="True" />
+
+            <Border Style="{StaticResource CardBorder}" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="UEFI firmware settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="Restart straight into the motherboard firmware (BIOS/UEFI) setup screen."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <Button Content="Restart to firmware now" Click="Firmware_Click"
+                            Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Safe mode" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="Restart Windows with only the essential drivers and services. Use it once to test — normal startup returns on the next boot — or keep it on every restart while you repair the PC."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="SafeStateText"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Restart in safe mode once" Click="SafeOnce_Click" />
+                        <Button Content="Use safe mode on every restart" Click="SafeAlways_Click" />
+                        <Button Content="Restore normal startup" Click="NormalStartup_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}" Padding="12">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Service fixes" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="Repairs to Windows services that break capture or virtualization. Every value written is recorded, so Undo on Recent changes puts it back."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="OBS capture" FontWeight="SemiBold" />
+                        <TextBlock Text="Sets CaptureService back to Manual, which fixes black or missing capture sources in OBS after the service was disabled."
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock x:Name="ObsCaptureState"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <Button Content="Apply fix" Click="ApplyObsFix_Click" HorizontalAlignment="Left" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Hyper-V and WSL" FontWeight="SemiBold" />
+                        <TextBlock Text="Restores the Hyper-V device services (vid, vdrvroot, umbus, CompositeBus, rdpbus, WSL) so Hyper-V, WSL2 and Windows Sandbox can start again. Needs a restart."
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock x:Name="HyperVState"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap" />
+                        <Button Content="Apply fix" Click="ApplyHyperVFix_Click" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Recent changes" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="Everything kaliteConfig wrote to this machine, newest first. Undo puts the value that was there before back."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="NoChangesText" Text="No changes recorded yet."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <ListView x:Name="ChangesList" MaxHeight="360" SelectionMode="None"
+                              Visibility="Collapsed">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnSpacing="12" Padding="0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Detail}"
+                                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="Undo" Tag="{Binding Id}"
+                                            Click="Undo_Click" VerticalAlignment="Center"
+                                            IsEnabled="{Binding CanUndo}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Refresh" Click="RefreshChanges_Click" />
+                        <Button Content="Undo this session" Click="UndoSession_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

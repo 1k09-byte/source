@@ -1,0 +1,901 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using kaliteConfig.Models;
+using kaliteConfig.Native;
+
+namespace kaliteConfig.Services;
+
+[System.Diagnostics.DebuggerNonUserCode]
+public sealed class ProcessTuningService
+{
+    private static readonly HashSet<string> CriticalNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "csrss.exe", "wininit.exe", "winlogon.exe", "services.exe", "lsass.exe",
+        "smss.exe", "svchost.exe", "dwm.exe", "winlogon.exe", "fontdrvhost.exe",
+        "memory compression.exe", "registry.exe", "wudfhost.exe", "sihost.exe",
+        "taskhostw.exe", "explorer.exe", "audiodg.exe", "spoolsv.exe",
+        "conhost.exe", "dllhost.exe", "runtimebroker.exe", "searchindexer.exe",
+        "searchapp.exe", "startmenuexperiencehost.exe", "shellexperiencehost.exe",
+        "textinputhost.exe", "ctfmon.exe", "securityhealthservice.exe",
+        "msmpeng.exe", "nissrv.exe", "smartscreen.exe", "sechealthui.exe",
+        "system.exe", "idle.exe", "memcompression.exe",
+        "shellhost.exe", "applicationframehost.exe",
+        "logonui.exe", "lockapp.exe", "searchhost.exe", "useroobebroker.exe",
+        "tabtip.exe", "syntpenh.exe", "syntphelper.exe",
+        "igfxem.exe", "igfxhk.exe", "igfxtray.exe",
+        "rtkauduservice64.exe", "nahimicservice.exe", "intelaudioservice.exe",
+        "dolbydax2api.exe", "conexantaudioservice.exe",
+        "nvdisplay.container.exe", "atieclxx.exe", "atiesrxx.exe",
+        "vmmem.exe", "vmmemwsl.exe", "vmcompute.exe", "vmms.exe",
+        "wsl.exe", "wslhost.exe", "wslservice.exe",
+        "mstsc.exe", "rdpclip.exe",
+        "sppsvc.exe", "trustedinstaller.exe", "tiworker.exe",
+        "mpdefendercoreservice.exe", "mssense.exe", "lsaiso.exe",
+        "dashost.exe", "jhi_service.exe",
+        "widgets.exe", "msedgewebview2.exe",
+    };
+
+    private readonly NativeSnapshotService _snapshot = new();
+    private readonly ProtectedProcessService _protectedProcess = new();
+    private readonly Dictionary<int, long> _lastTotalTicks = new();
+    private readonly Dictionary<int, long> _lastContextSwitches = new();
+    private readonly Dictionary<int, long> _lastCycles = new();
+    private DateTime _lastSampleUtc = DateTime.UtcNow;
+    private int _logicalCount = -1;
+
+    public bool SnapshotLimited => _snapshot.Limited;
+
+    public bool CollectCounters { get; set; } = true;
+
+    public void ResetCounterBaselines()
+    {
+        _lastContextSwitches.Clear();
+        _lastCycles.Clear();
+    }
+
+    public static bool IsCritical(string name, int pid)
+    {
+        if (pid <= 4)
+        {
+            return true;
+        }
+
+        if (CriticalNames.Contains(name))
+        {
+            return true;
+        }
+
+        try
+        {
+            if (string.Equals(Process.GetProcessById(pid).ProcessName + ".exe", name, StringComparison.OrdinalIgnoreCase)
+                && pid == Environment.ProcessId)
+            {
+                return true;
+            }
+        }
+        catch
+        {
+        }
+
+        return CriticalNames.Contains(name);
+    }
+
+    public static bool IsSelf(int pid) => pid == Environment.ProcessId;
+
+    public int LogicalProcessorCount()
+    {
+        if (_logicalCount <= 0)
+        {
+            _logicalCount = Environment.ProcessorCount;
+        }
+
+        return _logicalCount;
+    }
+
+    public async Task<List<TunerProcessRow>> ListProcessesAsync()
+    {
+        return await CpuSetService.RunNativeAsync(() =>
+        {
+            var rows = new List<TunerProcessRow>();
+            Dictionary<int, string>? wmiNames = null;
+
+            var parentPids = GetParentPids();
+
+            foreach (var proc in Process.GetProcesses())
+            using (proc)
+            {
+                int pid;
+                try
+                {
+                    pid = proc.Id;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                string name;
+                try
+                {
+                    name = proc.ProcessName + ".exe";
+                }
+                catch
+                {
+                    wmiNames ??= GetWmiProcessNames();
+                    name = wmiNames.TryGetValue(pid, out string? wmiName) && !string.IsNullOrWhiteSpace(wmiName)
+                        ? wmiName
+                        : $"PID {pid}";
+                }
+
+                var row = new TunerProcessRow 
+                { 
+                    Pid = pid, 
+                    Name = name,
+                    IsProtected = _protectedProcess.IsProcessProtected(pid)
+                        || kaliteConfig.Gaming.GameMode.GameModeGuard.IsConnectivityImage(name),
+                    ParentPid = parentPids.GetValueOrDefault(pid)
+                };
+                FillStatic(row);
+                rows.Add(row);
+            }
+
+            return rows;
+        }).ConfigureAwait(false);
+    }
+
+    private static Dictionary<int, int> GetParentPids()
+    {
+        var map = new Dictionary<int, int>(512);
+        try
+        {
+            IntPtr snapshot = NativeMethods.Toolhelp.CreateToolhelp32Snapshot(
+                NativeMethods.Toolhelp.TH32CS_SNAPPROCESS, 0);
+            if (snapshot == IntPtr.Zero || snapshot == new IntPtr(-1)) return map;
+
+            try
+            {
+                var entry = new NativeMethods.Toolhelp.PROCESSENTRY32
+                {
+                    dwSize = (uint)Marshal.SizeOf<NativeMethods.Toolhelp.PROCESSENTRY32>()
+                };
+
+                if (NativeMethods.Toolhelp.Process32First(snapshot, ref entry))
+                {
+                    do
+                    {
+                        map[(int)entry.th32ProcessID] = (int)entry.th32ParentProcessID;
+                        entry.dwSize = (uint)Marshal.SizeOf<NativeMethods.Toolhelp.PROCESSENTRY32>();
+                    }
+                    while (NativeMethods.Toolhelp.Process32Next(snapshot, ref entry));
+                }
+            }
+            finally
+            {
+                NativeMethods.Handles.CloseHandle(snapshot);
+            }
+        }
+        catch
+        {
+            map.Clear();
+        }
+
+        return map;
+    }
+
+    private static Dictionary<int, string> GetWmiProcessNames()
+    {
+        var map = new Dictionary<int, string>();
+        try
+        {
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                "SELECT ProcessId, Name FROM Win32_Process");
+            foreach (System.Management.ManagementBaseObject obj in searcher.Get())
+            {
+                using (obj)
+                {
+                    if (obj["ProcessId"] is { } pidValue
+                        && int.TryParse(pidValue.ToString(), out int pid)
+                        && obj["Name"] is { } nameValue
+                        && !string.IsNullOrWhiteSpace(nameValue.ToString()))
+                    {
+                        map[pid] = nameValue.ToString() ?? string.Empty;
+                    }
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return map;
+    }
+
+    private Dictionary<int, (long WorkingSet64, int ThreadCount)> _memorySnapshot = new();
+    private Dictionary<int, int[]> _threadIds = new();
+    private DateTime _memorySnapshotAtUtc;
+
+    private const string NoCpuSample =
+        "No recent context switch was observed for this process, or the CPU observer is off (it needs administrator rights).";
+
+    public async Task SampleCpuAsync(IReadOnlyList<TunerProcessRow> rows)
+    {
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        var deltas = await CpuSetService.RunNativeAsync(() =>
+        {
+            var now = DateTime.UtcNow;
+            double intervalMs = Math.Max(1, (now - _lastSampleUtc).TotalMilliseconds);
+            _lastSampleUtc = now;
+            int cpus = LogicalProcessorCount();
+            var result = new Dictionary<int, (double Cpu, long MemoryMb, int Threads, long ContextSwitches, long Cycles, string RunningCpu, string RunningCpuDetail)>();
+
+            Dictionary<int, kaliteConfig.Native.SnapshotProcess>? snapDict = null;
+            if (CollectCounters)
+            {
+                snapDict = new Dictionary<int, kaliteConfig.Native.SnapshotProcess>();
+                foreach (var s in _snapshot.TrySnapshot()) snapDict[(int)s.ProcessId] = s;
+            }
+
+            if (_memorySnapshot.Count == 0 || (now - _memorySnapshotAtUtc).TotalSeconds >= 5)
+            {
+                var fresh = new Dictionary<int, (long WorkingSet64, int ThreadCount)>();
+                var freshThreadIds = new Dictionary<int, int[]>();
+                var wanted = new HashSet<int>(rows.Select(r => r.Pid));
+                try
+                {
+                    foreach (var p in Process.GetProcesses())
+                    {
+                        try
+                        {
+                            var threadIds = new List<int>();
+                            try
+                            {
+                                foreach (ProcessThread t in p.Threads)
+                                {
+                                    try { threadIds.Add(t.Id); } catch { }
+                                }
+                            }
+                            catch { }
+                            fresh[p.Id] = (p.WorkingSet64, threadIds.Count);
+                            if (threadIds.Count > 0 && wanted.Contains(p.Id))
+                                freshThreadIds[p.Id] = threadIds.ToArray();
+                        }
+                        catch { }
+                        p.Dispose();
+                    }
+                }
+                catch { }
+                _memorySnapshot = fresh;
+                _threadIds = freshThreadIds;
+                _memorySnapshotAtUtc = now;
+            }
+            var liveMemoryAndThreads = _memorySnapshot;
+            var liveThreadIds = _threadIds;
+            
+            foreach (var row in rows)
+            {
+                try
+                {
+                    using var process = NativeMethods.Handles.OpenProcess(
+                        NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)row.Pid);
+                    if (process.IsInvalid)
+                    {
+                        continue;
+                    }
+
+                    double cpuPercent = 0;
+                    if (NativeMethods.Times.GetProcessTimes(process, out _, out _, out var k, out var u))
+                    {
+                        long total = k.ToTicks() + u.ToTicks();
+                        if (_lastTotalTicks.TryGetValue(row.Pid, out long prev))
+                        {
+                            double pct = ((total - prev) / 10000.0) / intervalMs * 100.0 / cpus;
+                            cpuPercent = Math.Clamp(pct, 0, 100 * cpus);
+                        }
+                        _lastTotalTicks[row.Pid] = total;
+                    }
+
+                    long memoryMb = 0;
+                    int threads = 0;
+                    if (liveMemoryAndThreads.TryGetValue(row.Pid, out var fastProps))
+                    {
+                        memoryMb = fastProps.WorkingSet64 / (1024 * 1024);
+                        threads = fastProps.ThreadCount;
+                    }
+
+                    string runningCpu = "-";
+                    string runningCpuDetail = NoCpuSample;
+                    if (liveThreadIds.TryGetValue(row.Pid, out var processThreadIds)
+                        && CpuObservationService.TryGetProcessCpu(
+                            processThreadIds, 15_000, out int currentCpu, out int cpuCount, out long cpuAgeMs))
+                    {
+                        runningCpu = currentCpu.ToString();
+                        runningCpuDetail = cpuCount > 1
+                            ? $"Running on CPU {currentCpu} - its threads touched {cpuCount} CPUs in the last {cpuAgeMs / 1000.0:0.#}s."
+                            : $"Running on CPU {currentCpu} - switched in {cpuAgeMs / 1000.0:0.#}s ago.";
+                    }
+
+                    long contextSwitchesDelta = 0;
+                    long cyclesDelta = 0;
+                    
+                    if (snapDict != null && snapDict.TryGetValue(row.Pid, out var snapProcess))
+                    {
+                        long totalSwitches = 0;
+                        foreach (var thread in snapProcess.Threads)
+                        {
+                            totalSwitches += thread.ContextSwitches;
+                        }
+                        
+                        long totalCycles = snapProcess.CycleTime;
+
+                        if (_lastContextSwitches.TryGetValue(row.Pid, out long prevSwitches))
+                        {
+                            contextSwitchesDelta = totalSwitches - prevSwitches;
+                        }
+                        _lastContextSwitches[row.Pid] = totalSwitches;
+                        
+                        if (_lastCycles.TryGetValue(row.Pid, out long prevCycles))
+                        {
+                            cyclesDelta = totalCycles - prevCycles;
+                        }
+                        _lastCycles[row.Pid] = totalCycles;
+                    }
+
+                    result[row.Pid] = (cpuPercent, memoryMb, threads, Math.Max(0, contextSwitchesDelta), Math.Max(0, cyclesDelta), runningCpu, runningCpuDetail);
+                }
+                catch
+                {
+                }
+            }
+
+            return result;
+        });
+
+        foreach (var row in rows)
+        {
+            if (deltas.TryGetValue(row.Pid, out var metrics))
+            {
+                double cpu = Math.Round(metrics.Cpu, 1);
+                if (row.CpuPercent != cpu) row.CpuPercent = cpu;
+
+                string memory = $"{metrics.MemoryMb} MB";
+                if (row.Memory != memory) row.Memory = memory;
+
+                if (row.Threads != metrics.Threads) row.Threads = metrics.Threads;
+                if (row.ContextSwitchesDelta != metrics.ContextSwitches) row.ContextSwitchesDelta = metrics.ContextSwitches;
+                if (row.CyclesDelta != metrics.Cycles) row.CyclesDelta = metrics.Cycles;
+                if (row.CurrentCpu != metrics.RunningCpu) row.CurrentCpu = metrics.RunningCpu;
+                if (row.CurrentCpuDetail != metrics.RunningCpuDetail) row.CurrentCpuDetail = metrics.RunningCpuDetail;
+            }
+        }
+    }
+
+    public void PruneCache(IEnumerable<int> livePids)
+    {
+        var live = new HashSet<int>(livePids);
+        foreach (var pid in _lastTotalTicks.Keys.Where(p => !live.Contains(p)).ToList())
+        {
+            _lastTotalTicks.Remove(pid);
+        }
+        foreach (var pid in _lastContextSwitches.Keys.Where(p => !live.Contains(p)).ToList())
+        {
+            _lastContextSwitches.Remove(pid);
+            _lastCycles.Remove(pid);
+        }
+    }
+
+    private static void FillStatic(TunerProcessRow row)
+    {
+        try
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)row.Pid);
+            if (process.IsInvalid)
+            {
+                row.Error = "No access";
+                return;
+            }
+
+            uint cls = NativeMethods.Priority.GetPriorityClass(process);
+            row.PriorityValue = cls;
+            row.PriorityText = PriorityName(cls);
+
+            if (NativeMethods.Priority.GetProcessPriorityBoost(process, out bool boostDisabled))
+            {
+                row.PriorityBoostText = boostDisabled ? "Disabled" : "Enabled";
+                row.BoostAllowed = !boostDisabled;
+            }
+
+            if (NativeMethods.Affinity.GetProcessAffinityMask(process, out IntPtr mask, out IntPtr sys))
+            {
+                row.AffinityMask = (ulong)mask.ToInt64();
+                row.AffinitySummary = AffinitySummary(row.AffinityMask, (ulong)sys.ToInt64());
+            }
+
+            try
+            {
+                uint[] procSets = ReadProcessCpuSetIds(row.Pid);
+                if (procSets.Length > 0)
+                    row.AffinitySummary = $"{procSets.Length} CPU sets";
+            }
+            catch { }
+
+            try
+            {
+                using var proc = Process.GetProcessById(row.Pid);
+                row.Path = SafeModuleName(proc);
+                row.State = IsSuspended(proc) ? "Suspended" : "Running";
+            }
+            catch
+            {
+            }
+
+            var state = new ProcessPowerThrottlingState { Version = NativeMethods.Power.Version };
+            if (NativeMethods.Power.GetProcessInformation(
+                    process, ProcessInformationClass.ProcessPowerThrottling,
+                    ref state, NativeMethods.Power.StateSize()))
+            {
+                row.EfficiencyMode = ((state.StateMask & NativeMethods.Power.ExecutionSpeed) != 0) ? "Enabled" : "Disabled";
+            }
+        }
+        catch (Exception ex)
+        {
+            row.Error = ShortError(ex);
+        }
+    }
+
+    private static bool IsSuspended(Process proc)
+    {
+        try
+        {
+            foreach (ProcessThread t in proc.Threads)
+            {
+                if (t.ThreadState == System.Diagnostics.ThreadState.Wait
+                    && t.WaitReason == ThreadWaitReason.Suspended)
+                {
+                    return true;
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return false;
+    }
+
+    public static string PriorityName(uint cls) => cls switch
+    {
+        NativeMethods.Priority.Idle => "Low (Idle)",
+        NativeMethods.Priority.BelowNormal => "Below Normal",
+        NativeMethods.Priority.Normal => "Normal",
+        NativeMethods.Priority.AboveNormal => "Above Normal",
+        NativeMethods.Priority.High => "High",
+        NativeMethods.Priority.Realtime => "Realtime",
+        _ => $"0x{cls:X}",
+    };
+
+    private static uint[] ReadProcessCpuSetIds(int pid)
+    {
+        try
+        {
+            using var h = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)pid);
+            if (h.IsInvalid) return Array.Empty<uint>();
+            if (!NativeMethods.CpuSets.GetProcessDefaultCpuSets(h, null, 0, out uint required) &&
+                System.Runtime.InteropServices.Marshal.GetLastWin32Error() != 122)
+                return Array.Empty<uint>();
+            if (required == 0) return Array.Empty<uint>();
+            uint[] ids = new uint[required];
+            if (!NativeMethods.CpuSets.GetProcessDefaultCpuSets(h, ids, required, out _))
+                return Array.Empty<uint>();
+            return ids;
+        }
+        catch { return Array.Empty<uint>(); }
+    }
+
+    public static string AffinitySummary(ulong mask, ulong systemMask)
+    {
+        if (mask == 0)
+        {
+            return "None!";
+        }
+
+        if (mask == systemMask)
+        {
+            return "All";
+        }
+
+        int bits = System.Numerics.BitOperations.PopCount(mask);
+        int total = System.Numerics.BitOperations.PopCount(systemMask);
+        return $"{bits}/{total} cores";
+    }
+
+    public async Task<(string Path, string CommandLine, string Times)> GetDetailsAsync(int pid)
+    {
+        return await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+
+            string path = "";
+            try
+            {
+                using var proc = Process.GetProcessById(pid);
+                path = SafeModuleName(proc);
+            }
+            catch
+            {
+            }
+
+            string cmd = NativeSnapshotService.TryGetCommandLine(process) ?? "(unavailable)";
+            string times = "";
+            if (NativeMethods.Times.GetProcessTimes(process, out var created, out _, out var k, out var u))
+            {
+                var start = DateTime.FromFileTimeUtc(created.ToTicks());
+                var cpu = TimeSpan.FromTicks(k.ToTicks() + u.ToTicks());
+                times = $"Started {start.ToLocalTime():g} · CPU kernel {TimeSpan.FromTicks(k.ToTicks()):g} / user {TimeSpan.FromTicks(u.ToTicks()):g} (total {cpu:g})";
+            }
+
+            return (path, cmd, times);
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SetPriorityAsync(int pid, uint priorityClass)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.SetInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            if (!NativeMethods.Priority.SetPriorityClass(process, priorityClass))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Setting priority class failed."));
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task<bool> GetBoostAsync(int pid)
+    {
+        return await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            if (!NativeMethods.Priority.GetProcessPriorityBoost(process, out bool Svetlana))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Reading priority boost failed."));
+            }
+
+            return !Svetlana;
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SetBoostAsync(int pid, bool enabled)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.SetInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            if (!NativeMethods.Priority.SetProcessPriorityBoost(process, Svetlana: !enabled))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Setting priority boost failed."));
+            }
+
+            if (enabled)
+            {
+                try
+                {
+                    using var p = System.Diagnostics.Process.GetProcessById(pid);
+                    foreach (System.Diagnostics.ProcessThread pt in p.Threads)
+                    {
+                        try
+                        {
+                            using var threadHandle = NativeMethods.Handles.OpenThread(
+                                NativeMethods.ThreadAccess.SetInformation, false, (uint)pt.Id);
+                            if (!threadHandle.IsInvalid)
+                            {
+                                NativeMethods.Priority.SetThreadPriorityBoost(threadHandle, Svetlana: false);
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task<ulong> GetAffinityAsync(int pid)
+    {
+        return await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            if (!NativeMethods.Affinity.GetProcessAffinityMask(process, out IntPtr processMask, out _))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Reading affinity mask failed."));
+            }
+            return (ulong)processMask.ToInt64();
+        });
+    }
+
+    public async Task SetAffinityAsync(int pid, ulong mask)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.SetInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            if (!NativeMethods.Affinity.SetProcessAffinityMask(process, (IntPtr)(long)mask))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Setting affinity mask failed."));
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SetEfficiencyAsync(int pid, bool enabled)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.SetInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            var state = new ProcessPowerThrottlingState
+            {
+                Version = NativeMethods.Power.Version,
+                ControlMask = NativeMethods.Power.ExecutionSpeed,
+                StateMask = enabled ? NativeMethods.Power.ExecutionSpeed : 0,
+            };
+            if (!NativeMethods.Power.SetProcessInformation(
+                    process, ProcessInformationClass.ProcessPowerThrottling,
+                    ref state, NativeMethods.Power.StateSize()))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Setting Efficiency Mode failed."));
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SetGlobalEfficiencyModeAsync(bool enable, IReadOnlySet<string> skipProcessNames)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            var procs = Process.GetProcesses();
+            foreach (var proc in procs)
+            {
+                int pid;
+                string name;
+                try { pid = proc.Id; name = proc.ProcessName + ".exe"; }
+                catch { continue; }
+
+                if (IsCritical(name, pid) || skipProcessNames.Contains(name) || skipProcessNames.Contains(proc.ProcessName))
+                {
+                    proc.Dispose();
+                    continue;
+                }
+
+                try
+                {
+                    using var process = NativeMethods.Handles.OpenProcess(
+                        NativeMethods.ProcessAccess.SetInformation, false, (uint)pid);
+                    if (!process.IsInvalid)
+                    {
+                        var state = new ProcessPowerThrottlingState
+                        {
+                            Version = NativeMethods.Power.Version,
+                            ControlMask = NativeMethods.Power.ExecutionSpeed,
+                            StateMask = enable ? NativeMethods.Power.ExecutionSpeed : 0,
+                        };
+                        NativeMethods.Power.SetProcessInformation(
+                                process, ProcessInformationClass.ProcessPowerThrottling,
+                                ref state, NativeMethods.Power.StateSize());
+
+                        var memPriority = new ProcessMemoryPriorityInfo
+                        {
+                            MemoryPriority = enable ? 1u : 5u
+                        };
+                        NativeMethods.Power.SetProcessInformation(
+                                process, ProcessInformationClass.ProcessMemoryPriority,
+                                ref memPriority, NativeMethods.Power.MemoryPrioritySize());
+
+                        uint ioPriority = enable ? 0u : 2u;
+                        NativeMethods.Ntdll.NtSetInformationProcess(
+                            process, NativeMethods.Ntdll.ProcessIoPriority,
+                            ref ioPriority, sizeof(uint));
+                    }
+                }
+                catch { }
+                finally { proc.Dispose(); }
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task<bool> GetEfficiencyAsync(int pid)
+    {
+        return await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            var state = new ProcessPowerThrottlingState
+            {
+                Version = NativeMethods.Power.Version,
+            };
+            if (!NativeMethods.Power.GetProcessInformation(
+                    process, ProcessInformationClass.ProcessPowerThrottling,
+                    ref state, NativeMethods.Power.StateSize()))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Reading Efficiency Mode failed."));
+            }
+
+            return (state.StateMask & NativeMethods.Power.ExecutionSpeed) != 0;
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SetPriorityBoostAsync(int pid, bool disablePriorityBoost)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.SetInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            if (!NativeMethods.Priority.SetProcessPriorityBoost(process, disablePriorityBoost))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Setting Priority Boost failed."));
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SuspendProcessAsync(int pid)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            foreach (var tid in LiveThreadIds(pid))
+            {
+                using var thread = NativeMethods.Handles.OpenThread(
+                    NativeMethods.ThreadAccess.SuspendResume, false, tid);
+                if (!thread.IsInvalid)
+                {
+                    NativeMethods.Threads.SuspendThread(thread);
+                }
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task ResumeProcessAsync(int pid)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            foreach (var tid in LiveThreadIds(pid))
+            {
+                using var thread = NativeMethods.Handles.OpenThread(
+                    NativeMethods.ThreadAccess.SuspendResume, false, tid);
+                if (thread.IsInvalid)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < 8; i++)
+                {
+                    uint prev = NativeMethods.Threads.ResumeThread(thread);
+                    if (prev == 0 || prev == uint.MaxValue)
+                    {
+                        break;
+                    }
+                }
+            }
+        }).ConfigureAwait(false);
+    }
+
+    public async Task TerminateProcessAsync(int pid, uint exitCode = 1)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.Terminate, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            if (!NativeMethods.Threads.TerminateProcess(process, exitCode))
+            {
+                throw CpuSetService.Friendly(pid, NativeSnapshotService.LastError("Terminating process failed."));
+            }
+        }).ConfigureAwait(false);
+    }
+
+    private static List<uint> LiveThreadIds(int pid)
+    {
+        var ids = new List<uint>();
+        try
+        {
+            using var proc = Process.GetProcessById(pid);
+            foreach (ProcessThread t in proc.Threads)
+            {
+                ids.Add((uint)t.Id);
+            }
+        }
+        catch
+        {
+        }
+
+        return ids;
+    }
+
+    private static string SafeModuleName(Process proc)
+    {
+        try
+        {
+            return proc.MainModule?.FileName ?? "";
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern IntPtr OpenThread(uint dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern uint SuspendThread(IntPtr hThread);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern uint ResumeThread(IntPtr hThread);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool SetThreadPriority(IntPtr hThread, int nPriority);
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    public async Task SuspendThreadAsync(int tid)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            IntPtr hThread = OpenThread(0x0002, false, (uint)tid);
+            if (hThread != IntPtr.Zero)
+            {
+                SuspendThread(hThread);
+                CloseHandle(hThread);
+            }
+        });
+    }
+
+    public async Task ResumeThreadAsync(int tid)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            IntPtr hThread = OpenThread(0x0002, false, (uint)tid);
+            if (hThread != IntPtr.Zero)
+            {
+                ResumeThread(hThread);
+                CloseHandle(hThread);
+            }
+        });
+    }
+
+    public async Task SetThreadPriorityAsync(int tid, kaliteConfig.Models.TunerThreadPriority priority)
+    {
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            IntPtr hThread = OpenThread(0x0020, false, (uint)tid);
+            if (hThread != IntPtr.Zero)
+            {
+                SetThreadPriority(hThread, (int)priority);
+                CloseHandle(hThread);
+            }
+        });
+    }
+
+    internal static string ShortError(Exception ex) => ex switch
+    {
+        Win32Exception w32 when w32.NativeErrorCode == NativeMethods.Win32Error.AccessDenied => "No access",
+        InvalidOperationException => "Exited",
+        _ => "Error",
+    };
+}

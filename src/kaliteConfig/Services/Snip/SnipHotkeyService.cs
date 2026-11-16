@@ -1,0 +1,251 @@
+using System;
+using System.Runtime.InteropServices;
+
+namespace kaliteConfig.Services;
+
+public sealed class SnipHotkeyService : IDisposable
+{
+    public const uint ModNone = 0x0;
+    public const uint ModAlt = 0x1;
+    public const uint ModControl = 0x2;
+    public const uint ModShift = 0x4;
+    public const uint ModWin = 0x8;
+
+    public const uint VkSnapshot = 0x2C;
+    public const uint VkS = 0x53;
+
+    public static int CustomIndex => Presets.Length;
+
+    public static bool IsCapturableKey(uint vk) => vk switch
+    {
+        0x00 => false,
+        0x10 or 0x11 or 0x12 => false,
+        0x5B or 0x5C => false,
+        0x14 => false,
+        0x90 or 0x91 or 0x92 => false,
+        _ => true,
+    };
+
+    public static string FormatLabel(uint modifiers, uint vk)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        if ((modifiers & ModControl) != 0) parts.Add("Ctrl");
+        if ((modifiers & ModShift) != 0) parts.Add("Shift");
+        if ((modifiers & ModAlt) != 0) parts.Add("Alt");
+        if ((modifiers & ModWin) != 0) parts.Add("Win");
+        parts.Add(KeyName(vk));
+        return string.Join("+", parts);
+    }
+
+    private static string KeyName(uint vk) => vk switch
+    {
+        VkSnapshot => "PrtScn",
+        >= 0x41 and <= 0x5A => ((char)vk).ToString(),
+        >= 0x30 and <= 0x39 => ((char)vk).ToString(),
+        >= 0x70 and <= 0x87 => "F" + (vk - 0x70 + 1),
+        0x2D => "Insert",
+        0x2E => "Delete",
+        0x24 => "Home",
+        0x23 => "End",
+        0x21 => "PageUp",
+        0x22 => "PageDown",
+        _ => $"VK {vk:X2}",
+    };
+
+    public sealed class HotkeyPreset
+    {
+        public HotkeyPreset(string label, uint modifiers, uint vk)
+        {
+            Label = label;
+            Keys = new[] { (modifiers, vk) };
+        }
+
+        public HotkeyPreset(string label, params (uint Modifiers, uint Vk)[] keys)
+        {
+            Label = label;
+            Keys = keys;
+        }
+
+        public string Label { get; }
+        public (uint Modifiers, uint Vk)[] Keys { get; }
+        public uint Modifiers => Keys.Length > 0 ? Keys[0].Modifiers : 0;
+        public uint Vk => Keys.Length > 0 ? Keys[0].Vk : 0;
+        public override string ToString() => Label;
+    }
+
+    public static readonly HotkeyPreset[] Presets = new[]
+    {
+        new HotkeyPreset("Win+Shift+S / PrtScn", (ModWin | ModShift, VkS), (ModNone, VkSnapshot)),
+        new HotkeyPreset("PrtScn", ModNone, VkSnapshot),
+        new HotkeyPreset("Win+Shift+S", ModWin | ModShift, VkS),
+        new HotkeyPreset("Ctrl+PrtScn", ModControl, VkSnapshot),
+        new HotkeyPreset("Shift+PrtScn", ModShift, VkSnapshot),
+        new HotkeyPreset("Ctrl+Shift+S", ModControl | ModShift, VkS),
+    };
+
+    private const int HotkeyId = 0xB002;
+    private const uint WM_HOTKEY = 0x0312;
+
+    public event Action? Pressed;
+
+    private IntPtr _hwnd = IntPtr.Zero;
+    private WndProcDelegate? _wndProc;
+
+    private GCHandle _wndProcPin;
+
+    private bool _registered;
+    private bool _disposed;
+    private readonly System.Collections.Generic.List<int> _activeIds = new();
+    private int _nextId = 0xB002;
+
+    public bool IsRegistered => _registered;
+    public HotkeyPreset Current { get; private set; } = Presets[0];
+
+    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct WNDCLASSEX
+    {
+        public uint cbSize;
+        public uint style;
+        public IntPtr lpfnWndProc;
+        public int cbClsExtra;
+        public int cbWndExtra;
+        public IntPtr hInstance;
+        public IntPtr hIcon;
+        public IntPtr hCursor;
+        public IntPtr hbrBackground;
+        public string? lpszMenuName;
+        public string lpszClassName;
+        public IntPtr hIconSm;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern ushort RegisterClassExW(ref WNDCLASSEX lpwcx);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateWindowExW(uint exStyle, string className, string windowName,
+        uint style, int x, int y, int w, int h, IntPtr parent, IntPtr menu, IntPtr instance, IntPtr param);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr DefWindowProcW(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool DestroyWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool UnregisterClassW(string className, IntPtr instance);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr GetModuleHandleW(string? moduleName);
+
+    private const string ClassName = "kaliteConfig_SnipHotkey";
+
+    private void EnsureWindow()
+    {
+        if (_hwnd != IntPtr.Zero) return;
+        _wndProc = WndProc;
+        if (!_wndProcPin.IsAllocated) _wndProcPin = GCHandle.Alloc(_wndProc);
+        var cls = new WNDCLASSEX
+        {
+            cbSize = (uint)Marshal.SizeOf<WNDCLASSEX>(),
+            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProc),
+            hInstance = GetModuleHandleW(null),
+            lpszClassName = ClassName,
+        };
+        ushort atom = RegisterClassExW(ref cls);
+        if (atom == 0 && Marshal.GetLastWin32Error() != 1410)
+            throw new InvalidOperationException("Could not register the snip hotkey window class.");
+        _hwnd = CreateWindowExW(0, ClassName, "kaliteSnip Hotkey", 0, 0, 0, 0, 0,
+            IntPtr.Zero, IntPtr.Zero, GetModuleHandleW(null), IntPtr.Zero);
+        if (_hwnd == IntPtr.Zero)
+            throw new InvalidOperationException("Could not create the snip hotkey window.");
+    }
+
+    private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+    {
+        if (msg == WM_HOTKEY && _activeIds.Contains(wParam.ToInt32()))
+        {
+            try { Pressed?.Invoke(); } catch { }
+            return IntPtr.Zero;
+        }
+        return DefWindowProcW(hWnd, msg, wParam, lParam);
+    }
+
+    public (bool Ok, string Message) Register(HotkeyPreset preset)
+    {
+        try
+        {
+            Unregister();
+            EnsureWindow();
+            var errors = new System.Collections.Generic.List<string>();
+            foreach (var key in preset.Keys)
+            {
+                if (!IsCapturableKey(key.Vk))
+                {
+                    errors.Add($"Requires main key, not bare modifier.");
+                    continue;
+                }
+                
+                int id = _nextId++;
+                if (!RegisterHotKey(_hwnd, id, key.Modifiers, key.Vk))
+                {
+                    int err = Marshal.GetLastWin32Error();
+                    errors.Add($"Win32 error {err} usually means another app controls this key (like Windows Snipping Tool)");
+                }
+                else
+                {
+                    _activeIds.Add(id);
+                }
+            }
+
+            if (_activeIds.Count == 0) return (false, string.Join(" | ", errors));
+            
+            _registered = true;
+            Current = preset;
+            if (errors.Count > 0) return (true, "Partially active (some shortcuts blocked). " + string.Join(" | ", errors));
+            return (true, string.Empty);
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Hotkey registration failed: {ex.Message}");
+        }
+    }
+
+    public void Unregister()
+    {
+        try
+        {
+            if (_hwnd != IntPtr.Zero && _registered)
+            {
+                foreach (int id in _activeIds) UnregisterHotKey(_hwnd, id);
+            }
+        }
+        catch { }
+        _activeIds.Clear();
+        _registered = false;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        Unregister();
+        try
+        {
+            if (_hwnd != IntPtr.Zero) DestroyWindow(_hwnd);
+            UnregisterClassW(ClassName, GetModuleHandleW(null));
+        }
+        catch { }
+        _hwnd = IntPtr.Zero;
+
+        if (_wndProcPin.IsAllocated) { _wndProcPin.Free(); _wndProcPin = default; }
+        _wndProc = null;
+    }
+}

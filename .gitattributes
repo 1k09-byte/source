@@ -1,0 +1,4 @@
+# Language stats: the app is C#; keep everything else out of the language bar.
+* linguist-detectable=false
+*.cs linguist-detectable=true
+# Language stats: C# only.

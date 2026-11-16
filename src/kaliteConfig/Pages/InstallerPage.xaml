@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page x:Class="kaliteConfig.Pages.InstallerPage"
+     xmlns:intrinsic="using:Microsoft.UI.Xaml"
+     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+     xmlns:local="using:kaliteConfig.Pages"
+    xmlns:models="using:kaliteConfig.Models"
+    xmlns:animations="using:Microsoft.UI.Xaml.Media.Animation"
+    xmlns:converters="using:kaliteConfig.Converters"
+    NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <converters:AssetPathToImageSourceConverter x:Key="AssetPathConverter" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+
+        <x:Double x:Key="InstallerCardHeight">232</x:Double>
+
+        <Style x:Key="AppSectionHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="AppCardActionStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+            <Setter Property="MinWidth" Value="84" />
+        </Style>
+
+        <DataTemplate x:Key="InstallerCardTemplate" x:DataType="models:BrowserInstallItem">
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    MinHeight="{StaticResource InstallerCardHeight}">
+                <Grid Padding="14,12" RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid ColumnSpacing="{x:Bind IconGap, Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Image Width="34" Height="34" VerticalAlignment="Center"
+                               Visibility="{x:Bind HasIcon, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                               Source="{x:Bind ImagePath, Converter={StaticResource AssetPathConverter}}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                                   Text="{x:Bind Name}"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+
+                    <TextBlock Grid.Row="1" VerticalAlignment="Top"
+                               Text="{x:Bind Description}"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+                    <Border Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left"
+                            Padding="7,2" CornerRadius="4"
+                            Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                            Visibility="{x:Bind HasNote, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBlock Text="{x:Bind Note}" Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Border>
+
+                    <DropDownButton Grid.Row="3" HorizontalAlignment="Left"
+                                    Content="{x:Bind ExtensionsLabel, Mode=OneWay}"
+                                    Visibility="{x:Bind HasExtensions, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <DropDownButton.Flyout>
+                            <Flyout>
+
+                                <Grid Width="340" RowSpacing="8" MaxHeight="420"
+                                      PointerWheelChanged="ExtensionsFlyout_PointerWheelChanged">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <ScrollViewer MaxHeight="330" MinHeight="96"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  VerticalScrollMode="Auto"
+                                                  HorizontalScrollMode="Disabled"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <StackPanel Spacing="4" Padding="0,0,12,0">
+                                            <ItemsRepeater ItemsSource="{x:Bind Extensions}">
+                                                <ItemsRepeater.ItemTemplate>
+                                                    <DataTemplate x:DataType="models:ExtensionItem">
+                                                        <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                                                  IsEnabled="{x:Bind IsAvailable, Mode=OneWay}"
+                                                                  Margin="0,2">
+                                                            <StackPanel Spacing="2">
+                                                                <TextBlock Text="{x:Bind Name}"
+                                                                           Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                                           TextWrapping="Wrap" />
+                                                                <TextBlock Text="{x:Bind Description}"
+                                                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                           TextWrapping="Wrap" />
+                                                            </StackPanel>
+                                                        </CheckBox>
+                                                    </DataTemplate>
+                                                </ItemsRepeater.ItemTemplate>
+                                            </ItemsRepeater>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                    <TextBlock Grid.Row="1"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="Wrap"
+                                               Text="Ticked extensions install automatically with the app — no extra step needed." />
+                                </Grid>
+                            </Flyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <Grid Grid.Row="4" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock VerticalAlignment="Center"
+                                   Text="{x:Bind StatusDetail, Mode=OneWay}"
+                                   FontSize="12"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{x:Bind local:InstallerPage.StatusTextBrush(Status), Mode=OneWay}"
+                                   Visibility="{x:Bind local:InstallerPage.StateTextVisibility(Status), Mode=OneWay}" />
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ProgressRing Width="18" Height="18" IsActive="True"
+                                          Visibility="{x:Bind local:InstallerPage.BusyVisibility(Status), Mode=OneWay}" />
+                            <Button Style="{StaticResource AppCardActionStyle}"
+                                    Content="{x:Bind local:InstallerPage.ActionLabel(Status), Mode=OneWay}"
+                                    IsEnabled="{x:Bind local:InstallerPage.ActionEnabled(Status), Mode=OneWay}"
+                                    Click="CardAction_Click"
+                                    Tag="{x:Bind}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid x:Name="RootGrid" UseLayoutRounding="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="28,16,28,0" Spacing="2">
+            <TextBlock Text="Apps" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock Text="Install the essentials in one click. Removing apps lives on the Uninstaller page."
+                       Style="{StaticResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <Grid x:Name="InstallPanel" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="28,10,28,4" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <AutoSuggestBox x:Name="AppSearchBox"
+                                Width="280"
+                                QueryIcon="Find"
+                                PlaceholderText="Search apps"
+                                TextChanged="AppSearchBox_TextChanged" />
+
+                <TextBlock Grid.Column="1" VerticalAlignment="Center"
+                           Text="{x:Bind ViewModel.FilterSummary, Mode=OneWay}"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="Show installed apps" VerticalAlignment="Center"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" IsOn="{x:Bind ViewModel.ShowInstalled, Mode=TwoWay}"
+                                  OnContent="" OffContent="" MinWidth="0"
+                                  ToolTipService.ToolTip="Reveal installed apps (with uninstall option)." />
+                </StackPanel>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" Padding="28,4,28,24"
+                          VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto"
+                          HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="26">
+
+                    <InfoBar Severity="Informational" IsOpen="True" IsClosable="False"
+                             Message="Everything here is already installed - nothing left to install."
+                             Visibility="{x:Bind ViewModel.NothingToInstall, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                    <InfoBar Severity="Informational" IsOpen="True" IsClosable="False"
+                             Message="No apps match your search."
+                             Visibility="{x:Bind ViewModel.NoSearchMatches, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                    <StackPanel x:Name="BrowserSection" Spacing="12"
+                                Visibility="{x:Bind ViewModel.HasBrowsers, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE774;" FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Web Browsers" Style="{StaticResource AppSectionHeaderStyle}" />
+                        </StackPanel>
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.VisibleBrowsers, Mode=OneWay}"
+                                       ItemTemplate="{StaticResource InstallerCardTemplate}">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout MinItemWidth="256" MinItemHeight="{StaticResource InstallerCardHeight}"
+                                                   MinColumnSpacing="12" MinRowSpacing="12"
+                                                   ItemsStretch="Fill" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </StackPanel>
+
+                    <StackPanel x:Name="LauncherSection" Spacing="12"
+                                Visibility="{x:Bind ViewModel.HasLaunchers, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE7FC;" FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Game Launchers" Style="{StaticResource AppSectionHeaderStyle}" />
+                        </StackPanel>
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.VisibleGameLaunchers, Mode=OneWay}"
+                                       ItemTemplate="{StaticResource InstallerCardTemplate}">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout MinItemWidth="256" MinItemHeight="{StaticResource InstallerCardHeight}"
+                                                   MinColumnSpacing="12" MinRowSpacing="12"
+                                                   ItemsStretch="Fill" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </StackPanel>
+
+                    <StackPanel x:Name="SocialSection" Spacing="12"
+                                Visibility="{x:Bind ViewModel.HasSocials, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE8F2;" FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Socials &amp; Communication" Style="{StaticResource AppSectionHeaderStyle}" />
+                        </StackPanel>
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.VisibleSocialApps, Mode=OneWay}"
+                                       ItemTemplate="{StaticResource InstallerCardTemplate}">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout MinItemWidth="256" MinItemHeight="{StaticResource InstallerCardHeight}"
+                                                   MinColumnSpacing="12" MinRowSpacing="12"
+                                                   ItemsStretch="Fill" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </StackPanel>
+
+                    <StackPanel x:Name="UtilitySection" Spacing="12"
+                                Visibility="{x:Bind ViewModel.HasUtilities, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE90F;" FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Utilities" Style="{StaticResource AppSectionHeaderStyle}" />
+                        </StackPanel>
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.VisibleUtilities, Mode=OneWay}"
+                                       ItemTemplate="{StaticResource InstallerCardTemplate}">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout MinItemWidth="256" MinItemHeight="{StaticResource InstallerCardHeight}"
+                                                   MinColumnSpacing="12" MinRowSpacing="12"
+                                                   ItemsStretch="Fill" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </StackPanel>
+
+                    <StackPanel x:Name="SystemToolsSection" Spacing="12"
+                                Visibility="{x:Bind ViewModel.HasSystemTools, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE770;" FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="System &amp; Hardware Tools" Style="{StaticResource AppSectionHeaderStyle}" />
+                        </StackPanel>
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.VisibleSystemTools, Mode=OneWay}"
+                                       ItemTemplate="{StaticResource InstallerCardTemplate}">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout MinItemWidth="256" MinItemHeight="{StaticResource InstallerCardHeight}"
+                                                   MinColumnSpacing="12" MinRowSpacing="12"
+                                                   ItemsStretch="Fill" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </StackPanel>
+
+                    <StackPanel x:Name="DevelopmentSection" Spacing="12"
+                                Visibility="{x:Bind ViewModel.HasDevelopment, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE943;" FontSize="16"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Development" Style="{StaticResource AppSectionHeaderStyle}" />
+                        </StackPanel>
+                        <ItemsRepeater ItemsSource="{x:Bind ViewModel.VisibleDevelopment, Mode=OneWay}"
+                                       ItemTemplate="{StaticResource InstallerCardTemplate}">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout MinItemWidth="256" MinItemHeight="{StaticResource InstallerCardHeight}"
+                                                   MinColumnSpacing="12" MinRowSpacing="12"
+                                                   ItemsStretch="Fill" />
+                            </ItemsRepeater.Layout>
+                        </ItemsRepeater>
+                    </StackPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+    </Grid>
+</Page>
+

@@ -1,0 +1,62 @@
+name: Site
+
+# Builds the public site from this repository and publishes it to GitHub Pages.
+# The repo browser is generated at build time from git, so visitors never touch
+# the GitHub API and never hit an anonymous rate limit.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "src/**"
+      - "Docs/**"
+      - "site/**"
+      - "tools/**"
+      - "README.md"
+      - "LICENSE"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for per-file commit info)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Generate repo data from git
+        run: node tools/build-site-data.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="kaliteConfig.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dev="using:DevWinUI"
+    xmlns:local="using:kaliteConfig"
+    xmlns:pages="using:kaliteConfig.Pages"
+    NavigationCacheMode="Required"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls">
+    <Page.Resources>
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+        <Style
+            x:Key="SettingsSectionHeaderTextBlockStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="Margin" Value="1,30,0,6" />
+            </Style.Setters>
+        </Style>
+    </Page.Resources>
+
+    <Grid x:Name="RootGrid" UseLayoutRounding="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock
+            x:Name="PageHeader"
+            HorizontalAlignment="Stretch"
+            Margin="36,24,36,0"
+            AutomationProperties.HeadingLevel="Level1"
+            Style="{StaticResource TitleLargeTextBlockStyle}"
+            Text="Settings" />
+        <ScrollViewer
+            x:Name="SettingsScroller"
+            Grid.Row="1"
+            Padding="0,0,0,0"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
+            <StackPanel
+                HorizontalAlignment="Stretch"
+                Spacing="{StaticResource SettingsCardSpacing}">
+
+                <InfoBar Title="{x:Bind Vm.BannerTitle, Mode=OneWay}"
+                         Message="{x:Bind Vm.Notes, Mode=OneWay}"
+                         IsOpen="{x:Bind Vm.IsAvailable, Mode=OneWay}"
+                         Severity="Informational"
+                         IsClosable="True"
+                         Margin="0,0,0,12">
+                    <InfoBar.Content>
+                        <StackPanel Spacing="8">
+                            <ProgressBar Value="{x:Bind pages:SettingsPageBindings.UpdateProgressValue(Vm.DownloadPercent), Mode=OneWay}"
+                                         IsIndeterminate="{x:Bind Vm.IsBusy, Mode=OneWay}"
+                                         Visibility="{x:Bind Vm.ProgressVisibility, Mode=OneWay}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="{x:Bind Vm.PrimaryUpdateActionText, Mode=OneWay}"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        IsEnabled="{x:Bind Vm.CanUpdateNow, Mode=OneWay}"
+                                        Click="UpdateNow_Click" />
+                                <TextBlock Text="{x:Bind Vm.StatusText, Mode=OneWay}"
+                                           VerticalAlignment="Center"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <TextBlock x:Name="buildInfoText"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <TextBlock
+                    Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                    Text="General" />
+
+                <toolkit:SettingsCard
+                    Description="Starts minimized to the system tray so thread rules keep applying"
+                    Header="Start with Windows">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE7E8;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}"
+                        x:Name="startupToggle"
+                        OffContent="Off"
+                        OnContent="On"
+                        Toggled="StartupToggle_Toggled" />
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Description="Side rail, top bar, or floating bottom dock"
+                    Header="Navigation">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE700;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox
+                        x:Name="navMode"
+                        Width="250"
+                        HorizontalAlignment="Right"
+                        SelectionChanged="NavMode_SelectionChanged">
+                        <ComboBoxItem Content="Side rail" Tag="Rail" />
+                        <ComboBoxItem Content="Top bar" Tag="Top" />
+                        <ComboBoxItem Content="Bottom dock" Tag="Bottom" />
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Description="Get help, share setups and hear about updates"
+                    Header="Join our Discord">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE716;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <Button
+                        Content="Open invite"
+                        Click="DiscordInvite_Click" />
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Description="Shows 'using kaliteOS' as your Discord activity. Nothing else is shared. Needs the Discord desktop app, with Display current activity turned on in Discord Settings, Activity Privacy"
+                    Header="Discord status">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE716;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel MinWidth="250" Spacing="8">
+                        <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}"
+                            x:Name="presenceToggle"
+                            OffContent="Off"
+                            OnContent="On"
+                            Toggled="PresenceToggle_Toggled" />
+                        <TextBlock
+                            x:Name="presenceStatus"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <TextBlock
+                    Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                    Text="Appearance" />
+
+                <toolkit:SettingsCard
+                    Description="Select which app theme to display"
+                    Header="App theme">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE790;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox
+                        x:Name="themeMode"
+                        dev:ThemeServiceAttach.ThemeService="{x:Bind local:App.Current.ThemeService}"
+                        Width="250"
+                        HorizontalAlignment="Right"
+                        AutomationProperties.AutomationId="themeModeComboBox">
+                        <ComboBoxItem Content="Use system setting" Tag="Default" />
+                        <ComboBoxItem Content="Light" Tag="Light" />
+                        <ComboBoxItem Content="Dark" Tag="Dark" />
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Description="Change the appearance of the backdrop material behind your app"
+                    Header="Material">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE2B1;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox
+                        x:Name="backdropMode"
+                        dev:ThemeServiceAttach.ThemeService="{x:Bind local:App.Current.ThemeService}"
+                        Width="250"
+                        HorizontalAlignment="Right"
+                        AutomationProperties.AutomationId="backdropModeComboBox">
+                        <ComboBoxItem Content="None" Tag="None" />
+                        <ComboBoxItem Content="Acrylic" Tag="Acrylic" />
+                        <ComboBoxItem Content="Acrylic Thin" Tag="AcrylicThin" />
+                        <ComboBoxItem Content="Mica" Tag="Mica" />
+                        <ComboBoxItem Content="Mica Alt" Tag="MicaAlt" />
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Description="Soft colour wash over the material. The material still shows through it - pick a colour, then set how strong it is."
+                    Header="Backdrop tint">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE790;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Button x:Name="TintColorButton"
+                                ToolTipService.ToolTip="Pick a tint colour">
+                            <Button.Flyout>
+                                <Flyout Opened="TintFlyout_Opened" Closed="TintFlyout_Closed">
+                                    <ColorPicker
+                                        x:Name="TintPicker"
+                                        ColorSpectrumShape="Ring"
+                                        Width="300"
+                                        IsAlphaEnabled="False"
+                                        IsAlphaSliderVisible="False"
+                                        IsAlphaTextInputVisible="False"
+                                        IsColorSpectrumVisible="True"
+                                        IsColorSliderVisible="True"
+                                        IsColorChannelTextInputVisible="True"
+                                        IsHexInputVisible="True"
+                                        ColorChanged="TintPicker_ColorChanged" />
+                                </Flyout>
+                            </Button.Flyout>
+                            <Border x:Name="TintSwatch"
+                                    Width="34"
+                                    Height="20"
+                                    CornerRadius="3"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1" />
+                        </Button>
+
+                        <Button Content="Clear" Click="TintClear_Click" ToolTipService.ToolTip="Remove the tint" />
+
+                        <StackPanel Spacing="0" VerticalAlignment="Center">
+                            <TextBlock Text="Strength" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <Slider x:Name="TintStrength"
+                                    Width="130"
+                                    Minimum="0"
+                                    Maximum="100"
+                                    StepFrequency="1"
+                                    ValueChanged="TintStrength_ValueChanged"
+                                    ToolTipService.ToolTip="0% is no tint. Higher makes the wash stronger without ever hiding the material." />
+                        </StackPanel>
+
+                        <TextBlock x:Name="TintStrengthText" Width="40" VerticalAlignment="Center" />
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Description="Choose the typeface used for text across the app (Default is the app's own font)"
+                    Header="App font">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8D2;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox
+                        x:Name="fontMode"
+                        Width="250"
+                        HorizontalAlignment="Right"
+                        AutomationProperties.AutomationId="fontModeComboBox"
+                        SelectionChanged="FontMode_SelectionChanged">
+                        <ComboBoxItem Content="App default" Tag="Default" FontFamily="Segoe UI" />
+                        <ComboBoxItem Content="Jim Nightshade" Tag="JimNightshade" FontFamily="ms-appx:///Assets/Fonts/JimNightshade-Regular.ttf#Jim Nightshade" />
+                        <ComboBoxItem Content="Uncial Antiqua" Tag="UncialAntiqua" FontFamily="ms-appx:///Assets/Fonts/UncialAntiqua-Regular.ttf#Uncial Antiqua" />
+                        <ComboBoxItem Content="Cormorant Garamond" Tag="CormorantGaramond" FontFamily="ms-appx:///Assets/Fonts/CormorantGaramond-Regular.ttf#Cormorant Garamond" />
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Description="A picture behind everything, with a controllable strength and fit. None shows the animated backdrop."
+                    Header="Background image">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE91B;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="4">
+                                <TextBlock x:Name="BgImageName"
+                                           Text="No image chosen"
+                                           FontSize="13"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="Choose an image file (PNG, JPG, BMP, GIF, WEBP)"
+                                           FontSize="11"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
+                            <Button x:Name="BgPickButton"
+                                    Grid.Column="1"
+                                    Content="Choose…"
+                                    Click="BgPick_Click"
+ />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Stretch" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <ComboBox x:Name="BgStretch"
+                                          SelectionChanged="BgStretch_SelectionChanged"
+                                          Width="150"
+                                          Margin="0,2,0,0">
+                                    <ComboBoxItem Content="Uniform to fill" Tag="UniformToFill" />
+                                    <ComboBoxItem Content="Uniform" Tag="Uniform" />
+                                    <ComboBoxItem Content="Fill" Tag="Fill" />
+                                    <ComboBoxItem Content="None" Tag="None" />
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Opacity" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="44" />
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="BgOpacity"
+                                            Minimum="0" Maximum="100" Value="80"
+                                            ValueChanged="BgOpacity_ValueChanged"
+                                            Margin="0,2,0,0" />
+                                    <TextBlock Grid.Column="1"
+                                               x:Name="BgOpacityText"
+                                               Text="80%"
+                                               FontSize="11"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+
+                        <Button Content="Remove background image" Click="BgRemove_Click" />
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <TextBlock
+                    Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                    Text="Diagnostics" />
+
+                <toolkit:SettingsCard
+                    Description="Crash, shutdown, game mode, GPU and driver logs written by kaliteConfig"
+                    Header="Log files">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE9D9;" />
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel MinWidth="280" Spacing="6">
+                        <ComboBox x:Name="LogPicker" HorizontalAlignment="Stretch" PlaceholderText="No log files yet" />
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="8">
+                            <Button Content="Open folder" Click="OpenLogsFolder_Click" />
+                            <Button Content="Open file" Click="OpenLogFile_Click" Style="{StaticResource AccentButtonStyle}" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Name="LogFolderText"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            TextAlignment="Right"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </toolkit:SettingsCard>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

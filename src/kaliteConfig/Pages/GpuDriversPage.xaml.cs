@@ -1,0 +1,157 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
+using kaliteConfig.Models;
+using kaliteConfig.ViewModels;
+using System;
+
+namespace kaliteConfig.Pages
+{
+    public sealed partial class GpuDriversPage : Page
+    {
+        public GpuDriversViewModel ViewModel { get; }
+
+        public GpuDriversPage()
+        {
+            this.InitializeComponent();
+            this.ViewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetService<GpuDriversViewModel>(App.Services) ?? new GpuDriversViewModel();
+            this.DataContext = ViewModel;
+
+            this.Loaded += async (_, _) =>
+            {
+                await ViewModel.DetectGpusCommand.ExecuteAsync(null);
+                await ViewModel.CheckDriverCommand.ExecuteAsync(ViewModel.SelectedDriver);
+            };
+        }
+
+        private async void CheckForUpdatesBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is GpuDriverItem driver)
+            {
+                await ViewModel.CheckDriverCommand.ExecuteAsync(driver);
+            }
+        }
+
+        private async void DownloadInstallBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is GpuDriverItem driver)
+            {
+                await ViewModel.InstallDriverCommand.ExecuteAsync(driver);
+            }
+        }
+
+        public static Visibility PrimaryVis(bool isPrimary) => isPrimary ? Visibility.Visible : Visibility.Collapsed;
+        public static Visibility SecondaryVis(bool isPrimary) => isPrimary ? Visibility.Collapsed : Visibility.Visible;
+
+        public static Visibility InstallBtnVis(GpuDriverStatus status)
+        {
+            return status is GpuDriverStatus.UpdateAvailable or GpuDriverStatus.NotInstalled or GpuDriverStatus.Failed
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public static Visibility InstallBtnVis(GpuDriverStatus status, string vendor)
+        {
+            if (IsAmd(vendor)) return Visibility.Collapsed;
+            return InstallBtnVis(status);
+        }
+
+        private static bool IsAmd(string vendor)
+            => !string.IsNullOrEmpty(vendor) && vendor.Contains("AMD", StringComparison.OrdinalIgnoreCase);
+
+        public static Visibility CheckBtnVis(GpuDriverStatus status, string vendor)
+        {
+            if (IsAmd(vendor)) return Visibility.Collapsed;
+            if (status == GpuDriverStatus.UpToDate) return Visibility.Collapsed;
+            return InstallBtnVis(status) == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public static Visibility UpToDateVis(GpuDriverStatus status)
+        {
+            return status == GpuDriverStatus.UpToDate ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public static Visibility ProgressVis(GpuDriverStatus status)
+        {
+            return status is GpuDriverStatus.Downloading or GpuDriverStatus.Installing
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public static bool InstallPhaseVis(GpuDriverStatus status)
+        {
+            return status == GpuDriverStatus.Installing;
+        }
+
+        public static Visibility ErrorVis(string errorMessage)
+        {
+            return string.IsNullOrEmpty(errorMessage) ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public static BitmapImage VendorIcon(string vendor)
+        {
+            string path = string.Empty;
+            if (vendor.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                path = "ms-appx:///Assets/nvidia-logo.png";
+            else if (vendor.Contains("AMD", StringComparison.OrdinalIgnoreCase))
+                path = "ms-appx:///Assets/amd-logo.png";
+            else if (vendor.Contains("Intel", StringComparison.OrdinalIgnoreCase))
+                path = "ms-appx:///Assets/intel-logo.png";
+
+            return string.IsNullOrEmpty(path) ? new BitmapImage() : new BitmapImage(new Uri(path));
+        }
+
+        public static Visibility NvidiaToolsVis(string vendor)
+        {
+            if (string.IsNullOrEmpty(vendor)) return Visibility.Collapsed;
+            return vendor.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public static Visibility AmdToolsVis(string vendor)
+        {
+            if (string.IsNullOrEmpty(vendor)) return Visibility.Collapsed;
+            return IsAmd(vendor) ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public static Visibility ToolsVis(string vendor)
+        {
+            bool hasTools = NvidiaToolsVis(vendor) == Visibility.Visible
+                || AmdToolsVis(vendor) == Visibility.Visible;
+            return hasTools ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public static string SlimmerButtonText(bool installed)
+            => installed ? "Open Radeon Software Slimmer" : "Get Radeon Software Slimmer";
+
+        public static bool SlimmerEnabled(bool busy) => !busy;
+
+        public static Visibility SlimmerProgressVis(double progress)
+            => progress is >= 0 and < 100 ? Visibility.Visible : Visibility.Collapsed;
+
+        private async void OpenRadeonSlimmer_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not GpuDriversViewModel vm) return;
+            if (sender is FrameworkElement { Tag: Models.GpuDriverItem item })
+                await vm.OpenRadeonSlimmerCommand.ExecuteAsync(item);
+        }
+
+        private void OpenNvidiaInspector_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string exePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "nvidiaProfileInspector", "nvidiaProfileInspector.exe");
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exePath) { UseShellExecute = true });
+            }
+            catch { }
+        }
+
+        private void ApplyNvidiaDefaultProfile_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string exePath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "nvidiaProfileInspector", "nvidiaProfileInspector.exe");
+                string nipPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "global_profile.nip");
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exePath, $"\"{nipPath}\"") { UseShellExecute = true });
+            }
+            catch { }
+        }
+    }
+}

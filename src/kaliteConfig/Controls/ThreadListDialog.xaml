@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="kaliteConfig.Controls.ThreadListDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:kaliteConfig.Controls"
+    Title="Threads"
+    CloseButtonText="Close"
+    DefaultButton="Close"
+    CornerRadius="12">
+
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">1400</x:Double>
+    </ContentDialog.Resources>
+
+    <Grid Width="1100" ColumnSpacing="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="1*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="HeaderText" Grid.Row="0" Style="{StaticResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+            <AutoSuggestBox x:Name="ThreadSearchBox" Grid.Row="1" QueryIcon="Find"
+                            MaxWidth="340" MinWidth="200" HorizontalAlignment="Left"
+                            PlaceholderText="Search threads - TID, name or start address"
+                            TextChanged="ThreadSearch_TextChanged"
+                            AutomationProperties.Name="Search threads" />
+            <Grid Grid.Row="2">
+                <ListView x:Name="ThreadList" MaxHeight="2000" SelectionMode="Single"
+                      SelectionChanged="ThreadList_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="CornerRadius" Value="6" />
+                        <Setter Property="Margin" Value="0,2,8,2" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="controls:ThreadRow">
+                        <Grid ColumnSpacing="8" Padding="0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE718;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                      VerticalAlignment="Center" Visibility="{x:Bind IsNamed, Mode=OneWay}"
+                                      ToolTipService.ToolTip="Named thread - pinned to top" />
+                            <CheckBox Grid.Column="1" IsChecked="{x:Bind BoostAllowed, Mode=TwoWay}"
+                                      Visibility="{x:Bind BoostBoxVis, Mode=OneWay}"
+                                      ToolTipService.ToolTip="{x:Bind BoostTip, Mode=OneWay}"
+                                      VerticalAlignment="Center" MinWidth="32" Click="BoostBox_Click" />
+                            <TextBlock Grid.Column="1" Text="?" MinWidth="32" TextAlignment="Center"
+                                       VerticalAlignment="Center" FontSize="12"
+                                       Visibility="{x:Bind BoostUnknownVis, Mode=OneWay}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       ToolTipService.ToolTip="{x:Bind BoostTip, Mode=OneWay}" />
+                            <StackPanel Grid.Column="2" Spacing="1">
+                                <TextBlock Text="{x:Bind Description}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind CurrentText, Mode=OneWay}" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTipService.ToolTip="CPUs this thread is allowed to run on">
+                                    <Run Text="CPU " /><Run Text="{x:Bind CpuText, Mode=OneWay}" /><Run Text="  ·  ideal " /><Run Text="{x:Bind IdealCpuText, Mode=OneWay}" />
+                                </TextBlock>
+                                <TextBlock FontSize="11"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTipService.ToolTip="The CPU this thread is running on right now">
+                                    <Run Text="on CPU " /><Run Text="{x:Bind RunningCpuText, Mode=OneWay}" />
+                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorDisabledBrush}">
+                                    <Run Text="TID " /><Run Text="{x:Bind Tid}" />
+                                    <Run Text="  ·  " /><Run Text="{x:Bind CpuTimeText, Mode=OneWay}" /><Run Text=" CPU" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                </ListView>
+
+                <Grid x:Name="LoadingOverlay" Visibility="Collapsed" MinHeight="180"
+                      Background="Transparent">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                        <ProgressRing x:Name="LoadingRing" IsActive="False" Width="42" Height="42" />
+                        <TextBlock x:Name="LoadingText" Text="Loading threads…" Visibility="Collapsed"
+                                   HorizontalAlignment="Center" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+            <Button Grid.Row="3" x:Name="RefreshButton" Content="Refresh list" Click="RefreshButton_Click" HorizontalAlignment="Left" />
+        </Grid>
+
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" MaxHeight="2000">
+            <StackPanel Spacing="10" Margin="0,0,18,0">
+                <TextBlock Text="Select a thread to inspect and tune it." FontSize="12"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           x:Name="NoSelectionText" />
+                <StackPanel Spacing="10" x:Name="EditorPanel" Visibility="Collapsed">
+                    <TextBlock x:Name="EditorTitle" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="EditorSub" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+
+                    <TextBlock Text="Thread priority" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="PriorityCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <ComboBox x:Name="PriorityCombo" Width="240" HorizontalAlignment="Left" PlaceholderText="Select priority…" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" SelectionChanged="PriorityCombo_SelectionChanged"
+                              ToolTipService.ToolTip="Thread priority. Auto restores the system default: Normal priority with boost on.">
+                        <ComboBoxItem Content="Auto - system default" Tag="auto" />
+                        <ComboBoxItem Content="Time critical (15)" Tag="15" />
+                        <ComboBoxItem Content="Highest (2)" Tag="2" />
+                        <ComboBoxItem Content="Above normal (1)" Tag="1" />
+                        <ComboBoxItem Content="Normal (0)" Tag="0" />
+                        <ComboBoxItem Content="Below normal (-1)" Tag="-1" />
+                        <ComboBoxItem Content="Lowest (-2)" Tag="-2" />
+                        <ComboBoxItem Content="Idle (-15)" Tag="-15" />
+                    </ComboBox>
+
+                    <TextBlock Text="Memory priority" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="MemoryCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <ComboBox x:Name="MemoryCombo" Width="220" HorizontalAlignment="Left" PlaceholderText="Select memory priority…" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1"
+                              SelectionChanged="MemoryCombo_SelectionChanged"
+                              ToolTipService.ToolTip="Windows memory priority for this thread (1 = very low, 5 = normal)">
+                        <ComboBoxItem Content="Very low (1)" Tag="1" />
+                        <ComboBoxItem Content="Low (2)" Tag="2" />
+                        <ComboBoxItem Content="Medium (3)" Tag="3" />
+                        <ComboBoxItem Content="Below normal (4)" Tag="4" />
+                        <ComboBoxItem Content="Normal (5)" Tag="5" />
+                    </ComboBox>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Efficiency mode (EcoQoS)" Style="{StaticResource BodyTextBlockStyle}" />
+                            <TextBlock Text="Runs this thread on low-power scheduling when the CPU is not busy."
+                                       Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" x:Name="EcoToggle" Style="{StaticResource KaliteToggleSwitchStyle}"
+                                      Toggled="EcoToggle_Toggled"
+                                      ToolTipService.ToolTip="Efficiency mode (EcoQoS) - ON = low-power scheduling for this thread" />
+                    </Grid>
+
+                    <TextBlock Text="CPU affinity - tick the CPUs this thread may run on" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="AffinityCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <Grid x:Name="AffinityCpuGrid" ColumnSpacing="6" RowSpacing="6" />
+                    <Button Content="Apply affinity" Click="AffinityApply_Click" HorizontalAlignment="Left" />
+
+                    <TextBlock Text="Ideal processor - pick one preferred CPU the thread's affinity mask allows" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="IdealCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                    <Grid x:Name="IdealCpuGrid" ColumnSpacing="6" RowSpacing="6" />
+                    <Button Content="Apply ideal processor" Click="IdealApply_Click" HorizontalAlignment="Left" />
+
+                    <Button Content="Make permanent (save as rule)" HorizontalAlignment="Left" Click="PermanentButton_Click"
+                            ToolTipService.ToolTip="Saves priority, memory priority, Eco, the ticked affinity CPUs and the picked ideal CPU as an auto-apply rule - no need to press Apply first; the rule also takes effect immediately" />
+
+                    <TextBlock Text="Danger zone" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="SuspendButton" Content="Suspend" Click="SuspendButton_Click" />
+                        <Button x:Name="EndButton" Content="End thread" Click="EndButton_Click" />
+                    </StackPanel>
+
+                    <TextBlock x:Name="EditorStatusBox" FontSize="12" TextWrapping="Wrap"
+                               Foreground="{ThemeResource SystemFillColorCautionBrush}" Visibility="Collapsed" />
+                    <TextBlock Text="Every control above maps to a documented Win32 thread API (SetThreadPriority, SetThreadPriorityBoost, SetThreadInformation/ThreadMemoryPriority, SetThreadGroupAffinity, SetThreadIdealProcessorEx, SuspendThread, TerminateThread)." FontSize="11" Foreground="{ThemeResource TextFillColorDisabledBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</ContentDialog>

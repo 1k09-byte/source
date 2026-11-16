@@ -1,0 +1,286 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using kaliteConfig.Models;
+using kaliteConfig.Services;
+using Microsoft.UI.Xaml.Controls;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace kaliteConfig.ViewModels;
+
+public partial class WindhawkProvisioningViewModel : ObservableObject
+{
+    private readonly WindhawkDetectionService _detection = new();
+    private readonly WindhawkProvisioningService _provisioning = new();
+    private readonly WindhawkInstallerService _installer = new();
+    private readonly WindhawkImportService _import = new();
+    private readonly KalitePowerPlanService _powerPlan = new();
+    private CancellationTokenSource? _cts;
+
+    [ObservableProperty]
+    public partial WindhawkInstallationInfo Installation { get; set; } = WindhawkInstallationInfo.NotInstalled;
+    [ObservableProperty]
+    public partial bool IsBusy { get; set; }
+    [ObservableProperty]
+    public partial string StatusText { get; set; } = string.Empty;
+    [ObservableProperty]
+    public partial double? DownloadPercent { get; set; }
+    [ObservableProperty]
+    public partial bool HasMessage { get; set; }
+    [ObservableProperty]
+    public partial string Message { get; set; } = string.Empty;
+    [ObservableProperty]
+    public partial InfoBarSeverity MessageSeverity { get; set; } = InfoBarSeverity.Informational;
+
+    public string? EffectiveBackupFilePath => WindhawkModCatalog.EnsureBundledBackupOnDisk();
+
+    public bool IsInstalled => Installation.IsInstalled;
+    public bool IsCliAvailable => Installation.CliPath is not null;
+    public string InstallStatusText => Installation.IsInstalled
+        ? $"Installed{(!string.IsNullOrEmpty(Installation.Version) ? " · v" + Installation.Version : "")}"
+        : "Not installed";
+
+    partial void OnInstallationChanged(WindhawkInstallationInfo value)
+    {
+        OnPropertyChanged(nameof(IsInstalled));
+        OnPropertyChanged(nameof(IsCliAvailable));
+        OnPropertyChanged(nameof(InstallStatusText));
+        OnPropertyChanged(nameof(CanTestImport));
+        OnPropertyChanged(nameof(CanRun));
+        OnPropertyChanged(nameof(ShowLegacyUpgradeNotice));
+    }
+
+    public bool CanRun => !IsBusy && !string.IsNullOrEmpty(EffectiveBackupFilePath) && File.Exists(EffectiveBackupFilePath);
+    public bool CanTestImport => !IsBusy && Installation.IsInstalled && !string.IsNullOrEmpty(EffectiveBackupFilePath) && File.Exists(EffectiveBackupFilePath);
+
+    public bool ShowLegacyUpgradeNotice => Installation.IsInstalled && Installation.CliPath is null;
+
+    public Microsoft.UI.Xaml.Visibility BusyVisibility => IsBusy
+        ? Microsoft.UI.Xaml.Visibility.Visible
+        : Microsoft.UI.Xaml.Visibility.Collapsed;
+
+    public double DownloadPercentValue => DownloadPercent ?? 0;
+    public bool IsProgressIndeterminate => IsBusy && DownloadPercent == null;
+    public Microsoft.UI.Xaml.Visibility DeterminateProgressVisibility => IsBusy && DownloadPercent.HasValue
+        ? Microsoft.UI.Xaml.Visibility.Visible
+        : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public Microsoft.UI.Xaml.Visibility IndeterminateProgressVisibility => IsBusy && !DownloadPercent.HasValue
+        ? Microsoft.UI.Xaml.Visibility.Visible
+        : Microsoft.UI.Xaml.Visibility.Collapsed;
+    public Microsoft.UI.Xaml.Visibility StatusTextVisibility => !IsBusy || string.IsNullOrWhiteSpace(StatusText)
+        ? Microsoft.UI.Xaml.Visibility.Collapsed
+        : Microsoft.UI.Xaml.Visibility.Visible;
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanRun));
+        OnPropertyChanged(nameof(CanTestImport));
+        OnPropertyChanged(nameof(BusyVisibility));
+        OnPropertyChanged(nameof(IsProgressIndeterminate));
+        OnPropertyChanged(nameof(DeterminateProgressVisibility));
+        OnPropertyChanged(nameof(IndeterminateProgressVisibility));
+        OnPropertyChanged(nameof(StatusTextVisibility));
+        OnPropertyChanged(nameof(DownloadPercentValue));
+    }
+
+    partial void OnDownloadPercentChanged(double? value)
+    {
+        OnPropertyChanged(nameof(DownloadPercentValue));
+        OnPropertyChanged(nameof(IsProgressIndeterminate));
+        OnPropertyChanged(nameof(DeterminateProgressVisibility));
+        OnPropertyChanged(nameof(IndeterminateProgressVisibility));
+    }
+
+    partial void OnStatusTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(StatusTextVisibility));
+    }
+
+    public void RefreshDetection()
+    {
+        Installation = _detection.Detect();
+        if (Installation.IsInstalled)
+        {
+            ShowMessage($"Windhawk {Installation.Version ?? ""} detected.".Trim() + (Installation.CliPath is not null
+                ? " Settings import will use its built-in CLI."
+                : " Running the flow upgrades to Windhawk 2.0 (alpha 5) - its CLI is required for settings import.")
+                + " This flow also applies the Kalite power plan for your CPU and makes it active.",
+                InfoBarSeverity.Informational);
+        }
+        else
+        {
+            ShowMessage("Windhawk is not installed. Running the flow below installs Windhawk 2.0 (alpha 5) silently, imports the bundled settings, then applies the Kalite power plan for your CPU and makes it active.",
+                InfoBarSeverity.Informational);
+        }
+    }
+
+    public void ShowMessage(string message, InfoBarSeverity severity)
+    {
+        Message = message;
+        MessageSeverity = severity;
+        HasMessage = true;
+    }
+
+    private void ClearMessage() => HasMessage = false;
+
+    [RelayCommand]
+    private void Cancel()
+    {
+        _cts?.Cancel();
+    }
+
+    public async Task RunProvisioningAsync()
+    {
+        var path = EffectiveBackupFilePath;
+        if (string.IsNullOrEmpty(path)) return;
+
+        IsBusy = true;
+        ClearMessage();
+        DownloadPercent = null;
+        StatusText = "Starting...";
+        _cts = new CancellationTokenSource();
+
+        try
+        {
+            if (!Installation.IsInstalled || string.IsNullOrEmpty(Installation.CliPath))
+            {
+                if (!WindhawkDetectionService.IsRunningElevated())
+                {
+                    ShowMessage("Administrator rights are required to install Windhawk. Run kaliteConfig elevated and try again.",
+                        InfoBarSeverity.Error);
+                    return;
+                }
+
+                var installProgress = new Progress<WindhawkProvisioningService.ProvisionProgress>(p =>
+                {
+                    StatusText = p.StatusText;
+                    DownloadPercent = p.DownloadPercent;
+                });
+
+                StatusText = "Preparing installation...";
+                Installation = await _provisioning.EnsureInstalledAsync(installProgress, _cts.Token);
+            }
+
+            var cliProgress = new Progress<WindhawkProvisioningService.ProvisionProgress>(p =>
+            {
+                StatusText = p.StatusText;
+                DownloadPercent = p.DownloadPercent;
+            });
+
+            var severity = InfoBarSeverity.Success;
+            string summary;
+
+            StatusText = "Applying Kalite power plan...";
+            DownloadPercent = null;
+            try
+            {
+                var plan = await Task.Run(() => _powerPlan.Apply(), _cts.Token);
+                summary = plan.Summary;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                summary = $"Power plan not applied: {ex.Message}";
+                severity = InfoBarSeverity.Warning;
+            }
+
+            StatusText = "Importing KaliteOS settings...";
+            var importStatus = new Progress<string>(s => StatusText = s);
+            var importResult = await _import.ImportBackupAsync(path!, Installation, importStatus, _cts.Token);
+            if (importResult.Skipped > 0) severity = InfoBarSeverity.Warning;
+            summary += Environment.NewLine + importResult.SummaryText;
+
+            ShowMessage(summary, severity);
+            
+            StatusText = "Done.";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Cancelled.";
+            ShowMessage("Operation cancelled.", InfoBarSeverity.Warning);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            StatusText = "Failed.";
+            ShowMessage(ex.Message, InfoBarSeverity.Error);
+        }
+        catch (Exception ex)
+        {
+            StatusText = "Failed.";
+            ShowMessage($"Windhawk provisioning failed: {ex.Message}", InfoBarSeverity.Error);
+        }
+        finally
+        {
+            IsBusy = false;
+            DownloadPercent = null;
+            _cts?.Dispose();
+            _cts = null;
+            Installation = _detection.Detect();
+        }
+    }
+
+    [RelayCommand]
+    public async Task TestImportAsync()
+    {
+        string? path = EffectiveBackupFilePath;
+
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+        {
+            ShowMessage($"KaliteOS settings file not found at: {path ?? "(null)"}", InfoBarSeverity.Error);
+            return;
+        }
+
+        if (!Installation.IsInstalled)
+        {
+            ShowMessage("Windhawk is not installed - install it first before testing import.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        IsBusy = true;
+        ClearMessage();
+        StatusText = "Testing import (windhawk-cli data import)...";
+        _cts = new CancellationTokenSource();
+
+        try
+        {
+            if (!string.IsNullOrEmpty(Installation.CliPath) && File.Exists(Installation.CliPath!))
+            {
+                var progress = new Progress<string>(s => StatusText = s);
+                var result = await _installer.ImportSettingsAsync(path!, progress, _cts.Token);
+                ShowMessage(
+                    result.Success
+                        ? $"Test import succeeded (exit {result.ExitCode}): {result.Stdout.Trim().Split('\n').LastOrDefault()?.Trim() ?? "ok"}"
+                        : $"Test import returned exit {result.ExitCode}: {(string.IsNullOrWhiteSpace(result.Stderr) ? result.Stdout : result.Stderr).Trim()}",
+                    result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+                StatusText = result.Success ? "Test import done." : "Test import had issues.";
+            }
+            else
+            {
+                var progress = new Progress<string>(s => StatusText = s);
+                var importResult = await _import.ImportBackupAsync(path!, Installation, progress, _cts.Token, refreshIconCache: false);
+                ShowMessage($"[Test] {importResult.SummaryText}", importResult.Skipped > 0 ? InfoBarSeverity.Warning : InfoBarSeverity.Success);
+                StatusText = "Test import done.";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Cancelled.";
+            ShowMessage("Test import cancelled.", InfoBarSeverity.Warning);
+        }
+        catch (Exception ex)
+        {
+            StatusText = "Failed.";
+            ShowMessage($"Test import failed: {ex.Message}", InfoBarSeverity.Error);
+        }
+        finally
+        {
+            IsBusy = false;
+            _cts?.Dispose();
+            _cts = null;
+            Installation = _detection.Detect();
+        }
+    }
+}

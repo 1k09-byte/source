@@ -1,0 +1,766 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Navigation;
+using kaliteConfig.Models;
+using kaliteConfig.Services;
+using kaliteConfig.ViewModels;
+using kaliteConfig.Controls;
+using kaliteConfig.ProcessOptimizer.ViewModels;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
+
+namespace kaliteConfig.Pages
+{
+    public sealed partial class ThreadTunerPage : Page
+    {
+        public ThreadTunerViewModel ViewModel { get; }
+        public Gaming.GameMode.GameModeViewModel GameMode { get; }
+        private readonly global::kaliteConfig.Services.StartupService _startup;
+        private bool _syncingStartupToggle;
+        private TunerProcessRow? _contextProcessRow;
+        private bool _activationAttached;
+
+        public ThreadTunerPage()
+        {
+            this.ViewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetService<ViewModels.ThreadTunerViewModel>(App.Services) ?? new ViewModels.ThreadTunerViewModel();
+            this.GameMode = new Gaming.GameMode.GameModeViewModel(App.Current.GameMode);
+            this.GameMode.PropertyChanged += GameMode_PropertyChanged;
+            this.InitializeComponent();
+            _startup = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::kaliteConfig.Services.StartupService>(App.Services);
+            this.DataContext = ViewModel;
+
+            this.Loaded += ThreadTunerPage_Loaded;
+            this.Unloaded += ThreadTunerPage_Unloaded;
+        }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+            ViewModel.IsPageVisible = true;
+            AttachWindowActivation();
+
+            _ = ViewModel.RefreshProcessesNowAsync();
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            ViewModel.IsPageVisible = false;
+            base.OnNavigatedFrom(e);
+        }
+
+        private async void GameModeOpen_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshPageGamingModeUi();
+            var dialog = new Controls.GameModeDialog(GameMode);
+            await dialog.ShowOverAsync(XamlRoot);
+            RefreshPageGamingModeUi();
+        }
+
+        private void AttachWindowActivation()
+        {
+            if (_activationAttached) return;
+
+            var window = kaliteConfig.App.MainWindow;
+            if (window is null) return;
+
+            _activationAttached = true;
+            ViewModel.IsWindowActive = true;
+            window.Activated += HostWindow_Activated;
+            Unloaded += (_, _) =>
+            {
+                window.Activated -= HostWindow_Activated;
+                _activationAttached = false;
+            };
+        }
+
+        private void HostWindow_Activated(object sender, Microsoft.UI.Xaml.WindowActivatedEventArgs args)
+        {
+            bool active = args.WindowActivationState != Microsoft.UI.Xaml.WindowActivationState.Deactivated;
+            ViewModel.IsWindowActive = active;
+
+            if (active && ViewModel.IsPageVisible)
+            {
+                ViewModel.OnReturningToForeground();
+            }
+        }
+
+        public static Microsoft.UI.Xaml.Media.Brush RowNameBrush(bool isProtected)
+        {
+            var resources = Application.Current.Resources;
+            return (Microsoft.UI.Xaml.Media.Brush)(isProtected
+                ? resources["SystemFillColorCriticalBrush"]
+                : resources["TextFillColorPrimaryBrush"]);
+        }
+
+        public static bool Not(bool value) => !value;
+
+        private void ThreadTunerPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (MainSelectorBar.SelectedItem == null)
+            {
+                MainSelectorBar.SelectedItem = TabProcesses;
+            }
+
+            ViewModel.ResumePolling();
+            ViewModel.LoadProcessesCommand.Execute(null);
+            HookSuspendUi();
+            HookRulesChanged();
+            _ = SyncStartupToggleAsync();
+        }
+
+        private bool _rulesHooked;
+
+        private void HookRulesChanged()
+        {
+            if (_rulesHooked) return;
+            _rulesHooked = true;
+            App.Current.ProfileWatcher.RulesChanged += ProfileWatcher_RulesChanged;
+        }
+
+        private void ProfileWatcher_RulesChanged(object? sender, EventArgs e)
+        {
+            RefreshPageGamingModeUi();
+            if (App.Current.LegacyGamingMode.IsHeldBy(GameModeOwner.Rule))
+            {
+                PageGamingStatusText.Text = "Gaming mode ON (automatic · from a rule)";
+            }
+        }
+
+        private void GameMode_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(Gaming.GameMode.GameModeViewModel.Enabled)) return;
+            void Apply() => PageGamingModeButton.Content = GameMode.Enabled ? "Disable Gaming mode" : "Enable Gaming mode";
+            if (DispatcherQueue.HasThreadAccess) Apply();
+            else DispatcherQueue.TryEnqueue(Apply);
+        }
+
+        private void ThreadTunerPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            try { GameMode.PropertyChanged -= GameMode_PropertyChanged; } catch { }
+            if (_rulesHooked)
+            {
+                App.Current.ProfileWatcher.RulesChanged -= ProfileWatcher_RulesChanged;
+                _rulesHooked = false;
+            }
+            if (_suspendHooked)
+            {
+                try { App.Current.ForegroundSuspend.StatusChanged -= SuspendStatus_Changed; } catch { }
+                _suspendHooked = false;
+            }
+            try { ViewModel.Shutdown(); } catch { }
+        }
+
+        private async Task SyncStartupToggleAsync()
+        {
+            _syncingStartupToggle = true;
+            try { StartupToggle.IsOn = await _startup.IsEnabledAsync(); }
+            catch { StartupToggle.IsOn = false; }
+            finally { _syncingStartupToggle = false; }
+        }
+
+        private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_syncingStartupToggle) return;
+            _syncingStartupToggle = true;
+            try
+            {
+                bool ok = await _startup.SetEnabledAsync(StartupToggle.IsOn);
+                if (!ok) StartupToggle.IsOn = !StartupToggle.IsOn;
+            }
+            catch { StartupToggle.IsOn = !StartupToggle.IsOn; }
+            finally { _syncingStartupToggle = false; }
+        }
+
+        private TunerProcessRow? GetRow(object sender) => (sender as FrameworkElement)?.DataContext as TunerProcessRow;
+
+        private TunerProcessRow? SelectedProcess =>
+            (ProcessesGrid.SelectedItem as TunerProcessRow)
+            ?? (ProcessesGrid.ItemsSource as System.Collections.Generic.IEnumerable<TunerProcessRow>)?.FirstOrDefault(p => p.Pid == _lastSelectedPid);
+
+        private int _lastSelectedPid = -1;
+
+        private void RowChevron_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement { DataContext: TunerProcessRow row })
+            {
+                ViewModel.ToggleExpanded(row);
+            }
+        }
+
+        private void ProcessesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ProcessesGrid.SelectedItem is TunerProcessRow row)
+                _lastSelectedPid = row.Pid;
+            RefreshPageGamingModeUi();
+        }
+
+        private void RefreshPageGamingModeUi()
+        {
+            GameMode.Refresh();
+            var svc = App.Current.LegacyGamingMode;
+            bool engineOn = GameMode.Enabled;
+
+            PageGamingModeButton.Content = engineOn ? "Disable Gaming mode" : "Enable Gaming mode";
+            PageGamingModeButton.IsEnabled = true;
+            PageRestoreButton.IsEnabled = svc.RestorableCount > 0 || svc.IsActive;
+
+            if (engineOn)
+            {
+                string text = GameMode.StatusText;
+                if (svc.IsHeldBy(GameModeOwner.UserInterface))
+                    text += $" · {svc.RestorableCount} restorable";
+                else if (svc.IsActive)
+                    text += $" · rule/auto hold active ({svc.RestorableCount} restorable)";
+                PageGamingStatusText.Text = text;
+            }
+            else if (svc.IsActive)
+            {
+                string why = string.Join(", ", svc.Holds.Select(h => h.Owner.ToString().ToLowerInvariant()));
+                PageGamingStatusText.Text = $"Gaming mode ON (held by {why}) · {svc.RestorableCount} restorable";
+            }
+            else
+            {
+                PageGamingStatusText.Text = GameMode.HasGames
+                    ? "Game Mode is off. Press Enable Gaming mode, then start a listed game."
+                    : "Game Mode is off. Press Enable Gaming mode, then add your game in the Game Mode card below.";
+            }
+        }
+
+        private static int? ForegroundPid()
+        {
+            try
+            {
+                var hwnd = Native.NativeMethods.GameMode.GetForegroundWindow();
+                if (hwnd != IntPtr.Zero
+                    && Gaming.GameMode.ForegroundWatcher.TryResolveForeground(hwnd, out int pid, out _, out _))
+                    return pid;
+            }
+            catch { }
+            return null;
+        }
+
+        private async void Page_ToggleGamingMode(object sender, RoutedEventArgs e)
+        {
+            var svc = App.Current.LegacyGamingMode;
+            PageGamingModeButton.IsEnabled = false;
+            try
+            {
+                if (!GameMode.Enabled)
+                {
+                    GameMode.ToggleEnabled();
+
+                    int target = SelectedProcess?.Pid ?? ForegroundPid() ?? Environment.ProcessId;
+                    var result = await svc.AcquireAsync(GameModeOwner.UserInterface, target, reason: "Threads page button");
+                    RefreshPageGamingModeUi();
+                    PageGamingStatusText.Text = $"{GameMode.StatusText} · {result.Summary}";
+                }
+                else
+                {
+                    GameMode.ToggleEnabled();
+                    bool ended = svc.Release(GameModeOwner.UserInterface);
+                    RefreshPageGamingModeUi();
+                    PageGamingStatusText.Text = ended || svc.Holds.Count == 0
+                        ? "Gaming mode off · priorities restored"
+                        : $"Gaming mode handed back · still held by {svc.Holds.Count} other holder(s)";
+                }
+            }
+            catch (Exception ex)
+            {
+                PageGamingStatusText.Text = $"Gaming mode error: {ex.Message}";
+                RefreshPageGamingModeUi();
+            }
+            finally
+            {
+                PageGamingModeButton.IsEnabled = true;
+            }
+        }
+
+        private async void Page_RestorePriorities(object sender, RoutedEventArgs e)
+        {
+            App.Current.LegacyGamingMode.ReleaseAll();
+            PageGamingStatusText.Text = "Priorities restored";
+            RefreshPageGamingModeUi();
+
+            var dialog = new ContentDialog
+            {
+                Title = "Normalize all priorities?",
+                Content = new TextBlock
+                {
+                    Text = "Set every accessible process's priority back to Normal?\n\nThis is a full reset - anything (including this app or other tools) that raised or lowered a priority gets set to Normal. Critical and protected system processes are skipped.",
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                PrimaryButtonText = "Reset all to Normal",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot,
+            };
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                var (reset, skipped) = App.Current.LegacyGamingMode.ResetAllPrioritiesToNormal();
+                PageGamingStatusText.Text = $"Reset {reset} process(es) to Normal ({skipped} skipped).";
+                RefreshPageGamingModeUi();
+            }
+        }
+
+        private bool _suspendHooked;
+
+        private void HookSuspendUi()
+        {
+            if (_suspendHooked) return;
+            _suspendHooked = true;
+            try { App.Current.ForegroundSuspend.StatusChanged += SuspendStatus_Changed; } catch { }
+            RefreshSuspendUi();
+        }
+
+        private void SuspendStatus_Changed()
+        {
+            DispatcherQueue.TryEnqueue(RefreshSuspendUi);
+        }
+
+        private void RefreshSuspendUi()
+        {
+            try
+            {
+                var svc = App.Current.ForegroundSuspend;
+                PageSuspendStatusText.Text =
+                    $"[{svc.SuspendedCount} suspended] {svc.StatusText}";
+            }
+            catch { }
+        }
+
+        private async void ExecuteTuning(object sender, Func<TunerProcessRow, Task> action)
+        {
+            if (GetRow(sender) is { } row)
+            {
+                try { await action(row); }
+                catch (Exception ex)
+                {
+                    _ = new ContentDialog
+                    {
+                        Title = "Execution Blocked",
+                        Content = new TextBlock { Text = ex.Message, TextWrapping = TextWrapping.Wrap },
+                        CloseButtonText = "Close",
+                        XamlRoot = this.XamlRoot
+                    }.ShowAsync();
+                }
+            }
+        }
+
+        private void ProcessMenu_Opening(object sender, object e)
+        {
+            if (sender is MenuFlyout menu && menu.Target is FrameworkElement target && target.DataContext is TunerProcessRow row)
+            {
+                _contextProcessRow = row;
+                _ = UpdateProcessMenuStateAsync(menu, row);
+            }
+        }
+
+        private TunerProcessRow? GetContextProcessRow(object sender) => GetRow(sender) ?? _contextProcessRow;
+
+        private async Task UpdateProcessMenuStateAsync(MenuFlyout menu, TunerProcessRow row)
+        {
+            foreach (var item in menu.Items)
+            {
+                string text = (item as MenuFlyoutItem)?.Text ?? (item as MenuFlyoutSubItem)?.Text ?? "";
+                if (text.Contains("Terminate") || text.Contains("Suspend") || text.Contains("Resume") || 
+                    text.Contains("Priority") || text.Contains("Affinity") || 
+                    text.Contains("boost") || text.Contains("Efficiency"))
+                {
+                    if (item is Control c) c.IsEnabled = !row.IsProtected;
+                }
+            }
+
+            var priority = menu.Items.OfType<MenuFlyoutSubItem>()
+                .FirstOrDefault(x => x.Text.StartsWith("Priority", StringComparison.OrdinalIgnoreCase));
+            if (priority != null)
+            {
+                priority.Text = $"Priority  (current: {row.PriorityText})";
+                MarkMenuChoice(priority, row.PriorityText);
+            }
+
+            var affinity = menu.Items.OfType<MenuFlyoutItem>()
+                .FirstOrDefault(x => x.Text.StartsWith("CPU affinity", StringComparison.OrdinalIgnoreCase));
+            if (affinity != null)
+            {
+                affinity.Text = $"CPU affinity... (current: {row.AffinitySummary})";
+            }
+
+            try
+            {
+                bool boostEnabled = await App.Current.ProcessTuning.GetBoostAsync(row.Pid);
+                var boost = menu.Items.OfType<MenuFlyoutSubItem>()
+                    .FirstOrDefault(x => x.Text.StartsWith("Priority boost", StringComparison.OrdinalIgnoreCase));
+                if (boost != null)
+                {
+                    boost.Text = $"Priority boost  (current: {(boostEnabled ? "Enabled" : "Disabled")})";
+                    MarkMenuChoice(boost, boostEnabled ? "Enabled" : "Disabled");
+                }
+            }
+            catch { }
+
+            try
+            {
+                bool efficiencyEnabled = await App.Current.ProcessTuning.GetEfficiencyAsync(row.Pid);
+                var efficiency = menu.Items.OfType<MenuFlyoutSubItem>()
+                    .FirstOrDefault(x => x.Text.StartsWith("Efficiency mode", StringComparison.OrdinalIgnoreCase));
+                if (efficiency != null)
+                {
+                    efficiency.Text = $"Efficiency mode  (current: {(efficiencyEnabled ? "Enabled" : "Disabled")})";
+                    MarkMenuChoice(efficiency, efficiencyEnabled ? "Enabled" : "Disabled");
+                }
+            }
+            catch { }
+        }
+
+        private static void MarkMenuChoice(MenuFlyoutSubItem menu, string current)
+        {
+            foreach (var item in menu.Items.OfType<MenuFlyoutItem>())
+            {
+                string label = item.Tag?.ToString() switch
+                {
+                    "AboveNormal" => "Above normal",
+                    "BelowNormal" => "Below normal",
+                    "Low" => "Low (Idle)",
+                    _ => item.Tag?.ToString() ?? item.Text.Replace(" ✓", "")
+                };
+                item.Text = string.Equals(label, current, StringComparison.OrdinalIgnoreCase)
+                    ? $"{label}  ✓"
+                    : label;
+            }
+        }
+
+        private static string FormatCpuMask(ulong mask)
+        {
+            var cpus = new List<string>();
+            for (int i = 0; i < 64; i++)
+            {
+                if ((mask & (1UL << i)) != 0) cpus.Add(i.ToString());
+            }
+            return cpus.Count == 0 ? "None" : string.Join(", ", cpus);
+        }
+
+        private void Action_Terminate(object sender, RoutedEventArgs e) => ExecuteTuning(sender, row => App.Current.ProcessTuning.TerminateProcessAsync(row.Pid));
+        private void Action_Suspend(object sender, RoutedEventArgs e) => ExecuteTuning(sender, row => App.Current.ProcessTuning.SuspendProcessAsync(row.Pid));
+        private void Action_Resume(object sender, RoutedEventArgs e) => ExecuteTuning(sender, row => App.Current.ProcessTuning.ResumeProcessAsync(row.Pid));
+
+        private void Action_Priority(object sender, RoutedEventArgs e) => ExecuteTuning(sender, async row =>
+        {
+            if (sender is FrameworkElement { Tag: string p })
+            {
+                uint priorityClass = p switch
+                {
+                    "Realtime" => 0x00000100,
+                    "High" => 0x00000080,
+                    "AboveNormal" => 0x00008000,
+                    "Normal" => 0x00000020,
+                    "BelowNormal" => 0x00004000,
+                    "Low" => 0x00000040,
+                    "Idle" => 0x00000040,
+                    _ => 0x00000020
+                };
+                await App.Current.ProcessTuning.SetPriorityAsync(row.Pid, priorityClass);
+            }
+        });
+
+        private void Action_Eco(object sender, RoutedEventArgs e) => ExecuteTuning(sender, async row =>
+        {
+            if (sender is FrameworkElement { Tag: string eco })
+            {
+                await App.Current.ProcessTuning.SetEfficiencyAsync(row.Pid, eco == "Enabled");
+            }
+        });
+
+        private void Action_Affinity(object sender, RoutedEventArgs e)
+        {
+            if (GetContextProcessRow(sender) is not { } row) return;
+            _ = ShowProcessAffinityAsync(row);
+        }
+
+        private async Task ShowProcessAffinityAsync(TunerProcessRow row)
+        {
+            int cpus = App.Current.ProcessTuning.LogicalProcessorCount();
+            ulong currentMask = await App.Current.ProcessTuning.GetAffinityAsync(row.Pid);
+
+            var panel = new StackPanel { Spacing = 8 };
+            var checkboxes = new List<CheckBox>();
+
+            for (int i = 0; i < cpus; i++)
+            {
+                bool isSet = (currentMask & (1UL << i)) != 0;
+                var cb = new CheckBox { Content = $"CPU {i}", IsChecked = isSet, Tag = i };
+                checkboxes.Add(cb);
+                panel.Children.Add(cb);
+            }
+
+            var dialog = new ContentDialog
+            {
+                Title = $"Processor Affinity: {row.Name} (current: 0x{currentMask:X})",
+                Content = new ScrollViewer { Content = panel, MaxHeight = 400 },
+                PrimaryButtonText = "Apply",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = this.XamlRoot
+            };
+
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                ulong newMask = 0;
+                foreach (var cb in checkboxes)
+                {
+                    if (cb.IsChecked == true && cb.Tag is int bit) newMask |= (1UL << bit);
+                }
+                if (newMask != 0) await App.Current.ProcessTuning.SetAffinityAsync(row.Pid, newMask);
+            }
+        }
+
+        private void Action_Boost(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuFlyoutItem item && item.Tag is string tag)
+            {
+                bool enabled = tag != "Disabled";
+                ExecuteTuning(sender, row => SetProcessBoostAsync(row, enabled));
+            }
+        }
+
+        private async Task SetProcessBoostAsync(TunerProcessRow row, bool enabled)
+        {
+            int applied = await Services.ProcessBoostPreferenceService.Instance.SetAsync(row.Name, enabled);
+
+            bool? actual = null;
+            try { actual = await App.Current.ProcessTuning.GetBoostAsync(row.Pid); } catch { }
+
+            if (actual.HasValue)
+            {
+                row.BoostAllowed = actual.Value;
+                row.PriorityBoostText = actual.Value ? "Enabled" : "Disabled";
+            }
+            else
+            {
+                row.BoostAllowed = null;
+                row.PriorityBoostText = "Unknown";
+            }
+
+            if (applied == 0)
+            {
+                _ = new ContentDialog
+                {
+                    Title = "Boost preference saved",
+                    Content = new TextBlock
+                    {
+                        Text = $"No running instance of {row.Name} accepted the change. " +
+                               "The preference is saved and will be applied the next time it starts.",
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    CloseButtonText = "Close",
+                    XamlRoot = this.XamlRoot,
+                }.ShowAsync();
+            }
+        }
+
+        private async void RowBoost_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox box || box.Tag is not TunerProcessRow row) return;
+            bool enabled = box.IsChecked == true;
+
+            try
+            {
+                await SetProcessBoostAsync(row, enabled);
+            }
+            catch (Exception ex)
+            {
+                row.BoostAllowed = !enabled;
+                await new ContentDialog
+                {
+                    Title = "Priority boost",
+                    Content = new TextBlock { Text = ex.Message, TextWrapping = TextWrapping.Wrap },
+                    CloseButtonText = "Close",
+                    XamlRoot = this.XamlRoot,
+                }.ShowAsync();
+            }
+        }
+
+        private void Action_Threads(object sender, RoutedEventArgs? e) => ExecuteTuning(sender, row => ShowThreadsDialogAsync(row));
+
+        private async Task ShowThreadsDialogAsync(Models.TunerProcessRow row)
+        {
+            var dlg = new Controls.ThreadListDialog();
+            await dlg.ShowForProcessAsync(row.Pid, row.Name, this.XamlRoot);
+        }
+        
+        private void Row_DoubleTapped(object sender, Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs e) => Action_Threads(sender, null);
+
+        private async Task OpenRuleEditorAsync(TunerProfile target, bool isNew)
+        {
+            var dlg = new RuleEditorDialog { XamlRoot = this.XamlRoot };
+            dlg.LoadFrom(target, isNew);
+            if (await dlg.ShowRuleEditorAsync() == ContentDialogResult.Primary || dlg.ShortcutAccepted)
+            {
+                target.CopyFrom(dlg.Draft);
+                bool saved = await App.Current.ProfileWatcher.AddOrUpdate(target);
+                if (!saved)
+                {
+                    await ShowRulesErrorAsync("Could not save the rule file. The rule is active for this session only.");
+                }
+                await App.Current.ProfileWatcher.ApplyProfileNowAsync(target);
+                ViewModel.SyncProfiles();
+                RefreshRulesMeta();
+            }
+        }
+
+        private void Action_CreateRule(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is TunerProcessRow row)
+            {
+                var draft = new TunerProfile
+                {
+                    Name = row.Name, Pattern = row.Name, AutoApply = true, Enabled = true
+                };
+                _ = OpenRuleEditorAsync(draft, isNew: true);
+            }
+        }
+
+        private void Action_Details(object sender, RoutedEventArgs e)
+        {
+            ExecuteTuning(sender, async row =>
+            {
+                using var proc = System.Diagnostics.Process.GetProcessById(row.Pid);
+                var panel = new StackPanel { Spacing = 12 };
+                
+                string path = "Access Denied";
+                try { path = proc.MainModule?.FileName ?? "Unknown"; } catch { }
+
+                panel.Children.Add(new TextBlock { Text = $"Executable Path:\n{path}", TextWrapping = TextWrapping.Wrap, Style = (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["BodyTextBlockStyle"] });
+                panel.Children.Add(new TextBlock { Text = $"Handles: {proc.HandleCount}", Style = (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["BodyTextBlockStyle"] });
+                panel.Children.Add(new TextBlock { Text = $"Working Set (RAM): {(proc.WorkingSet64 / 1024 / 1024.0):F1} MB", Style = (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["BodyTextBlockStyle"] });
+                try { panel.Children.Add(new TextBlock { Text = $"Start Time: {proc.StartTime}", Style = (Microsoft.UI.Xaml.Style)Microsoft.UI.Xaml.Application.Current.Resources["BodyTextBlockStyle"] }); } catch { }
+
+                await new ContentDialog
+                {
+                    Title = $"Details: {row.Name} ({row.Pid})",
+                    Content = panel,
+                    CloseButtonText = "Close",
+                    XamlRoot = this.XamlRoot
+                }.ShowAsync();
+            });
+        }
+        private void MainSelectorBar_SelectionChanged(Microsoft.UI.Xaml.Controls.SelectorBar sender, Microsoft.UI.Xaml.Controls.SelectorBarSelectionChangedEventArgs args)
+        {
+            if (sender.SelectedItem == TabRules)
+            {
+                ProcessesPanel.Visibility = Visibility.Collapsed;
+                RulesPanel.Visibility = Visibility.Visible;
+                ViewModel.SyncProfiles();
+                RefreshRulesMeta();
+            }
+            else
+            {
+                RulesPanel.Visibility = Visibility.Collapsed;
+                ProcessesPanel.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void RefreshRulesMeta()
+        {
+            int n = ViewModel.DisplayedProcessProfiles.Count;
+            RulesCountText.Text = n == 1 ? "1 rule" : $"{n} rules";
+        }
+
+        private TunerProfile? GetRuleRow(object sender) =>
+            (sender as FrameworkElement)?.DataContext as TunerProfile;
+
+        private TunerProfile? SelectedRuleOrRow(object sender) =>
+            ViewModel.SelectedProfile ?? GetRuleRow(sender);
+
+        private async void RuleAdd_Click(object sender, RoutedEventArgs e) =>
+            await OpenRuleEditorAsync(new TunerProfile(), isNew: true);
+
+        private async void RuleExport_Click(object sender, RoutedEventArgs e)
+        {
+            string? message = await RulesTransferUi.ExportAsync();
+            if (message is not null) await ShowRulesErrorAsync(message);
+        }
+
+        private async void RuleImport_Click(object sender, RoutedEventArgs e)
+        {
+            string? message = await RulesTransferUi.ImportAsync();
+            if (message is null) return;
+
+            ViewModel.RulesFilter = string.Empty;
+            ViewModel.SyncProfiles();
+            RefreshRulesMeta();
+            await ShowRulesErrorAsync(message);
+        }
+
+        private Task ShowRulesErrorAsync(string message)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Rules",
+                Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                CloseButtonText = "Close",
+                XamlRoot = this.XamlRoot,
+            };
+            return dialog.ShowAsync().AsTask();
+        }
+
+        private async void RuleEdit_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedRuleOrRow(sender) is { } p)
+            {
+                await OpenRuleEditorAsync(p, isNew: false);
+            }
+        }
+
+        private async void RuleToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedRuleOrRow(sender) is not { } p) return;
+            p.Enabled = !p.Enabled;
+            p.RefreshSummaries();
+            bool saved = await App.Current.ProfileWatcher.AddOrUpdate(p);
+            ViewModel.SyncProfiles();
+            if (!saved)
+            {
+                await ShowRulesErrorAsync("Could not save the rule file. The change is active for this session only.");
+            }
+            if (p.Enabled)
+            {
+                await App.Current.ProfileWatcher.ApplyProfileNowAsync(p);
+            }
+            ViewModel.SyncProfiles();
+            RefreshRulesMeta();
+        }
+
+        private async void RuleDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedRuleOrRow(sender) is not { } p) return;
+            bool saved = await App.Current.ProfileWatcher.Remove(p);
+            ViewModel.SyncProfiles();
+            RefreshRulesMeta();
+            if (!saved)
+            {
+                await ShowRulesErrorAsync("Could not save the rule file. The rule will reappear on restart.");
+            }
+        }
+
+        private async void RuleApplyNow_Click(object sender, RoutedEventArgs e)
+        {
+            if (SelectedRuleOrRow(sender) is not { } p) return;
+            await App.Current.ProfileWatcher.ApplyProfileNowAsync(p);
+            ViewModel.SyncProfiles();
+            RefreshRulesMeta();
+        }
+
+        private void RuleRow_DoubleTapped(object sender, Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs e)
+        {
+            if (e.Handled) return;
+            e.Handled = true;
+            if (GetRuleRow(sender) is { } p)
+            {
+                _ = OpenRuleEditorAsync(p, isNew: false);
+            }
+        }
+    }
+}

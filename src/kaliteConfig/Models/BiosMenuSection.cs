@@ -1,0 +1,42 @@
+using System;
+using System.Collections.Generic;
+
+namespace kaliteConfig.Models;
+
+public sealed class BiosMenuSection
+{
+    public string Name { get; }
+    public string[] Path { get; }
+    public BiosMenuSection? Parent { get; }
+    public List<BiosMenuSection> Children { get; } = new();
+    public List<BiosSetting> Settings { get; } = new();
+
+    public int TotalCount { get; private set; }
+
+    public bool IsRoot => Path.Length == 0;
+
+    internal BiosMenuSection(string name, string[] path, BiosMenuSection? parent)
+    {
+        Name = name;
+        Path = path;
+        Parent = parent;
+    }
+
+    public string CountText => $"({TotalCount})";
+
+    internal void AttachChild(BiosMenuSection child) => Children.Add(child);
+
+    internal void AddSetting(BiosSetting setting)
+    {
+        Settings.Add(setting);
+        for (var node = this; node is not null; node = node.Parent) node.TotalCount++;
+    }
+
+    public IEnumerable<BiosMenuSection> SelfAndDescendants()
+    {
+        yield return this;
+        foreach (var child in Children)
+            foreach (var descendant in child.SelfAndDescendants())
+                yield return descendant;
+    }
+}

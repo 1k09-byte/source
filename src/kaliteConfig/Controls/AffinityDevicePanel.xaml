@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="kaliteConfig.Controls.AffinityDevicePanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:kaliteConfig.Controls"
+    xmlns:models="using:kaliteConfig.Models">
+
+    <Border BorderThickness="0,1,0,0"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            Margin="0,10,0,0"
+            Padding="0,18,0,0">
+        <Grid>
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="Slide" Y="-14" />
+            </Grid.RenderTransform>
+
+            <StackPanel x:Name="Body" Spacing="24" Opacity="0">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{x:Bind Device.CategoryLabel, Mode=OneWay, FallbackValue=''}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="{x:Bind Device.DeviceInstanceId, Mode=OneWay, FallbackValue=''}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Spacing="16">
+                    <TextBlock Text="MSI settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" Header="MSI mode"
+                                  OnContent="Enabled" OffContent="Disabled"
+                                  IsOn="{x:Bind Device.MsiEnabled, Mode=TwoWay}" />
+                    <TextBlock Text="Message-signaled interrupts cut CPU overhead compared with legacy line-based IRQs."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <NumberBox Header="MSI limit"
+                               HorizontalAlignment="Stretch"
+                               SpinButtonPlacementMode="Inline"
+                               Value="{x:Bind Device.MsiLimit, Mode=TwoWay}"
+                               Minimum="0"
+                               Maximum="{x:Bind Device.EffectiveMaxMsiLimit, Mode=OneWay}"
+                               IsEnabled="{x:Bind Device.MsiEnabled, Mode=OneWay}" />
+                    <TextBlock Text="Caps how many interrupts the device may raise. Lower values reduce DPC latency spikes; 0 means automatic."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Max MSI"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Bind Device.MaxMsiLimitText, Mode=OneWay, FallbackValue=''}"
+                                   Style="{StaticResource BodyTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Advanced policies" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <ComboBox Header="Device priority"
+                              HorizontalAlignment="Stretch"
+                              ItemsSource="{x:Bind PriorityOptions}"
+                              SelectedItem="{x:Bind Device.SelectedPriority, Mode=TwoWay}" />
+                    <TextBlock Text="How urgently this device's interrupts are serviced relative to other hardware."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <ComboBox Header="Device policy"
+                              HorizontalAlignment="Stretch"
+                              ItemsSource="{x:Bind PolicyOptions}"
+                              DisplayMemberPath="Label"
+                              SelectedValuePath="Value"
+                              SelectedValue="{x:Bind Device.SelectedPolicy, Mode=TwoWay}"
+                              ToolTipService.ToolTip="{x:Bind Device.SelectedPolicy, Mode=OneWay}" />
+                    <TextBlock Text="Controls which processors are eligible to receive this device's interrupts."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Spacing="8"
+                            Visibility="{x:Bind local:AffinityDevicePanel.BoolToVis(Device.IsNetwork), Mode=OneWay}">
+                    <TextBlock Text="Receive Side Scaling (NDIS)" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="{x:Bind Device.RssText, Mode=OneWay, FallbackValue=''}"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="Network packet processing is steered by RSS, not by the IRQ mask alone. Applying a processor mask sets the RSS base processor and queue count, then restarts the adapter."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Spacing="16">
+                    <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              IsExpanded="{x:Bind Device.IsProcessorMaskExpanded, Mode=TwoWay}">
+                        <Expander.Header>
+                            <StackPanel Spacing="0">
+                                <TextBlock Text="Processor mask" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Text="{x:Bind Device.SelectedThreadCountText, Mode=OneWay, FallbackValue=''}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Expander.Header>
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Select all" Click="SelectAll_Click" />
+                                <Button Content="Clear" Click="Clear_Click" />
+                            </StackPanel>
+                            <ItemsRepeater ItemsSource="{x:Bind Device.CoreGroups, Mode=OneWay}"
+                                           HorizontalAlignment="Stretch">
+                                <ItemsRepeater.Layout>
+                                    <UniformGridLayout MaximumRowsOrColumns="8" MinItemWidth="150"
+                                                       MinColumnSpacing="8" MinRowSpacing="8"
+                                                       Orientation="Horizontal" ItemsJustification="Start" />
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ProcessorCoreGroup">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{x:Bind Title}"
+                                                       Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                            <ItemsRepeater ItemsSource="{x:Bind Threads}">
+                                                <ItemsRepeater.Layout>
+                                                    <StackLayout Spacing="4" />
+                                                </ItemsRepeater.Layout>
+                                                <ItemsRepeater.ItemTemplate>
+                                                    <DataTemplate x:DataType="models:ProcessorThreadItem">
+                                                        <CheckBox Content="{x:Bind Label}" IsChecked="{x:Bind IsChecked, Mode=TwoWay}" />
+                                                    </DataTemplate>
+                                                </ItemsRepeater.ItemTemplate>
+                                            </ItemsRepeater>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </StackPanel>
+                    </Expander>
+                    <TextBlock Text="Assign hardware interrupts to specific logical processors."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                    <Button Content="Cancel" Click="Cancel_Click" />
+                    <Button Style="{ThemeResource AccentButtonStyle}" Content="Apply" Click="Apply_Click" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
