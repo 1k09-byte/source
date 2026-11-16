@@ -1019,7 +1019,6 @@ namespace kaliteConfig
                 if (NavView.IsPaneVisible && railItem is not null)
                 {
                     UpdateNavPill(railItem);
-                    AnimateRailItemPop(railItem);
                 }
                 else
                 {
@@ -1417,9 +1416,8 @@ namespace kaliteConfig
             new(PageKey.Gaming, "GamingPage", "Affinity", null, Services.NavIcons.AffinityPath, false),
             new(PageKey.ThreadTuner, "ThreadTunerPage", "Tuning", null, Services.NavIcons.TuningPath, false),
             new(PageKey.Drivers, "DriversPage", "Drivers", "\uE90F", null, false),
-            new(PageKey.Uninstaller, "UninstallerPage", "Uninstaller", "\uE74D", null, false),
             new(PageKey.Startup, "StartupPage", "Startup", "\uE7E8", null, false),
-            new(PageKey.WindowsSettings, "WindowsSettingsPage", "Windows", "\uE713", null, false),
+            new(PageKey.WindowsSettings, "WindowsSettingsPage", "System Settings", "\uE713", null, false),
             new(PageKey.PowerPlans, "PowerPlansPage", "Power", "\uE945", null, false),
             new(PageKey.Input, "InputPage", "Input", "\uE962", null, true),
             new(PageKey.BiosManager, "BiosManagerPage", "BIOS", "\uE9D9", null, false),

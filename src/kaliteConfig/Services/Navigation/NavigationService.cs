@@ -5,7 +5,7 @@ namespace kaliteConfig.Services.Navigation;
 
 public enum PageKey
 {
-    Apps, Uninstaller, Drivers, Startup, Graphics, Gaming, PriorityBoosts, ThreadTuner, Snip,
+    Apps, Drivers, Startup, Graphics, Gaming, PriorityBoosts, ThreadTuner, Snip,
     Network, WindowsSettings, BiosManager, PowerPlans, Troubleshooting, Settings, Input, Home
 }
 
@@ -23,8 +23,7 @@ public sealed class NavigationService : INavigationService
 
     private static Type TypeFor(PageKey key) => key switch
     {
-        PageKey.Apps => typeof(Pages.InstallerPage),
-        PageKey.Uninstaller => typeof(Pages.UninstallerPage),
+        PageKey.Apps => typeof(Pages.InstallerHubPage),
         PageKey.Drivers => typeof(Pages.DriversPage),
         PageKey.Startup => typeof(Pages.StartupPage),
         PageKey.Graphics => typeof(Pages.GraphicsHubPage),
@@ -45,7 +44,6 @@ public sealed class NavigationService : INavigationService
     public static PageKey KeyForTag(string tag) => tag switch
     {
         "AppsPage" => PageKey.Apps,
-        "UninstallerPage" => PageKey.Uninstaller,
         "DriversPage" => PageKey.Drivers,
         "StartupPage" => PageKey.Startup,
         "GraphicsPage" => PageKey.Graphics,

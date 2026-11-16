@@ -121,19 +121,10 @@
         </VisualStateManager.VisualStateGroups>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel x:Name="SectionHeader" Grid.Row="0" Margin="13,11,13,6" Spacing="1">
-            <TextBlock x:Name="SectionTitle" Text="Uninstaller" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock x:Name="SectionSubtitle" Text="Remove installed applications and leftover folders."
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       TextWrapping="Wrap" />
-        </StackPanel>
-
-        <Grid x:Name="UninstallerPanel" Grid.Row="1" Padding="13,0,13,14" RowSpacing="8">
+        <Grid x:Name="UninstallerPanel" Grid.Row="0" Padding="13,9,13,14" RowSpacing="8">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />

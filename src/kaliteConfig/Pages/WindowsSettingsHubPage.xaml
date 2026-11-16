@@ -18,7 +18,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="13,11,13,0" Spacing="1">
-            <TextBlock Text="Windows Settings" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock Text="System Settings" Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock Text="System switches for Windows, in one place."
                        Style="{StaticResource BodyTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
@@ -31,7 +31,7 @@
                         <TextBlock Text="CPU and power tuning" Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
                         <toolkit:SettingsCard x:Name="PowerModeCard" Header="Kernel/Power settings"
-                                              Description="Balanced keeps the Windows defaults. Aggressive applies the power and kernel flags: power-event processing and parked-core requests off, QoS hint computation and IPI last-clock-owner handling on, no display burst on power-source change, and forced core parking off. Needs administrator rights and a restart.">
+                                              Description="Balanced keeps the Windows defaults. Aggressive applies the power and kernel flags: power-event processing and parked-core requests off, QoS hint computation and IPI last-clock-owner handling on, no display burst on power-source change, and forced core parking off. Needs administrator rights and a restart. Strongly recommended to test between Balanced and Aggressive.">
                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="PowerModeToggle" OffContent="Balanced" OnContent="Aggressive" Toggled="PowerMode_Toggled" />
                         </toolkit:SettingsCard>
                     </StackPanel>
@@ -42,6 +42,7 @@
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
                         <toolkit:SettingsCard x:Name="MmcssCard" Header="Multimedia Class Scheduler (MMCSS)"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="MmcssToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="MmcssStatus"/></toolkit:SettingsCard>
                         <toolkit:SettingsCard x:Name="TimerResolutionCard" Header="Global timer resolution requests" Description="Lets the finest timer resolution requested by any process apply to the whole system instead of only to the process that asked for it. Needs administrator rights and a restart."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="TimerResolutionToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="GlobalTimerResolutionRequests"/></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="SystemResponsivenessCard" Header="System Responsiveness" Description="Caps the CPU share MMCSS reserves for background work. 10 favors foreground apps and games under load; 20 is the Windows default. Needs administrator rights and a restart."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="SystemResponsivenessToggle" OffContent="20" OnContent="10" Toggled="SystemResponsiveness_Toggled" /></toolkit:SettingsCard>
                         <toolkit:SettingsCard x:Name="HibernateCard" Header="Hibernation" Description="Turning it off clears the hibernate flags and keeps fast startup off. Needs administrator rights."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="HibernateToggle" Toggled="Hibernate_Toggled"/></toolkit:SettingsCard>
                     </StackPanel>
                 </Border>
@@ -60,6 +61,13 @@
                         <TextBlock Text="GPU scheduling" Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
                         <toolkit:SettingsCard x:Name="HagsCard" Header="Hardware-accelerated GPU scheduling (HAGS)"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="HagsToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="HwSchMode"/></toolkit:SettingsCard>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource CardBorder}" Padding="6">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Explorer" Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
+                        <toolkit:SettingsCard x:Name="ExplorerUiCard" Header="Explorer UI" Description="Old applies the classic Explorer preset: Windows 10-style context menu, compact mode, classic taskbar and search tweaks. Default restores the stock Windows 11 Explorer. Explorer restarts to apply."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="ExplorerUiToggle" OffContent="Default" OnContent="Old" Toggled="ExplorerUi_Toggled" /></toolkit:SettingsCard>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource CardBorder}" Padding="6">
