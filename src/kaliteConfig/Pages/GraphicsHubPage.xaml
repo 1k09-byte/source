@@ -14,13 +14,13 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Padding="36,28,36,0" Spacing="4">
+        <StackPanel Grid.Row="0" Padding="25,20,25,0" Spacing="3">
             <TextBlock Text="GPU" Style="{StaticResource GalleryPageTitle}" />
             <TextBlock Style="{StaticResource GalleryPageCaption}"
                        Text="Drivers, GPU overclocking and display controls for this machine." />
         </StackPanel>
 
-        <SelectorBar x:Name="ViewSelector" Grid.Row="1" Margin="36,16,36,4"
+        <SelectorBar x:Name="ViewSelector" Grid.Row="1" Margin="25,11,25,3"
                      SelectionChanged="ViewSelector_SelectionChanged">
             <SelectorBarItem Tag="Drivers" Text="Drivers" IsSelected="True" />
             <SelectorBarItem Tag="Overclock" Text="Overclock" />

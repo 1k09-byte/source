@@ -25,10 +25,10 @@
         <vm:AmdOverclockViewModel x:Name="Vm" />
     </UserControl.DataContext>
 
-    <StackPanel Spacing="10">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+    <StackPanel Spacing="7">
+        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
             <Border Width="36" Height="36" CornerRadius="{ThemeResource ControlCornerRadius}"
-                    Background="{ThemeResource SubtleFillColorSecondaryBrush}" Padding="8">
+                    Background="{ThemeResource SubtleFillColorSecondaryBrush}" Padding="6">
                 <FontIcon Glyph="&#xE950;" FontSize="16" />
             </Border>
             <StackPanel VerticalAlignment="Center">
@@ -36,7 +36,7 @@
                 <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Text="Detected through ADLX, the AMD driver interface" />
             </StackPanel>
-            <Button Command="{Binding RefreshCommand}" VerticalAlignment="Center" Margin="8,0,0,0"
+            <Button Command="{Binding RefreshCommand}" VerticalAlignment="Center" Margin="6,0,0,0"
                     Content="Re-detect AMD"
                     ToolTipService.ToolTip="Ask the AMD driver again which adapters are present and what they support" />
         </StackPanel>
@@ -48,8 +48,8 @@
         <InfoBar Message="{Binding WriteNote}" Severity="Informational" IsOpen="True" IsClosable="False"
                  Visibility="{Binding WriteNote, Converter={StaticResource NullToVisibilityConverter}}" />
 
-        <Border Style="{StaticResource AmdCard}" Padding="16,12">
-            <Grid ColumnSpacing="12">
+        <Border Style="{StaticResource AmdCard}" Padding="11,8">
+            <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -57,7 +57,7 @@
                 </Grid.ColumnDefinitions>
                 <FontIcon Grid.Column="0" Glyph="&#xE945;" FontSize="16"
                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                     <TextBlock Text="ADLX (AMD device library)" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                Text="{Binding StatusText}" />
@@ -73,16 +73,16 @@
                   BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                   BorderThickness="1"
                   CornerRadius="10"
-                  Padding="6"
+                  Padding="4"
                   SelectionMode="None"
                   Visibility="{Binding HasCards, Converter={StaticResource BoolToVisibilityConverter}}">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <StackPanel Padding="8,6" Spacing="3">
+                    <StackPanel Padding="6,4" Spacing="2">
                         <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                         <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    Text="{Binding SubtitleText}" />
-                        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0"
+                        <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,1,0,0"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    Text="{Binding CapabilityText}" />
                     </StackPanel>
@@ -90,9 +90,9 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <Border Style="{StaticResource AmdCard}" Padding="24"
+        <Border Style="{StaticResource AmdCard}" Padding="17"
                 Visibility="{Binding HasCards, Converter={StaticResource InvertedBoolToVisibilityConverter}}">
-            <StackPanel Spacing="6">
+            <StackPanel Spacing="4">
                 <TextBlock Text="{Binding EmptyTitle}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                 <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Text="{Binding EmptyDetail}" />

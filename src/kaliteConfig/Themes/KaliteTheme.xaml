@@ -9,6 +9,10 @@
     <FontFamily x:Key="KaliteDisplayFontFamily">ms-appx:///Assets/Fonts/UncialAntiqua-Regular.ttf#Uncial Antiqua</FontFamily>
     <FontFamily x:Key="KaliteBodyFontFamily">Segoe UI Variable Text, Segoe UI, sans-serif</FontFamily>
 
+    <Style TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+
     <Style x:Key="CardBorder" TargetType="Border">
         <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
@@ -17,7 +21,7 @@
     </Style>
 
     <Style x:Key="GalleryPageTitle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontSize" Value="24" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
@@ -79,6 +83,72 @@
         <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
 
+    <Style x:Key="CommandCluster" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CommandClusterBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="ClusterSeparator" TargetType="Border">
+        <Setter Property="Width" Value="1" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="Background" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="ClusterButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="Root"
+                          CornerRadius="{TemplateBinding CornerRadius}"
+                          Background="{TemplateBinding Background}"
+                          Padding="{TemplateBinding Padding}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource ClusterButtonHoverBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource ClusterButtonPressedBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.4" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter x:Name="Content"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="AccentToolbarButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
         <Setter Property="Padding" Value="12,6" />
         <Setter Property="MinWidth" Value="108" />
@@ -89,6 +159,10 @@
     </Style>
 
     <Style x:Key="KaliteToggleSwitchStyle" TargetType="ToggleSwitch">
+        <Setter Property="OffContent" Value="Disabled" />
+        <Setter Property="OnContent" Value="Enabled" />
+        <Setter Property="Width" Value="152" />
+        <Setter Property="Height" Value="32" />
         <Setter Property="MinWidth" Value="0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="FontFamily" Value="{StaticResource KaliteBodyFontFamily}" />
@@ -97,13 +171,13 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleSwitch">
-                    <Grid x:Name="ToggleRoot" Background="Transparent" Padding="2">
+                    <Grid x:Name="ToggleRoot" Background="Transparent" Padding="1">
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Track.BorderBrush" Value="#47FFFFFF" />
+                                        <Setter Target="HoverVeil.Opacity" Value="1" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
@@ -118,74 +192,110 @@
                                 </VisualState>
                             </VisualStateGroup>
                             <VisualStateGroup x:Name="ToggleStates">
-                                <VisualStateGroup.Transitions>
-                                    <VisualTransition GeneratedDuration="0:0:0.16">
-                                        <VisualTransition.GeneratedEasingFunction>
-                                            <CubicEase EasingMode="EaseOut" />
-                                        </VisualTransition.GeneratedEasingFunction>
-                                    </VisualTransition>
-                                </VisualStateGroup.Transitions>
                                 <VisualState x:Name="Off">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.16" EnableDependentAnimation="True" />
-                                        <DoubleAnimation Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16" />
-                                        <DoubleAnimation Storyboard.TargetName="OnGlyph" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16" />
-                                        <DoubleAnimation Storyboard.TargetName="OffGlyph" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16" />
+                                        <DoubleAnimation Storyboard.TargetName="LeftFill" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="RightFill" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="OffLabel" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" />
+                                        <DoubleAnimation Storyboard.TargetName="OnLabel" Storyboard.TargetProperty="Opacity" To="0.42" Duration="0:0:0.11" />
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="On">
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X" To="16" Duration="0:0:0.16" EnableDependentAnimation="True" />
-                                        <DoubleAnimation Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16" />
-                                        <DoubleAnimation Storyboard.TargetName="OnGlyph" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.16" />
-                                        <DoubleAnimation Storyboard.TargetName="OffGlyph" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.16" />
+                                        <DoubleAnimation Storyboard.TargetName="LeftFill" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.11">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="RightFill" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="OffLabel" Storyboard.TargetProperty="Opacity" To="0.42" Duration="0:0:0.11" />
+                                        <DoubleAnimation Storyboard.TargetName="OnLabel" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.11" />
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Dragging" />
                             </VisualStateGroup>
+                            <VisualStateGroup x:Name="FocusStates">
+                                <VisualState x:Name="Focused">
+                                    <VisualState.Setters>
+                                        <Setter Target="FocusRing.Opacity" Value="1" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Unfocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="FocusRing.Opacity" Value="0" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerFocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="FocusRing.Opacity" Value="0" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
 
-                        <Grid Width="38" Height="22" VerticalAlignment="Center">
+                        <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" VerticalAlignment="Center">
                             <Border x:Name="Track"
-                                    Background="#16FFFFFF"
-                                    BorderBrush="#33FFFFFF"
-                                    BorderThickness="1"
-                                    CornerRadius="11" />
-                            <Border x:Name="TrackOn"
-                                    Background="#FF2C3A6E"
-                                    BorderBrush="#FF3A4A85"
-                                    BorderThickness="1"
-                                    CornerRadius="11"
-                                    Opacity="0" />
-                            <TextBlock x:Name="OnGlyph"
-                                       Text="&#xE73E;"
-                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                       FontSize="9"
-                                       Foreground="#FFECEEF6"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Center"
-                                       Margin="5,1,0,0"
-                                       IsHitTestVisible="False"
-                                       Opacity="0" />
-                            <TextBlock x:Name="OffGlyph"
-                                       Text="&#xE711;"
-                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                       FontSize="9"
-                                       Foreground="#9AA2B8"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"
-                                       Margin="0,1,4,0"
-                                       IsHitTestVisible="False"
-                                       Opacity="1" />
-                            <Grid x:Name="SwitchKnobBounds"
-                                  Width="16" Height="16"
-                                  HorizontalAlignment="Left" VerticalAlignment="Center"
-                                  Margin="3,0,0,0">
-                                <Grid.RenderTransform>
-                                    <TranslateTransform x:Name="KnobShift" />
-                                </Grid.RenderTransform>
-                                <Ellipse Width="16" Height="16" Fill="#FFECEEF6" />
+                                    Background="{ThemeResource ToggleSegmentIdleBrush}"
+                                    CornerRadius="9" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="LeftFill"
+                                        Grid.Column="0"
+                                        Background="{ThemeResource ToggleSegmentFillBrush}"
+                                        CornerRadius="9,0,0,9"
+                                        Opacity="1" />
+                                <Border x:Name="RightFill"
+                                        Grid.Column="1"
+                                        Background="{ThemeResource ToggleSegmentFillBrush}"
+                                        CornerRadius="0,9,9,0"
+                                        Opacity="0" />
+                                <TextBlock x:Name="OffLabel"
+                                           Grid.Column="0"
+                                           Text="{TemplateBinding OffContent}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource ToggleLabelActiveBrush}"
+                                           Opacity="1"
+                                           IsHitTestVisible="False" />
+                                <TextBlock x:Name="OnLabel"
+                                           Grid.Column="1"
+                                           Text="{TemplateBinding OnContent}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource ToggleLabelActiveBrush}"
+                                           Opacity="0.42"
+                                           IsHitTestVisible="False" />
                             </Grid>
+                            <Border x:Name="HoverVeil"
+                                    CornerRadius="9"
+                                    Background="{ThemeResource ToggleHoverVeilBrush}"
+                                    Opacity="0"
+                                    IsHitTestVisible="False" />
+                            <Border x:Name="FocusRing"
+                                    CornerRadius="9"
+                                    BorderBrush="{ThemeResource ToggleFocusRingBrush}"
+                                    BorderThickness="2"
+                                    Opacity="0"
+                                    IsHitTestVisible="False" />
                         </Grid>
                         <Thumb x:Name="SwitchThumb"
                                AutomationProperties.AccessibilityView="Raw">

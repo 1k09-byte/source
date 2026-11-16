@@ -35,7 +35,7 @@
         <Border x:Name="StatusBadge" Style="{StaticResource PreviewBadgeStyle}"
                 HorizontalAlignment="Left" VerticalAlignment="Top"
                 Visibility="Collapsed" IsHitTestVisible="False">
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="4">
                 <ProgressRing x:Name="BusyRing" Width="14" Height="14" IsActive="False" Visibility="Collapsed"/>
                 <TextBlock x:Name="StatusLabel" FontSize="11" MaxWidth="320" TextTrimming="CharacterEllipsis"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
@@ -46,7 +46,7 @@
                 HorizontalAlignment="Left" VerticalAlignment="Bottom" Background="#CC3A3A00" BorderThickness="0"
                 Visibility="Collapsed" IsHitTestVisible="False"
                 ToolTipService.ToolTip="Every pixel is identical. Protected or DRM content can legitimately capture as a flat frame.">
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="4">
                 <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE7BA;" FontSize="11" Foreground="#FFFFD24D"/>
                 <TextBlock Text="Image looks blank" FontSize="11" Foreground="#FFFFD24D"/>
             </StackPanel>
@@ -54,7 +54,7 @@
 
         <Border x:Name="ZoomChrome" Style="{StaticResource PreviewBadgeStyle}"
                 HorizontalAlignment="Right" VerticalAlignment="Bottom">
-            <StackPanel Orientation="Horizontal" Spacing="2">
+            <StackPanel Orientation="Horizontal" Spacing="1">
                 <Button Content="&#x2212;" Click="ZoomOut_Click"
                         ToolTipService.ToolTip="Zoom out (Ctrl+-)" AutomationProperties.Name="Zoom out"/>
                 <Button Content="Fit" Click="ZoomFit_Click"

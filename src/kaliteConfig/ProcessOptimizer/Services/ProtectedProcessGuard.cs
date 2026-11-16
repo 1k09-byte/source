@@ -7,7 +7,7 @@ public static class ProtectedProcessGuard
 {
     private static readonly HashSet<string> _hardDenylist = new(StringComparer.OrdinalIgnoreCase)
     {
-        "csrss", "wininit", "services", "lsass", "winlogon", "smss", "system", "idle", "registry",
+        "wininit", "services", "lsass", "winlogon", "smss", "system", "idle", "registry",
         "dwm", "audiodg", "spoolsv", "fontdrvhost", "sihost", "taskhostw",
         "msmpeng", "nissrv", "smartscreen", "sechealthui",
         "kaliteconfig"

@@ -32,7 +32,9 @@ namespace kaliteConfig.Pages
                 LoadOneKernelToggle("MmcssStatus", MmcssToggle, MmcssCard);
                 LoadOneKernelToggle("Vbs", VbsToggle, VbsCard);
                 LoadOneKernelToggle("Hvci", HvciToggle, HvciCard);
+                LoadOneKernelToggle("VulnerableDriverBlocklist", DriverBlocklistToggle, DriverBlocklistCard);
                 LoadOneKernelToggle("HwSchMode", HagsToggle, HagsCard);
+                LoadOneKernelToggle("GlobalTimerResolutionRequests", TimerResolutionToggle, TimerResolutionCard);
                 LoadHibernateToggle();
             }
             finally { _loadingKernelToggles = false; }
@@ -71,9 +73,12 @@ namespace kaliteConfig.Pages
             if (_loadingDma || sender is not ToggleSwitch toggle) return;
             bool target = toggle.IsOn;
             string? error = _dma.Write(target);
-            LoadDmaToggle();
-            App.Notify("Kernel DMA Protection", error ?? $"IOMMUFlags set to {(target ? 1 : 0)} and verified. Restart to apply.",
-                error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                LoadDmaToggle();
+                App.Notify("Kernel DMA Protection", error ?? $"IOMMUFlags set to {(target ? 1 : 0)} and verified. Restart to apply.",
+                    error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            });
         }
 
         private void Hibernate_Toggled(object sender, RoutedEventArgs e)
@@ -81,13 +86,16 @@ namespace kaliteConfig.Pages
             if (_loadingHibernate || sender is not ToggleSwitch toggle) return;
             bool target = toggle.IsOn;
             string? error = _hibernate.Write(target);
-            LoadHibernateToggle();
-            App.Notify(
-                "Hibernation",
-                error ?? (target
-                    ? "Hibernation is on. HibernateEnabled, AllowHibernate and the default flag were set to 1 and verified. Fast startup stays off."
-                    : "Hibernation is off. HibernateEnabled, AllowHibernate and the default flag were set to 0 and verified. Fast startup stays off."),
-                error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                LoadHibernateToggle();
+                App.Notify(
+                    "Hibernation",
+                    error ?? (target
+                        ? "Hibernation is on. HibernateEnabled, AllowHibernate and the default flag were set to 1 and verified. Fast startup stays off."
+                        : "Hibernation is off. HibernateEnabled, AllowHibernate and the default flag were set to 0 and verified. Fast startup stays off."),
+                    error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            });
         }
 
         private void LoadPowerMode()
@@ -120,13 +128,16 @@ namespace kaliteConfig.Pages
             string? error = _powerMode.Apply(aggressive
                 ? Services.PowerKernelMode.Aggressive
                 : Services.PowerKernelMode.Balanced);
-            LoadPowerMode();
-            App.Notify(
-                "CPU and power tuning mode",
-                error ?? (aggressive
-                    ? "Aggressive mode applied: the power and kernel flags were written and verified. Restart to apply."
-                    : "Balanced mode applied: the aggressive flags were removed and verified. Restart to apply."),
-                error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                LoadPowerMode();
+                App.Notify(
+                    "CPU and power tuning mode",
+                    error ?? (aggressive
+                        ? "Aggressive mode applied: the power and kernel flags were written and verified. Restart to apply."
+                        : "Balanced mode applied: the aggressive flags were removed and verified. Restart to apply."),
+                    error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            });
         }
 
         private void LoadOneKernelToggle(string id, ToggleSwitch toggle, CommunityToolkit.WinUI.Controls.SettingsCard card)
@@ -153,6 +164,7 @@ namespace kaliteConfig.Pages
             "Vbs" => VbsCard,
             "Hvci" => HvciCard,
             "HwSchMode" => HagsCard,
+            "GlobalTimerResolutionRequests" => TimerResolutionCard,
             _ => null,
         };
 
@@ -161,17 +173,24 @@ namespace kaliteConfig.Pages
             if (_loadingKernelToggles || sender is not ToggleSwitch toggle || toggle.Tag is not string id) return;
             var def = Services.WindowsSettingsService.Find(id);
             if (def == null) return;
+            bool target = toggle.IsOn;
             try
             {
-                _kernel.Write(def, toggle.IsOn);
-                LoadKernelToggles();
-                App.Notify(def.Name, $"Set to {(toggle.IsOn ? "on" : "off")} and verified.", Services.Notifications.AppNoticeSeverity.Success);
+                _kernel.Write(def, target);
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    LoadKernelToggles();
+                    App.Notify(def.Name, $"Set to {(target ? "on" : "off")} and verified.", Services.Notifications.AppNoticeSeverity.Success);
+                });
             }
             catch (Exception ex)
             {
-                LoadKernelToggles();
-                if (CardFor(id) is { } card) card.Description += $" Write denied: {ex.Message}";
-                App.Notify(def.Name, $"Could not apply the change: {ex.Message}", Services.Notifications.AppNoticeSeverity.Error);
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    LoadKernelToggles();
+                    if (CardFor(id) is { } card) card.Description += $" Write denied: {ex.Message}";
+                    App.Notify(def.Name, $"Could not apply the change: {ex.Message}", Services.Notifications.AppNoticeSeverity.Error);
+                });
             }
         }
 

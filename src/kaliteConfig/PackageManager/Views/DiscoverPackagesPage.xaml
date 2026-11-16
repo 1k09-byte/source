@@ -11,7 +11,7 @@
     Background="Transparent"
     NavigationCacheMode="Disabled">
 
-    <Grid RowSpacing="14">
+    <Grid RowSpacing="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -20,15 +20,15 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Padding="22,18" CornerRadius="{ThemeResource OverlayCornerRadius}"
+        <Border Grid.Row="0" Padding="15,13" CornerRadius="{ThemeResource OverlayCornerRadius}"
                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-            <Grid ColumnSpacing="24">
+            <Grid ColumnSpacing="17">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Spacing="4" VerticalAlignment="Center">
+                <StackPanel Spacing="3" VerticalAlignment="Center">
                     <TextBlock Text="Get Software" Style="{StaticResource TitleLargeTextBlockStyle}" />
                     <TextBlock Text="{x:Bind Vm.StatusLine, Mode=OneWay}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="13" />
@@ -41,7 +41,7 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" ColumnSpacing="10">
+        <Grid Grid.Row="1" ColumnSpacing="7">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -50,23 +50,23 @@
                           VerticalScrollBarVisibility="Disabled">
                 <ItemsRepeater ItemsSource="{x:Bind Vm.SourceChoices, Mode=OneWay}">
                     <ItemsRepeater.Layout>
-                        <StackLayout Orientation="Horizontal" Spacing="6" />
+                        <StackLayout Orientation="Horizontal" Spacing="4" />
                     </ItemsRepeater.Layout>
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="vm:SourceChoice">
                             <ToggleButton Content="{x:Bind Label}" IsChecked="{x:Bind IsChecked, Mode=TwoWay}"
-                                          CornerRadius="{ThemeResource ControlCornerRadius}" Padding="14,4" />
+                                          CornerRadius="{ThemeResource ControlCornerRadius}" Padding="10,3" />
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>
             </ScrollViewer>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                 <Button Content="All" Command="{x:Bind Vm.CheckAllSourcesCommand}" CornerRadius="{ThemeResource ControlCornerRadius}" />
                 <Button Content="None" Command="{x:Bind Vm.UncheckAllSourcesCommand}" CornerRadius="{ThemeResource ControlCornerRadius}" />
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="2" ColumnSpacing="10">
+        <Grid Grid.Row="2" ColumnSpacing="7">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -95,7 +95,7 @@
                 <ComboBoxItem Content="Source" />
                 <ComboBoxItem Content="Version" />
             </ComboBox>
-            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right"
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right"
                         VerticalAlignment="Bottom">
                 <ToggleButton Content="List" Tag="0" Click="ViewMode_Click"
                               IsChecked="{x:Bind Vm.ViewMode.Equals(vm:PackageViewMode.List), Mode=OneWay}" />
@@ -109,7 +109,7 @@
                     Command="{x:Bind Vm.InstallSelectedCommand}" VerticalAlignment="Bottom" />
         </Grid>
 
-        <Grid Grid.Row="3" ColumnSpacing="14">
+        <Grid Grid.Row="3" ColumnSpacing="10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="250" />
@@ -129,13 +129,13 @@
                            Visibility="{x:Bind local:DiscoverPackagesPage.EmptyVis(Vm.Filtered.Count, Vm.IsBusy), Mode=OneWay}" />
             </Grid>
 
-            <Border Grid.Column="1" x:Name="DropBox" AllowDrop="True" Padding="18"
+            <Border Grid.Column="1" x:Name="DropBox" AllowDrop="True" Padding="13"
                     CornerRadius="{ThemeResource OverlayCornerRadius}"
                     Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                     BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" BorderThickness="2"
                     DragOver="DropBox_DragOver" Drop="DropBox_Drop" Tapped="DropBox_Tapped"
                     ToolTipService.ToolTip="Click to choose files, or drag them here">
-                <StackPanel Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="7" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <FontIcon Glyph="&#xE896;" FontSize="36" HorizontalAlignment="Center"
                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                     <TextBlock Text="Browser extensions" FontWeight="SemiBold" FontSize="16"
@@ -147,9 +147,9 @@
             </Border>
         </Grid>
 
-        <Border Grid.Row="4" Padding="12,6" CornerRadius="{ThemeResource ControlCornerRadius}"
+        <Border Grid.Row="4" Padding="8,4" CornerRadius="{ThemeResource ControlCornerRadius}"
                 Background="{ThemeResource SubtleFillColorSecondaryBrush}">
-            <Grid ColumnSpacing="8">
+            <Grid ColumnSpacing="6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />

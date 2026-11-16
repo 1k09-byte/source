@@ -15,7 +15,7 @@ public sealed class ProcessTuningService
 {
     private static readonly HashSet<string> CriticalNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        "csrss.exe", "wininit.exe", "winlogon.exe", "services.exe", "lsass.exe",
+        "wininit.exe", "winlogon.exe", "services.exe", "lsass.exe",
         "smss.exe", "svchost.exe", "dwm.exe", "winlogon.exe", "fontdrvhost.exe",
         "memory compression.exe", "registry.exe", "wudfhost.exe", "sihost.exe",
         "taskhostw.exe", "explorer.exe", "audiodg.exe", "spoolsv.exe",

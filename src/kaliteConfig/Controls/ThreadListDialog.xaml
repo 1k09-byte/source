@@ -13,13 +13,13 @@
         <x:Double x:Key="ContentDialogMaxWidth">1400</x:Double>
     </ContentDialog.Resources>
 
-    <Grid Width="1100" ColumnSpacing="20">
+    <Grid Width="1100" ColumnSpacing="14">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*" />
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
 
-        <Grid Grid.Column="0" RowSpacing="8">
+        <Grid Grid.Column="0" RowSpacing="6">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -45,7 +45,7 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="controls:ThreadRow">
-                        <Grid ColumnSpacing="8" Padding="0,6">
+                        <Grid ColumnSpacing="6" Padding="0,4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
@@ -90,7 +90,7 @@
 
                 <Grid x:Name="LoadingOverlay" Visibility="Collapsed" MinHeight="180"
                       Background="Transparent">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
                         <ProgressRing x:Name="LoadingRing" IsActive="False" Width="42" Height="42" />
                         <TextBlock x:Name="LoadingText" Text="Loading threads…" Visibility="Collapsed"
                                    HorizontalAlignment="Center" FontSize="12"
@@ -102,11 +102,11 @@
         </Grid>
 
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" MaxHeight="2000">
-            <StackPanel Spacing="10" Margin="0,0,18,0">
+            <StackPanel Spacing="7" Margin="0,0,13,0">
                 <TextBlock Text="Select a thread to inspect and tune it." FontSize="12"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            x:Name="NoSelectionText" />
-                <StackPanel Spacing="10" x:Name="EditorPanel" Visibility="Collapsed">
+                <StackPanel Spacing="7" x:Name="EditorPanel" Visibility="Collapsed">
                     <TextBlock x:Name="EditorTitle" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
                     <TextBlock x:Name="EditorSub" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
 
@@ -136,12 +136,12 @@
                         <ComboBoxItem Content="Normal (5)" Tag="5" />
                     </ComboBox>
 
-                    <Grid ColumnSpacing="12">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <StackPanel Spacing="1" VerticalAlignment="Center">
                             <TextBlock Text="Efficiency mode (EcoQoS)" Style="{StaticResource BodyTextBlockStyle}" />
                             <TextBlock Text="Runs this thread on low-power scheduling when the CPU is not busy."
                                        Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -154,19 +154,19 @@
 
                     <TextBlock Text="CPU affinity - tick the CPUs this thread may run on" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock x:Name="AffinityCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                    <Grid x:Name="AffinityCpuGrid" ColumnSpacing="6" RowSpacing="6" />
+                    <Grid x:Name="AffinityCpuGrid" ColumnSpacing="4" RowSpacing="4" />
                     <Button Content="Apply affinity" Click="AffinityApply_Click" HorizontalAlignment="Left" />
 
                     <TextBlock Text="Ideal processor - pick one preferred CPU the thread's affinity mask allows" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock x:Name="IdealCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                    <Grid x:Name="IdealCpuGrid" ColumnSpacing="6" RowSpacing="6" />
+                    <Grid x:Name="IdealCpuGrid" ColumnSpacing="4" RowSpacing="4" />
                     <Button Content="Apply ideal processor" Click="IdealApply_Click" HorizontalAlignment="Left" />
 
                     <Button Content="Make permanent (save as rule)" HorizontalAlignment="Left" Click="PermanentButton_Click"
                             ToolTipService.ToolTip="Saves priority, memory priority, Eco, the ticked affinity CPUs and the picked ideal CPU as an auto-apply rule - no need to press Apply first; the rule also takes effect immediately" />
 
                     <TextBlock Text="Danger zone" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button x:Name="SuspendButton" Content="Suspend" Click="SuspendButton_Click" />
                         <Button x:Name="EndButton" Content="End thread" Click="EndButton_Click" />
                     </StackPanel>

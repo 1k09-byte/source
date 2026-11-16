@@ -15,8 +15,8 @@
         <x:Double x:Key="ContentDialogMaxWidth">1200</x:Double>
     </ContentDialog.Resources>
 
-    <ScrollViewer MaxHeight="620" VerticalScrollBarVisibility="Auto" Padding="0,0,18,0">
-        <Grid x:Name="Root" Width="1060" RowSpacing="8" KeyDown="Root_KeyDown">
+    <ScrollViewer MaxHeight="620" VerticalScrollBarVisibility="Auto" Padding="0,0,13,0">
+        <Grid x:Name="Root" Width="1060" RowSpacing="6" KeyDown="Root_KeyDown">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -27,12 +27,12 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" ColumnSpacing="12">
+            <Grid Grid.Row="0" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="3*" />
                     <ColumnDefinition Width="1.2*" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Spacing="4">
+                <StackPanel Grid.Column="0" Spacing="3">
                     <TextBlock Text="Target process" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     <AutoSuggestBox x:Name="TargetBox" PlaceholderText="Type a process name or pattern"
                                     Text="{x:Bind Draft.Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -41,7 +41,7 @@
                                     PreviewKeyDown="TargetBox_PreviewKeyDown"
                                     ToolTipService.ToolTip="Type part of a name and pick it, or type your own pattern. A comma separates several targets." />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="4">
+                <StackPanel Grid.Column="1" Spacing="3">
                     <TextBlock Text="Applies to" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     <ComboBox x:Name="AppliesBox" HorizontalAlignment="Stretch" SelectedIndex="0"
                               CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1">
@@ -50,7 +50,7 @@
                 </StackPanel>
             </Grid>
 
-            <Grid Grid.Row="1" ColumnSpacing="12">
+            <Grid Grid.Row="1" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -60,12 +60,12 @@
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <HyperlinkButton x:Name="ShowLiveThreadsButton" Grid.Column="1" Content="Show running threads"
-                                 Padding="8,0" VerticalAlignment="Center" Visibility="Collapsed"
+                                 Padding="6,0" VerticalAlignment="Center" Visibility="Collapsed"
                                  Click="ShowLiveThreads_Click"
                                  ToolTipService.ToolTip="Open the thread rules tab and list the threads this process has right now" />
             </Grid>
 
-            <Grid Grid.Row="2" ColumnSpacing="8">
+            <Grid Grid.Row="2" ColumnSpacing="6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -74,9 +74,9 @@
                 <Button x:Name="TabThreads" Grid.Column="1" Content="Thread rules" HorizontalAlignment="Stretch" Click="Tab_Click" Tag="Threads" />
             </Grid>
 
-            <StackPanel x:Name="SettingsPanel" Grid.Row="3" Spacing="8">
-                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="12,8">
-                    <Grid ColumnSpacing="12">
+            <StackPanel x:Name="SettingsPanel" Grid.Row="3" Spacing="6">
+                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,6">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
@@ -89,8 +89,8 @@
                                   SelectionChanged="ProcessRowCombo_SelectionChanged" />
                     </Grid>
                 </Border>
-                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="12,8">
-                    <Grid ColumnSpacing="12">
+                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,6">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
@@ -103,8 +103,8 @@
                                   SelectionChanged="ProcessRowCombo_SelectionChanged" />
                     </Grid>
                 </Border>
-                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="12,8">
-                    <Grid ColumnSpacing="12">
+                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,6">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
@@ -117,8 +117,8 @@
                                   SelectionChanged="ProcessRowCombo_SelectionChanged" />
                     </Grid>
                 </Border>
-                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="12,8">
-                    <Grid ColumnSpacing="12">
+                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,6">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
@@ -129,8 +129,8 @@
                         <TextBlock Grid.Column="1" Text="Exclude this process from global priority boost stripping" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
                     </Grid>
                 </Border>
-                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="12,8">
-                    <Grid ColumnSpacing="12">
+                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,6">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
@@ -142,8 +142,8 @@
                         <Button Grid.Column="2" x:Name="AffinityChooseButton" Content="Choose..." Click="AffinityChoose_Click" CornerRadius="{ThemeResource ControlCornerRadius}" />
                     </Grid>
                 </Border>
-                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="12,8">
-                    <Grid ColumnSpacing="12">
+                <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,6">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
@@ -157,13 +157,13 @@
                 </Border>
             </StackPanel>
 
-            <Grid x:Name="ThreadsPanel" Grid.Row="3" Visibility="Collapsed" ColumnSpacing="20">
+            <Grid x:Name="ThreadsPanel" Grid.Row="3" Visibility="Collapsed" ColumnSpacing="14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1*" />
                     <ColumnDefinition Width="1*" />
                 </Grid.ColumnDefinitions>
 
-                <Grid Grid.Column="0" RowSpacing="8">
+                <Grid Grid.Column="0" RowSpacing="6">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -190,7 +190,7 @@
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="local:LiveThreadChoice">
-                                <Grid ColumnSpacing="8">
+                                <Grid ColumnSpacing="6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
@@ -203,7 +203,7 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <Grid Grid.Row="2" ColumnSpacing="8">
+                    <Grid Grid.Row="2" ColumnSpacing="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -232,7 +232,7 @@
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:TunerThreadRule">
-                                <Grid ColumnSpacing="8" Padding="0,6">
+                                <Grid ColumnSpacing="6" Padding="0,4">
                                     <Grid.ContextFlyout>
                                         <MenuFlyout>
                                             <MenuFlyoutItem Text="Delete rule" Click="ThreadRule_DeleteFlyout_Click" />
@@ -255,8 +255,8 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <StackPanel Grid.Row="5" Spacing="8">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Grid.Row="5" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
                             <Button Content="Delete rule" Click="ThreadRule_DeleteButton_Click" CornerRadius="{ThemeResource ControlCornerRadius}" />
                         </StackPanel>
                         <TextBlock x:Name="ThreadRulesStatusText" FontSize="12" TextWrapping="Wrap"
@@ -264,11 +264,11 @@
                     </StackPanel>
                 </Grid>
 
-                <StackPanel Grid.Column="1" Spacing="10" Margin="0,0,18,0">
+                <StackPanel Grid.Column="1" Spacing="7" Margin="0,0,13,0">
                         <TextBlock Text="Select a thread rule to inspect and tune it." FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    x:Name="RuleNoSelectionText" />
-                        <StackPanel Spacing="10" x:Name="RuleEditorPanel" Visibility="Collapsed">
+                        <StackPanel Spacing="7" x:Name="RuleEditorPanel" Visibility="Collapsed">
                             <TextBlock x:Name="RuleEditorTitle" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
                             <TextBlock x:Name="RuleEditorSub" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
 
@@ -297,12 +297,12 @@
                                 <ComboBoxItem Content="Normal (5)" Tag="5" />
                             </ComboBox>
 
-                            <Grid ColumnSpacing="12">
+                            <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <StackPanel Spacing="1" VerticalAlignment="Center">
                                     <TextBlock Text="Efficiency mode (EcoQoS)" Style="{StaticResource BodyTextBlockStyle}" />
                                     <TextBlock Text="Runs these threads on low-power scheduling when the CPU is not busy."
                                                Style="{StaticResource CaptionTextBlockStyle}"
@@ -314,12 +314,12 @@
 
                             <TextBlock Text="CPU affinity - tick the CPUs this thread may run on" Style="{StaticResource CaptionTextBlockStyle}" />
                             <TextBlock x:Name="RuleAffinityCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                            <Grid x:Name="RuleAffinityCpuGrid" ColumnSpacing="6" RowSpacing="6" />
+                            <Grid x:Name="RuleAffinityCpuGrid" ColumnSpacing="4" RowSpacing="4" />
                             <Button Content="Apply affinity" Click="RuleAffinityApply_Click" HorizontalAlignment="Left" />
 
                             <TextBlock Text="Ideal processor - pick one preferred CPU the thread's affinity mask allows" Style="{StaticResource CaptionTextBlockStyle}" />
                             <TextBlock x:Name="RuleIdealCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                            <Grid x:Name="RuleIdealCpuGrid" ColumnSpacing="6" RowSpacing="6" />
+                            <Grid x:Name="RuleIdealCpuGrid" ColumnSpacing="4" RowSpacing="4" />
                             <Button Content="Apply ideal processor" Click="RuleIdealApply_Click" HorizontalAlignment="Left" />
 
                             <Button Content="Delete rule" HorizontalAlignment="Left" Click="ThreadRule_DeleteButton_Click" CornerRadius="{ThemeResource ControlCornerRadius}"
@@ -331,7 +331,7 @@
                 </StackPanel>
             </Grid>
 
-            <Border Grid.Row="4" Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="12,10">
+            <Border Grid.Row="4" Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,7">
                 <TextBlock x:Name="SummaryText" Text="0 process settings · 0 thread rules" Style="{StaticResource BodyTextBlockStyle}" />
             </Border>
 

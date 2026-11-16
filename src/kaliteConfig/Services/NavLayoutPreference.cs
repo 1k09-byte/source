@@ -27,7 +27,7 @@ internal static class NavLayoutPreference
     }
 
     private static string Normalize(string tag) =>
-        tag == DockTag || tag == TopTag ? tag : RailTag;
+        tag == TopTag ? tag : RailTag;
 
     public static void SaveLayout(string tag)
     {

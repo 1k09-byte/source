@@ -124,7 +124,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="28,16,28,8" Spacing="2">
+        <StackPanel Grid.Row="0" Margin="13,11,13,6" Spacing="1">
             <TextBlock Text="Drivers" Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock Text="Inspect installed driver packages and remove the ones you do not need."
                        Style="{StaticResource BodyTextBlockStyle}"
@@ -132,13 +132,13 @@
                        TextWrapping="Wrap" />
         </StackPanel>
 
-        <Grid x:Name="RemoverPanel" Grid.Row="1" Padding="28,0,28,20" RowSpacing="12">
+        <Grid x:Name="RemoverPanel" Grid.Row="1" Padding="13,0,13,14" RowSpacing="8">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" ColumnSpacing="16">
+            <Grid Grid.Row="0" ColumnSpacing="11">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" MaxWidth="360" />
                     <ColumnDefinition Width="Auto" />
@@ -162,19 +162,19 @@
                 <SplitView.Pane>
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
-                            CornerRadius="{ThemeResource ControlCornerRadius}" Padding="16" Margin="8,0,0,0">
-                    <Grid RowSpacing="12">
+                            CornerRadius="{ThemeResource ControlCornerRadius}" Padding="11" Margin="6,0,0,0">
+                    <Grid RowSpacing="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                            <Grid ColumnSpacing="8">
+                            <Grid ColumnSpacing="6">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Spacing="4">
+                                <StackPanel Spacing="3">
                                     <TextBlock Text="{Binding SelectedDriver.FriendlyKind}"
                                                Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding SelectedDriver.Provider}"
@@ -191,36 +191,36 @@
                             </Grid>
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                            <StackPanel Spacing="12">
-                                <StackPanel Spacing="4"
+                            <StackPanel Spacing="8">
+                                <StackPanel Spacing="3"
                                             Visibility="{Binding SelectedDriver.DriverVersion, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Version" Style="{StaticResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     <TextBlock Text="{Binding SelectedDriver.DriverVersion}"
                                                Style="{StaticResource BodyTextBlockStyle}" />
                                 </StackPanel>
-                                <StackPanel Spacing="4"
+                                <StackPanel Spacing="3"
                                             Visibility="{Binding SelectedDriver.FriendlyClass, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Class" Style="{StaticResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     <TextBlock Text="{Binding SelectedDriver.FriendlyClass}"
                                                Style="{StaticResource BodyTextBlockStyle}" />
                                 </StackPanel>
-                                <StackPanel Spacing="4"
+                                <StackPanel Spacing="3"
                                             Visibility="{Binding SelectedDriver.DriverDate, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Driver date" Style="{StaticResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     <TextBlock Text="{Binding SelectedDriver.DriverDate}"
                                                Style="{StaticResource BodyTextBlockStyle}" />
                                 </StackPanel>
-                                <StackPanel Spacing="4"
+                                <StackPanel Spacing="3"
                                             Visibility="{Binding SelectedDriver.SignerName, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Signer" Style="{StaticResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     <TextBlock Text="{Binding SelectedDriver.SignerName}"
                                                Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
                                 </StackPanel>
-                                <StackPanel Spacing="4"
+                                <StackPanel Spacing="3"
                                             Visibility="{Binding SelectedDriver.FormattedSize, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Driver store size"
                                                Style="{StaticResource CaptionTextBlockStyle}"
@@ -228,7 +228,7 @@
                                     <TextBlock Text="{Binding SelectedDriver.FormattedSize}"
                                                Style="{StaticResource BodyTextBlockStyle}" />
                                 </StackPanel>
-                                <StackPanel Spacing="4"
+                                <StackPanel Spacing="3"
                                             Visibility="{Binding SelectedDriver.PublishedName, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Published INF"
                                                Style="{StaticResource CaptionTextBlockStyle}"
@@ -240,9 +240,9 @@
                             </StackPanel>
                             </ScrollViewer>
 
-                            <StackPanel Grid.Row="2" Spacing="8">
+                            <StackPanel Grid.Row="2" Spacing="6">
                                 <Button HorizontalAlignment="Stretch" Click="DetailsRemoveDriver_Click">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
                                         <FontIcon Glyph="&#xE74D;" />
                                         <TextBlock Text="Remove package" />
                                     </StackPanel>
@@ -263,7 +263,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Padding="12,8" ColumnSpacing="12">
+                    <Grid Grid.Row="0" Padding="8,6" ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="96" />
@@ -290,7 +290,7 @@
                               Visibility="{Binding IsLoadingDrivers, Converter={StaticResource InvertedBoolToVisibilityConverter}}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:DriverPackageItem">
-                                <Grid ColumnSpacing="12"
+                                <Grid ColumnSpacing="8"
                                       PointerPressed="DriverRow_PointerPressed"
                                       PointerReleased="DriverRow_PointerReleased">
                                     <Grid.ColumnDefinitions>
@@ -330,7 +330,7 @@
                         </ListView.ItemTemplate>
                     </ListView>
 
-                    <StackPanel Grid.Row="1" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    <StackPanel Grid.Row="1" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 Visibility="{Binding IsLoadingDrivers, Converter={StaticResource BoolToVisibilityConverter}}">
                         <ProgressRing IsActive="{Binding IsLoadingDrivers}" HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding DriverSummaryText}" Style="{StaticResource CaptionTextBlockStyle}"

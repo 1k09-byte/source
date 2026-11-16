@@ -9,7 +9,7 @@
 
     <Page.Resources>
         <DataTemplate x:Key="ChangeSummaryTemplate" x:DataType="vm:ChangeSummary">
-            <Grid Padding="4,6" ColumnSpacing="10"
+            <Grid Padding="3,4" ColumnSpacing="7"
                   automation:AutomationProperties.Name="{x:Bind Name}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -115,10 +115,10 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel x:Name="ActionRow" Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="28,14,28,0">
+        <StackPanel x:Name="ActionRow" Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="13,10,13,0">
                     <Button Style="{StaticResource BiosActionButton}" Click="LoadDump_Click"
                             ToolTipService.ToolTip="Open a SCEWIN dump file by hand">
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
                             <FontIcon Glyph="&#xE7B3;" FontSize="14" />
                             <TextBlock Text="Import dump…" />
                         </StackPanel>
@@ -126,7 +126,7 @@
                     <Button Style="{StaticResource BiosActionButton}" Click="Refresh_Click"
                             IsEnabled="{x:Bind ViewModel.HasDocument, Mode=OneWay}"
                             ToolTipService.ToolTip="Run SCEWIN again and reload the live firmware settings">
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
                             <FontIcon Glyph="&#xE72C;" FontSize="14" />
                             <TextBlock Text="Re-export live" />
                         </StackPanel>
@@ -134,26 +134,26 @@
                     <Button Style="{StaticResource BiosActionButton}" Click="Export_Click"
                             IsEnabled="{x:Bind ViewModel.HasDocument, Mode=OneWay}"
                             ToolTipService.ToolTip="Write the current document (with your edits) to a text file">
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
                             <FontIcon Glyph="&#xE74E;" FontSize="14" />
                             <TextBlock Text="Save profile…" />
                         </StackPanel>
                     </Button>
         </StackPanel>
 
-        <StackPanel x:Name="NoticeStack" Grid.Row="1" Spacing="8" Margin="28,12,28,0">
+        <StackPanel x:Name="NoticeStack" Grid.Row="1" Spacing="6" Margin="13,8,13,0">
 
             <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                     BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
-                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="14,11">
-                <Grid ColumnSpacing="12">
+                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="10,8">
+                <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE7BA;" FontSize="17" VerticalAlignment="Top"
                               Foreground="{ThemeResource SystemFillColorCautionBrush}" />
-                    <StackPanel Grid.Column="1" Spacing="3">
+                    <StackPanel Grid.Column="1" Spacing="2">
                         <TextBlock Text="Flashing values is entirely at your own risk"
                                    Style="{StaticResource BodyStrongTextBlockStyle}" />
                         <TextBlock
@@ -166,9 +166,9 @@
 
             <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                     BorderBrush="{ThemeResource SystemFillColorCriticalBrush}"
-                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="14,11"
+                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="10,8"
                     Visibility="{x:Bind ViewModel.HasError, Mode=OneWay}">
-                <Grid ColumnSpacing="12">
+                <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -176,7 +176,7 @@
                     </Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE730;" FontSize="17" VerticalAlignment="Top"
                               Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
-                    <StackPanel Grid.Column="1" Spacing="3">
+                    <StackPanel Grid.Column="1" Spacing="2">
                         <TextBlock Text="The last operation did not finish"
                                    Style="{StaticResource BodyStrongTextBlockStyle}" />
                         <TextBlock Text="{x:Bind ViewModel.ErrorText, Mode=OneWay}"
@@ -185,27 +185,27 @@
                     </StackPanel>
                     <Button Grid.Column="2" Click="ErrorDismiss_Click"
                             ToolTipService.ToolTip="Dismiss"
-                            VerticalAlignment="Top" Padding="7,5">
+                            VerticalAlignment="Top" Padding="5,4">
                         <FontIcon Glyph="&#xE711;" FontSize="12" />
                     </Button>
                 </Grid>
             </Border>
         </StackPanel>
 
-        <Grid Grid.Row="2" x:Name="WorkGrid" ColumnSpacing="16" Margin="28,14,28,0">
+        <Grid Grid.Row="2" x:Name="WorkGrid" ColumnSpacing="11" Margin="13,10,13,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition x:Name="InspectorColumn" Width="420" />
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0" RowSpacing="12">
+            <Grid Grid.Column="0" RowSpacing="8">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <Border x:Name="FilterCard" Grid.Row="0" Style="{StaticResource GalleryCard}" Padding="10,8">
-                    <Grid x:Name="FilterGrid" ColumnSpacing="14">
+                <Border x:Name="FilterCard" Grid.Row="0" Style="{StaticResource GalleryCard}" Padding="7,6">
+                    <Grid x:Name="FilterGrid" ColumnSpacing="10">
                         <Grid.RowDefinitions>
                             <RowDefinition x:Name="FilterTopRow" Height="Auto" />
                             <RowDefinition x:Name="FilterBottomRow" Height="0" />
@@ -220,11 +220,11 @@
                                      TextChanged="SearchField_TextChanged"
                                 PlaceholderText="Search name, token, help text or value…"
                                 MinHeight="30"
-                                Padding="30,4,10,4"
+                                Padding="21,3,7,3"
                                      IsEnabled="{x:Bind ViewModel.HasDocument, Mode=OneWay}" />
                             <FontIcon Glyph="&#xE721;" FontSize="14"
                                       HorizontalAlignment="Left" VerticalAlignment="Center"
-                                      Margin="11,0,0,0" IsHitTestVisible="False"
+                                      Margin="8,0,0,0" IsHitTestVisible="False"
                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                         </Grid>
 
@@ -248,7 +248,7 @@
                             </ListView.ItemsPanel>
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="vm:BiosCategory">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
                                         <TextBlock Text="{x:Bind DisplayName}" FontSize="13"
                                                    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                                                    VerticalAlignment="Center" />
@@ -262,17 +262,17 @@
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="1" RowSpacing="4">
+                <Grid Grid.Row="1" RowSpacing="3">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <Border Grid.Row="0" Padding="17,0,1,6"
+                    <Border Grid.Row="0" Padding="12,0,1,4"
                             BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                             BorderThickness="0,0,0,1"
                             Visibility="{x:Bind ViewModel.HasDocument, Mode=OneWay}">
-                        <Grid ColumnSpacing="8">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="170" />
@@ -300,14 +300,14 @@
                               ScrollViewer.IsVerticalScrollChainingEnabled="True">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="vm:BiosSettingRow">
-                                <Grid automation:AutomationProperties.Name="{x:Bind Name}" Padding="9,5">
+                                <Grid automation:AutomationProperties.Name="{x:Bind Name}" Padding="6,4">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="170" />
                                         <ColumnDefinition Width="150" />
                                     </Grid.ColumnDefinitions>
 
-                                    <Grid Grid.Column="0" ColumnSpacing="8">
+                                    <Grid Grid.Column="0" ColumnSpacing="6">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
@@ -334,13 +334,13 @@
                                                TextWrapping="NoWrap"
                                                TextTrimming="CharacterEllipsis" />
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5"
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
                                                 VerticalAlignment="Center">
                                         <FontIcon Glyph="&#xE730;" FontSize="11"
                                                   VerticalAlignment="Center"
                                                   Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                   Visibility="{x:Bind ErrorVisibility, Mode=OneWay}" />
-                                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,2"
+                                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="6,1"
                                                 Width="112"
                                                 BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                                                 BorderThickness="1"
@@ -359,7 +359,7 @@
 
                     <Border Grid.Column="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             Visibility="{x:Bind ViewModel.NoResultsVisibility, Mode=OneWay}">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="340">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6" MaxWidth="340">
                             <FontIcon Glyph="&#xE721;" FontSize="32"
                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                       HorizontalAlignment="Center" />
@@ -374,7 +374,7 @@
 
                     <Border Grid.Column="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             Visibility="{x:Bind ViewModel.LoadingVisibility, Mode=OneWay}">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="340">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="340">
                             <ProgressRing IsActive="True" Width="46" Height="46" HorizontalAlignment="Center" />
                             <TextBlock Text="{x:Bind ViewModel.LoadingText, Mode=OneWay}"
                                        HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
@@ -386,11 +386,11 @@
             </Grid>
 
             <Border Grid.Column="1" x:Name="InspectorCard"
-                    Style="{StaticResource GalleryCard}" Padding="18,14">
+                    Style="{StaticResource GalleryCard}" Padding="13,10">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" x:Name="DetailScroll">
                     <Grid>
 
-                        <StackPanel Spacing="8" VerticalAlignment="Center"
+                        <StackPanel Spacing="6" VerticalAlignment="Center"
                                     Visibility="{x:Bind ViewModel.NoDetailVisibility, Mode=OneWay}">
                             <FontIcon Glyph="&#xE945;" FontSize="34"
                                       HorizontalAlignment="Center"
@@ -403,9 +403,9 @@
                                        Style="{StaticResource GalleryPageCaption}" />
                         </StackPanel>
 
-                        <StackPanel Spacing="12"
+                        <StackPanel Spacing="8"
                                     Visibility="{x:Bind ViewModel.DetailVisibility, Mode=OneWay}">
-                            <StackPanel Spacing="6">
+                            <StackPanel Spacing="4">
                                 <Border Style="{StaticResource GalleryPill}" HorizontalAlignment="Left"
                                         Background="{ThemeResource SubtleFillColorSecondaryBrush}">
                                     <TextBlock Text="{x:Bind ViewModel.SelectedRow.SectionText, Mode=OneWay}"
@@ -423,8 +423,8 @@
 
                             <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
                                     BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="14,12">
-                                <StackPanel Spacing="9">
+                                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="10,8">
+                                <StackPanel Spacing="6">
                                     <TextBlock Text="Value" Style="{StaticResource BodyStrongTextBlockStyle}" />
 
                                     <RadioButtons x:Name="ValueOptions"
@@ -436,7 +436,7 @@
                                              PlaceholderText="0x-prefixed hex or decimal"
                                              Visibility="{x:Bind ViewModel.EditingFreeformVisibility, Mode=OneWay}" />
 
-                                    <StackPanel Orientation="Horizontal" Spacing="7"
+                                    <StackPanel Orientation="Horizontal" Spacing="5"
                                                 Visibility="{x:Bind ViewModel.EditingErrorVisibility, Mode=OneWay}">
                                         <FontIcon Glyph="&#xE730;" FontSize="13" VerticalAlignment="Center"
                                                   Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
@@ -449,7 +449,7 @@
                                             CommandParameter="{x:Bind ViewModel.SelectedRow, Mode=OneWay}"
                                             HorizontalAlignment="Left"
                                             Style="{StaticResource BiosActionButton}">
-                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
                                             <FontIcon Glyph="&#xE72A;" FontSize="13" />
                                             <TextBlock Text="Reset to firmware default" />
                                         </StackPanel>
@@ -459,10 +459,10 @@
 
                             <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
                                     BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="14,12">
-                                <StackPanel Spacing="8">
+                                    BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="10,8">
+                                <StackPanel Spacing="6">
                                     <TextBlock Text="Firmware metadata" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                    <Grid ColumnSpacing="12" RowSpacing="7">
+                                    <Grid ColumnSpacing="8" RowSpacing="5">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="104" />
                                             <ColumnDefinition Width="*" />
@@ -497,7 +497,7 @@
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="{ThemeResource ControlCornerRadius}"
                     Visibility="{x:Bind ViewModel.EmptyVisibility, Mode=OneWay}">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" MaxWidth="430">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="7" MaxWidth="430">
                     <Border Width="72" Height="72" CornerRadius="20"
                             Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                             HorizontalAlignment="Center">
@@ -510,15 +510,15 @@
                     <TextBlock Text="Open a text file produced by SCEWIN_64.exe /o /s — or let the app export one from this machine — and every setup question becomes an editable tile."
                                HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
                                Style="{StaticResource GalleryPageCaption}" />
-                    <Button Content="Import a dump" HorizontalAlignment="Center" Margin="0,6,0,0"
+                    <Button Content="Import a dump" HorizontalAlignment="Center" Margin="0,4,0,0"
                             Click="LoadDump_Click" Style="{StaticResource AccentButtonStyle}" />
                 </StackPanel>
             </Border>
         </Grid>
 
-        <Border x:Name="StagedTray" Grid.Row="3" Style="{StaticResource GalleryCard}" Margin="28,14,28,16" Padding="16,11">
-            <StackPanel Spacing="10">
-                <Grid x:Name="TrayGrid" ColumnSpacing="12">
+        <Border x:Name="StagedTray" Grid.Row="3" Style="{StaticResource GalleryCard}" Margin="13,10,13,11" Padding="11,8">
+            <StackPanel Spacing="7">
+                <Grid x:Name="TrayGrid" ColumnSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition x:Name="TrayRowTop" Height="Auto" />
                         <RowDefinition x:Name="TrayRowBottom" Height="Auto" />
@@ -529,7 +529,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel x:Name="TrayStatus" Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <StackPanel x:Name="TrayStatus" Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                         <Border Width="30" Height="30" CornerRadius="9"
                                 Background="{ThemeResource SubtleFillColorSecondaryBrush}">
                             <FontIcon Glyph="&#xE74E;" FontSize="14"
@@ -551,16 +551,16 @@
 
                     <Button Grid.Column="1" x:Name="TrayToggle" Click="TrayToggle_Click"
                             ToolTipService.ToolTip="Show what is staged"
-                            Padding="7,5"
+                            Padding="5,4"
                             IsEnabled="{x:Bind ViewModel.HasChanges, Mode=OneWay}">
                         <FontIcon x:Name="TrayChevron" Glyph="&#xE70E;" FontSize="12" />
                     </Button>
 
-                    <StackPanel x:Name="TrayActions" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <StackPanel x:Name="TrayActions" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <Button Style="{StaticResource BiosActionButton}"
                                 Command="{x:Bind ViewModel.ResetAllCommand}"
                                 IsEnabled="{x:Bind ViewModel.HasChanges, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="7">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
                                 <FontIcon Glyph="&#xE72A;" FontSize="13" />
                                 <TextBlock Text="Revert all" />
                             </StackPanel>
@@ -569,8 +569,8 @@
                                 Click="ApplyToBios_Click"
                                 IsEnabled="{x:Bind ViewModel.HasChanges, Mode=OneWay}"
                                 ToolTipService.ToolTip="Review the staged values, then write them with SCEWIN"
-                                Padding="14,6">
-                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                Padding="10,4">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
                                 <FontIcon Glyph="&#xE74E;" FontSize="13" />
                                 <TextBlock Text="Apply" />
                             </StackPanel>
@@ -581,7 +581,7 @@
                           SelectionMode="None"
                           Visibility="Collapsed"
                           MaxHeight="200"
-                          Padding="4,0"
+                          Padding="3,0"
                           ItemTemplate="{StaticResource ChangeSummaryTemplate}"
                           ScrollViewer.VerticalScrollBarVisibility="Auto" />
             </StackPanel>

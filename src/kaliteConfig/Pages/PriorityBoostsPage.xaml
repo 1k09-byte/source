@@ -9,7 +9,7 @@
 
     <Page.Resources>
         <DataTemplate x:Key="RuleRowTemplate" x:DataType="models:TunerProfile">
-            <Border Margin="12,4" Padding="14,10" CornerRadius="{ThemeResource ControlCornerRadius}"
+            <Border Margin="8,3" Padding="10,7" CornerRadius="{ThemeResource ControlCornerRadius}"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
                     ToolTipService.ToolTip="{x:Bind Pattern}" DoubleTapped="RuleRow_DoubleTapped">
@@ -22,7 +22,7 @@
                         <MenuFlyoutItem Text="Delete" Click="RuleDelete_Click" />
                     </MenuFlyout>
                 </Border.ContextFlyout>
-                <Grid ColumnSpacing="12">
+                <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*" />
                         <ColumnDefinition Width="2.2*" />
@@ -37,12 +37,12 @@
                     <TextBlock Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind ProcessActionsSummary, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="2" VerticalAlignment="Center" Style="{StaticResource BodyTextBlockStyle}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind ThreadRulesSummary, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
                     <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                        <Border CornerRadius="10" Padding="8,2" HorizontalAlignment="Left"
+                        <Border CornerRadius="10" Padding="6,1" HorizontalAlignment="Left"
                                 Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                 Visibility="{x:Bind EnabledPillVis, Mode=OneWay}">
                             <TextBlock Text="Enabled" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
                         </Border>
-                        <Border CornerRadius="10" Padding="8,2" HorizontalAlignment="Left"
+                        <Border CornerRadius="10" Padding="6,1" HorizontalAlignment="Left"
                                 Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                 Visibility="{x:Bind DisabledPillVis, Mode=OneWay}">
                             <TextBlock Text="Disabled" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -68,16 +68,16 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="36,24,36,0" Spacing="8">
+        <StackPanel Grid.Row="0" Margin="25,17,25,0" Spacing="6">
             <TextBlock Text="Threads &amp; Boosts" Style="{StaticResource TitleLargeTextBlockStyle}" />
         </StackPanel>
 
-        <Grid Grid.Row="1" Margin="36,12,36,16">
+        <Grid Grid.Row="1" Margin="25,8,25,11">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <SelectorBar x:Name="MainSelectorBar" SelectionChanged="MainSelectorBar_SelectionChanged" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+            <SelectorBar x:Name="MainSelectorBar" SelectionChanged="MainSelectorBar_SelectionChanged" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,11,0">
                 <SelectorBarItem x:Name="TabThreads" Text="Threads" />
                 <SelectorBarItem x:Name="TabRules" Text="Rules" />
             </SelectorBar>
@@ -91,12 +91,12 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="12,4,12,10">
+            <Grid Grid.Row="0" Margin="8,3,8,7">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Spacing="4">
+                <StackPanel Grid.Column="0" Spacing="3">
                     <TextBlock Text="Thread Tune" Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock Text="Threads show a tag only while Windows has priority boost actually on for them. Use the right-click menu to turn it on or off."
                                Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
@@ -105,9 +105,9 @@
                          Text="{x:Bind ViewModel.RulesFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </Grid>
 
-            <Border Grid.Row="1" Margin="12,0,12,0" Padding="14,8" CornerRadius="6"
+            <Border Grid.Row="1" Margin="8,0,8,0" Padding="10,6" CornerRadius="6"
                     Background="{ThemeResource SubtleFillColorSecondaryBrush}">
-                <Grid ColumnSpacing="12">
+                <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="44" />
                         <ColumnDefinition Width="100" />
@@ -128,7 +128,7 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:ThreadBoostRow">
                         <Border BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="0,0,0,1">
-                            <Grid Padding="4,6" ColumnSpacing="12" Background="Transparent">
+                            <Grid Padding="3,4" ColumnSpacing="8" Background="Transparent">
                                 <Grid.ContextFlyout>
                                     <MenuFlyout>
                                         <MenuFlyoutItem Text="Create rule..." Click="ThreadAction_CreateRule" />
@@ -149,7 +149,7 @@
                                         Visibility="{x:Bind BoostBadgeVis, Mode=OneWay}"
                                         Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                         CornerRadius="9"
-                                        Padding="8,2">
+                                        Padding="6,1">
                                     <TextBlock Text="On" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
                                 </Border>
                                 <TextBlock Grid.Column="1" Text="{x:Bind Tid}" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -162,12 +162,12 @@
                 </ListView.ItemTemplate>
             </ListView>
 
-            <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.IsThreadTuneLoading, Mode=OneWay}" Spacing="12">
+            <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.IsThreadTuneLoading, Mode=OneWay}" Spacing="8">
                 <ProgressRing IsActive="{x:Bind ViewModel.IsThreadTuneLoading, Mode=OneWay}" Width="48" Height="48" />
                 <TextBlock Text="{x:Bind ViewModel.ThreadTuneLoadingText, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" />
             </StackPanel>
 
-            <Grid Grid.Row="3" Margin="12,8,12,12">
+            <Grid Grid.Row="3" Margin="8,6,8,8">
                 <TextBlock x:Name="ThreadTuneCountText" Text="0 threads" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
             </Grid>
         </Grid>
@@ -180,31 +180,34 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="12,4,12,10" ColumnSpacing="8">
+        <Grid Grid.Row="0" Margin="8,3,8,7" ColumnSpacing="6">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Rules" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" Margin="0,0,12,0" />
+            <TextBlock Grid.Column="0" Text="Rules" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" Margin="0,0,8,0" />
             <TextBox Grid.Column="1" MaxWidth="320" HorizontalAlignment="Left" PlaceholderText="Search rules" VerticalAlignment="Center"
                      Text="{x:Bind ViewModel.RulesFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                <Button Content="Edit" Style="{StaticResource ToolbarButton}" Click="RuleEdit_Click" />
-                <Button Content="Enable / disable" Style="{StaticResource ToolbarButton}" Click="RuleToggle_Click" />
-                <Button Content="Delete" Style="{StaticResource ToolbarButton}" Click="RuleDelete_Click" />
-                <Button Content="Import" Style="{StaticResource ToolbarButton}" Click="RuleImport_Click"
-                        ToolTipService.ToolTip="Import rules from a .json file and apply them" />
-                <Button Content="Export" Style="{StaticResource ToolbarButton}" Click="RuleExport_Click"
-                        ToolTipService.ToolTip="Export every rule to a .json file" />
-            </StackPanel>
+            <Border Grid.Column="2" Style="{StaticResource CommandCluster}" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Edit" Style="{StaticResource ClusterButton}" CornerRadius="8,0,0,8" Click="RuleEdit_Click" />
+                    <Button Content="Enable / disable" Style="{StaticResource ClusterButton}" Click="RuleToggle_Click" />
+                    <Button Content="Delete" Style="{StaticResource ClusterButton}" Click="RuleDelete_Click" />
+                    <Border Style="{StaticResource ClusterSeparator}" />
+                    <Button Content="Import" Style="{StaticResource ClusterButton}" Click="RuleImport_Click"
+                            ToolTipService.ToolTip="Import rules from a .json file and apply them" />
+                    <Button Content="Export" Style="{StaticResource ClusterButton}" CornerRadius="0,8,8,0" Click="RuleExport_Click"
+                            ToolTipService.ToolTip="Export every rule to a .json file" />
+                </StackPanel>
+            </Border>
             <Button Grid.Column="3" Content="Add rule" Style="{StaticResource AccentToolbarButton}" VerticalAlignment="Center" Click="RuleAdd_Click" />
         </Grid>
 
-        <Border Grid.Row="1" Margin="12,0,12,0" Padding="14,8" CornerRadius="6"
+        <Border Grid.Row="1" Margin="8,0,8,0" Padding="10,6" CornerRadius="6"
                 Background="{ThemeResource SubtleFillColorSecondaryBrush}">
-            <Grid ColumnSpacing="12">
+            <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="2*" />
                     <ColumnDefinition Width="2.2*" />
@@ -225,8 +228,8 @@
                   ItemTemplate="{StaticResource RuleRowTemplate}"
                   SelectionMode="Single" ShowsScrollingPlaceholders="False" />
 
-        <Grid Grid.Row="3" Margin="12,8,12,12">
-            <StackPanel Orientation="Horizontal" Spacing="24">
+        <Grid Grid.Row="3" Margin="8,6,8,8">
+            <StackPanel Orientation="Horizontal" Spacing="17">
                 <TextBlock x:Name="RulesCountText" Text="0 rules" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                 <TextBlock Text="Each action is applied and verified independently" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
             </StackPanel>

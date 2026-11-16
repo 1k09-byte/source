@@ -24,7 +24,7 @@
         </ListView.Resources>
         <ListView.ItemTemplate>
             <DataTemplate>
-                <local:PackageRow Margin="0,0,0,8"
+                <local:PackageRow Margin="0,0,0,6"
                                   HorizontalAlignment="Stretch"
                                   HorizontalContentAlignment="Stretch" />
             </DataTemplate>

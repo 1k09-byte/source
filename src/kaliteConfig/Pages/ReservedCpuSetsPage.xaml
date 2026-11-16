@@ -18,7 +18,7 @@
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    TextWrapping="Wrap" />
 
-        <StackPanel Grid.Row="1" Spacing="8">
+        <StackPanel Grid.Row="1" Spacing="6">
             <InfoBar IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
                      Severity="Error"
                      Title="Error"
@@ -55,7 +55,7 @@
                     <DataTemplate x:DataType="models:CpuCoreItem">
                         <ToggleButton Content="{x:Bind Name}"
                                       IsChecked="{x:Bind IsReserved, Mode=TwoWay}"
-                                      Margin="0,0,8,8" />
+                                      Margin="0,0,6,6" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -64,7 +64,7 @@
                     Command="{x:Bind ViewModel.SaveCommand}"
                     IsEnabled="{x:Bind ViewModel.HasPendingChanges, Mode=OneWay}"
                     Style="{StaticResource AccentButtonStyle}"
-                    Margin="8,0,0,32"
+                    Margin="6,0,0,22"
                     VerticalAlignment="Bottom" />
         </Grid>
 

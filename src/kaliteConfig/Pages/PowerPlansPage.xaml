@@ -26,7 +26,7 @@
     </Page.DataContext>
 
     <Grid>
-        <Grid ColumnSpacing="12" Padding="28,8,28,16">
+        <Grid ColumnSpacing="8" Padding="13,6,13,11">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="320" />
                 <ColumnDefinition Width="*" />
@@ -34,20 +34,20 @@
 
             <Grid Grid.ColumnSpan="2" Canvas.ZIndex="10" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Opacity="0.85" />
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="360">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="360">
                     <ProgressRing IsActive="{Binding IsLoading}" Width="48" Height="48" HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding LoadingStatus}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextAlignment="Center" TextWrapping="Wrap" />
                 </StackPanel>
             </Grid>
 
-            <Border Grid.Column="0" Style="{StaticResource PowerCard}" Padding="12"><Grid>
+            <Border Grid.Column="0" Style="{StaticResource PowerCard}" Padding="8"><Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 
-                <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,8">
+                <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,6">
                     <TextBlock Text="Power Schemes" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <Button Content="New Plan" Click="NewPlan_Click" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch"
                             ToolTipService.ToolTip="Create a new plan from a base, with your own name and description" />
@@ -68,27 +68,27 @@
                           BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                           BorderThickness="1"
                           CornerRadius="5"
-                          Padding="6">
+                          Padding="4">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:PowerScheme">
-                            <StackPanel Padding="8,4">
+                            <StackPanel Padding="6,3">
                                 <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="Currently applied" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                <TextBlock Text="Currently applied" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,3,0,0" Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibilityConverter}}" />
                             </StackPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
             </Grid></Border>
 
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
-                <StackPanel Spacing="12" Visibility="{Binding SelectedScheme, Converter={StaticResource NullToVisibilityConverter}}">
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                <StackPanel Spacing="8" Visibility="{Binding SelectedScheme, Converter={StaticResource NullToVisibilityConverter}}">
 
                     <Grid MaxWidth="360" MinWidth="200" HorizontalAlignment="Left">
                         <TextBox Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  PlaceholderText="Search settings…"
                                  ToolTipService.ToolTip="Filter this plan's settings by name or description" />
                         <FontIcon Glyph="&#xE721;" FontSize="14" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                  Margin="0,0,10,0" IsHitTestVisible="False"
+                                  Margin="0,0,7,0" IsHitTestVisible="False"
                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     </Grid>
 
@@ -101,19 +101,19 @@
                             BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}" 
                             BorderThickness="1" 
                             CornerRadius="5"
-                            Padding="12">
+                            Padding="8">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Spacing="6" Margin="0,0,16,0">
+                            <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,11,0">
                                 <TextBox Text="{Binding SelectedScheme.Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" FontSize="24" FontWeight="SemiBold" BorderThickness="0" Background="Transparent" />
                                 <TextBox Text="{Binding SelectedScheme.Description, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" AcceptsReturn="True" BorderThickness="0" Background="Transparent" />
-                                <TextBlock Text="{Binding SelectedScheme.Id}" FontSize="11" Foreground="{ThemeResource TextFillColorDisabledBrush}" Margin="8,8,0,0" />
+                                <TextBlock Text="{Binding SelectedScheme.Id}" FontSize="11" Foreground="{ThemeResource TextFillColorDisabledBrush}" Margin="6,6,0,0" />
                             </StackPanel>
                             
-                            <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
                                 <Button Content="Set as Active" 
                                         Command="{Binding SetActiveSchemeCommand}" 
                                         CommandParameter="{Binding SelectedScheme}" 
@@ -139,7 +139,7 @@
                     <ItemsRepeater ItemsSource="{Binding SelectedScheme.FilteredSubgroups}">
                         <ItemsRepeater.ItemTemplate>
                             <DataTemplate x:DataType="models:PowerSubgroup">
-                                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,12"
+                                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,0,0,8"
                                           IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
                                     <Expander.Header>
                                         <Grid>
@@ -153,12 +153,12 @@
                                     <ItemsRepeater ItemsSource="{Binding FilteredSettings}">
                                         <ItemsRepeater.ItemTemplate>
                                             <DataTemplate x:DataType="models:PowerSetting">
-                                                <toolkit:SettingsCard Header="{Binding Name}" Description="{Binding Description}" Margin="0,0,0,4">
+                                                <toolkit:SettingsCard Header="{Binding Name}" Description="{Binding Description}" Margin="0,0,0,3">
 
-                                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                                    <StackPanel Orientation="Horizontal" Spacing="11">
                                                         <StackPanel
                                                             Visibility="{Binding IsChoiceType, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ComboBox MinWidth="220"
                                                                       ItemsSource="{Binding PossibleChoices}"
                                                                       SelectedItem="{Binding SelectedAcChoice, Mode=TwoWay}" />
@@ -166,7 +166,7 @@
 
                                                         <StackPanel
                                                             Visibility="{Binding IsChoiceType, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ComboBox MinWidth="220"
                                                                       ItemsSource="{Binding PossibleChoices}"
                                                                       SelectedItem="{Binding SelectedDcChoice, Mode=TwoWay}" />
@@ -174,21 +174,21 @@
 
                                                         <StackPanel
                                                             Visibility="{Binding IsBooleanType, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" OnContent="On" OffContent="Off"
                                                                           IsOn="{Binding AcBoolValue, Mode=TwoWay}" />
                                                         </StackPanel>
 
                                                         <StackPanel
                                                             Visibility="{Binding IsBooleanType, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" OnContent="On" OffContent="Off"
                                                                           IsOn="{Binding DcBoolValue, Mode=TwoWay}" />
                                                         </StackPanel>
 
                                                         <StackPanel
                                                             Visibility="{Binding HasRangeChoices, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ComboBox MinWidth="220"
                                                                       ItemsSource="{Binding PossibleChoices}"
                                                                       DisplayMemberPath="Name"
@@ -197,7 +197,7 @@
 
                                                         <StackPanel
                                                             Visibility="{Binding HasRangeChoices, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ComboBox MinWidth="220"
                                                                       ItemsSource="{Binding PossibleChoices}"
                                                                       DisplayMemberPath="Name"
@@ -206,23 +206,23 @@
 
                                                         <StackPanel
                                                             Visibility="{Binding IsBareRange, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <NumberBox Value="{Binding UiAcValue, Mode=TwoWay}" SpinButtonPlacementMode="Compact"
                                                                        SmallChange="1" />
-                                                            <TextBlock Text="{Binding AcValueText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" />
+                                                            <TextBlock Text="{Binding AcValueText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,3,0,0" />
                                                         </StackPanel>
 
                                                         <StackPanel
                                                             Visibility="{Binding IsBareRange, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <NumberBox Value="{Binding UiDcValue, Mode=TwoWay}" SpinButtonPlacementMode="Compact"
                                                                        SmallChange="1" />
-                                                            <TextBlock Text="{Binding DcValueText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" />
+                                                            <TextBlock Text="{Binding DcValueText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,3,0,0" />
                                                         </StackPanel>
 
                                                         <StackPanel
                                                             Visibility="{Binding IsPresetList, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="Plugged in (AC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ComboBox MinWidth="220"
                                                                       ItemsSource="{Binding PossibleChoices}"
                                                                       DisplayMemberPath="Name"
@@ -231,7 +231,7 @@
 
                                                         <StackPanel
                                                             Visibility="{Binding IsPresetList, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                                                            <TextBlock Text="On battery (DC)" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,3" />
                                                             <ComboBox MinWidth="220"
                                                                       ItemsSource="{Binding PossibleChoices}"
                                                                       DisplayMemberPath="Name"

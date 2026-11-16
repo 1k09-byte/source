@@ -58,8 +58,8 @@
             IsPaneToggleButtonVisible="False"
             BorderThickness="0"
             PaneDisplayMode="Left"
-            OpenPaneLength="76"
-            CompactPaneLength="76"
+            OpenPaneLength="56"
+            CompactPaneLength="56"
             IsPaneOpen="True"
             SelectionChanged="NavView_SelectionChanged"
             PointerWheelChanged="ChromeWheelForward">
@@ -70,7 +70,8 @@
                 <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource KaliteChromeSurfaceColor}" />
                 <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource KaliteChromeSurfaceColor}" />
 
-                <SolidColorBrush x:Key="NavigationViewBackground" Color="{ThemeResource KaliteChromeSurfaceColor}" />
+                <SolidColorBrush x:Key="NavigationViewBackground" Color="Transparent" />
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
                 <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
                 <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
 
@@ -78,6 +79,17 @@
             </NavigationView.Resources>
             
             <NavigationView.MenuItems>
+                <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Home" Tag="HomePage" AutomationProperties.Name="Home" Padding="0">
+                    <ToolTipService.ToolTip>
+                        <ToolTip Visibility="Collapsed" />
+                    </ToolTipService.ToolTip>
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItemSeparator Style="{StaticResource RailNavSeparatorStyle}" />
+
                 <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Apps" Tag="AppsPage" AutomationProperties.Name="App Manager" Padding="0">
                     <ToolTipService.ToolTip>
                         <ToolTip Visibility="Collapsed" />
@@ -86,6 +98,8 @@
                         <PathIcon Data="M4.5 17.0009C3.7203 17.0009 3.07955 16.406 3.00687 15.6454L3 15.5009V4.50092C3 3.72122 3.59489 3.08047 4.35554 3.00778L4.5 3.00092H9C9.7797 3.00092 10.4204 3.5958 10.4931 4.35646L10.5 4.50092V4.75534L12.6886 2.48609C13.2276 1.92691 14.0959 1.8766 14.6956 2.34798L14.8118 2.44922L17.5694 5.17386C18.1219 5.71976 18.1614 6.5886 17.68 7.18505L17.5767 7.30053L15.266 9.50034L15.5 9.50092C16.2797 9.50092 16.9204 10.0958 16.9931 10.8565L17 11.0009V15.5009C17 16.2806 16.4051 16.9214 15.6445 16.994L15.5 17.0009H4.5ZM9.5 10.5009H4V15.5009C4 15.7157 4.13542 15.8988 4.32553 15.9696L4.41012 15.9929L4.5 16.0009H9.5V10.5009ZM15.5 10.5009H10.5V16.0009H15.5C15.7455 16.0009 15.9496 15.824 15.9919 15.5908L16 15.5009V11.0009C16 10.7555 15.8231 10.5513 15.5899 10.509L15.5 10.5009ZM10.5 7.71034V9.50034H12.29L10.5 7.71034ZM9 4.00092H4.5C4.25454 4.00092 4.05039 4.17779 4.00806 4.41104L4 4.50092V9.50092H9.5V4.50092C9.5 4.28614 9.36458 4.10299 9.17447 4.0322L9.08988 4.00897L9 4.00092Z" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+
+                <NavigationViewItemSeparator Style="{StaticResource RailNavSeparatorStyle}" />
 
                 <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="GPU" Tag="GraphicsPage" AutomationProperties.Name="GPU Control" Padding="0">
                     <ToolTipService.ToolTip>
@@ -114,6 +128,8 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 
+                <NavigationViewItemSeparator Style="{StaticResource RailNavSeparatorStyle}" />
+
                 <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Drivers" Tag="DriversPage" AutomationProperties.Name="Drivers" Padding="0">
                     <ToolTipService.ToolTip>
                         <ToolTip Visibility="Collapsed" />
@@ -140,6 +156,8 @@
                         <FontIcon Glyph="&#xE7E8;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+
+                <NavigationViewItemSeparator Style="{StaticResource RailNavSeparatorStyle}" />
 
                 <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Windows" Tag="WindowsSettingsPage" AutomationProperties.Name="Windows Tuning" Padding="0">
                     <ToolTipService.ToolTip>
@@ -213,7 +231,7 @@
             <Border
                 x:Name="NavPill"
                 Width="4"
-                Height="22"
+                Height="16"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 RenderTransformOrigin="0,0.5"
@@ -230,8 +248,8 @@
                 Grid.Row="0" Grid.RowSpan="2"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"
-                Margin="0,0,0,14"
-                Padding="10,8"
+                Margin="0,0,0,10"
+                Padding="7,6"
                 CornerRadius="18"
                 MaxWidth="920"
                 Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
@@ -246,13 +264,13 @@
             <Border.RenderTransform>
                 <TranslateTransform x:Name="DockShift" />
             </Border.RenderTransform>
-            <Grid ColumnSpacing="4">
+            <Grid ColumnSpacing="3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" x:Name="DockLeft" Padding="6,8"
+                <Button Grid.Column="0" x:Name="DockLeft" Padding="4,6"
                         VerticalAlignment="Center" Click="DockLeft_Click"
                         ToolTipService.ToolTip="Scroll left"
                         UseSystemFocusVisuals="False"
@@ -266,9 +284,9 @@
                               HorizontalScrollMode="Auto"
                               VerticalScrollMode="Disabled"
                               VerticalAlignment="Center">
-                    <StackPanel x:Name="DockButtons" Orientation="Horizontal" Spacing="2" />
+                    <StackPanel x:Name="DockButtons" Orientation="Horizontal" Spacing="1" />
                 </ScrollViewer>
-                <Button Grid.Column="2" x:Name="DockRight" Padding="6,8"
+                <Button Grid.Column="2" x:Name="DockRight" Padding="4,6"
                         VerticalAlignment="Center" Click="DockRight_Click"
                         ToolTipService.ToolTip="Scroll right"
                         UseSystemFocusVisuals="False"
@@ -282,14 +300,23 @@
         <InfoBar x:Name="AppNoticeBar"
                  Grid.Row="0" Grid.RowSpan="2"
                  Width="380"
-                 Margin="0,0,24,24"
+                 Margin="0,0,17,17"
                  HorizontalAlignment="Right"
                  VerticalAlignment="Bottom"
                  IsOpen="False"
                  IsClosable="True"
                  Canvas.ZIndex="90" />
 
-        <TitleBar x:Name="titleBar" Grid.Row="0" FontFamily="{StaticResource KaliteBodyFontFamily}" />
+        <TitleBar x:Name="titleBar" Grid.Row="0" FontFamily="{StaticResource KaliteBodyFontFamily}"
+                  Background="{ThemeResource KaliteChromeSurfaceBrush}" />
+        <TextBlock Grid.Row="0"
+                   Text="Kalite Configuration Tool"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="12"
+                   FontWeight="SemiBold"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   IsHitTestVisible="False" />
         <Border
             x:Name="TitleFade"
             Grid.Row="0"

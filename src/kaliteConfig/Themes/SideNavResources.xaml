@@ -17,7 +17,15 @@
             <SolidColorBrush x:Key="ContentDialogSmokeFill" Color="#99000000" />
             <SolidColorBrush x:Key="RailHighlightHoverBrush" Color="#30000000" />
             <SolidColorBrush x:Key="RailHighlightPressedBrush" Color="#26000000" />
-            <SolidColorBrush x:Key="RailSelectionPlateBrush" Color="#FF3D4E8F" />
+            <SolidColorBrush x:Key="RailSelectionPlateBrush" Color="#1A000000" />
+            <SolidColorBrush x:Key="CommandClusterBackgroundBrush" Color="#FFF4F4F6" />
+            <SolidColorBrush x:Key="ClusterButtonHoverBrush" Color="#14000000" />
+            <SolidColorBrush x:Key="ClusterButtonPressedBrush" Color="#20000000" />
+            <SolidColorBrush x:Key="ToggleHoverVeilBrush" Color="#08000000" />
+            <SolidColorBrush x:Key="ToggleSegmentIdleBrush" Color="#FFE3E5EA" />
+            <SolidColorBrush x:Key="ToggleSegmentFillBrush" Color="#FFD3DEFF" />
+            <SolidColorBrush x:Key="ToggleLabelActiveBrush" Color="#FF0F1C33" />
+            <SolidColorBrush x:Key="ToggleFocusRingBrush" Color="#FF1B4FA8" />
             <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush" Color="Transparent" />
         </ResourceDictionary>
 
@@ -92,7 +100,15 @@
             <SolidColorBrush x:Key="RailHighlightSelectedBrush" Color="#4DFFFFFF" />
             <SolidColorBrush x:Key="RailHighlightHoverBrush" Color="#38FFFFFF" />
             <SolidColorBrush x:Key="RailHighlightPressedBrush" Color="#2EFFFFFF" />
-            <SolidColorBrush x:Key="RailSelectionPlateBrush" Color="#FF3D4E8F" />
+            <SolidColorBrush x:Key="RailSelectionPlateBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="CommandClusterBackgroundBrush" Color="#F20C0D10" />
+            <SolidColorBrush x:Key="ClusterButtonHoverBrush" Color="#16FFFFFF" />
+            <SolidColorBrush x:Key="ClusterButtonPressedBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="ToggleHoverVeilBrush" Color="#0FFFFFFF" />
+            <SolidColorBrush x:Key="ToggleSegmentIdleBrush" Color="#FF15171C" />
+            <SolidColorBrush x:Key="ToggleSegmentFillBrush" Color="#FF20375F" />
+            <SolidColorBrush x:Key="ToggleLabelActiveBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="ToggleFocusRingBrush" Color="#FF5B8CD8" />
             <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush" Color="Transparent" />
         </ResourceDictionary>
 
@@ -167,7 +183,15 @@
             <SolidColorBrush x:Key="RailHighlightSelectedBrush" Color="#4DFFFFFF" />
             <SolidColorBrush x:Key="RailHighlightHoverBrush" Color="#38FFFFFF" />
             <SolidColorBrush x:Key="RailHighlightPressedBrush" Color="#2EFFFFFF" />
-            <SolidColorBrush x:Key="RailSelectionPlateBrush" Color="#FF3D4E8F" />
+            <SolidColorBrush x:Key="RailSelectionPlateBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="CommandClusterBackgroundBrush" Color="#F20C0D10" />
+            <SolidColorBrush x:Key="ClusterButtonHoverBrush" Color="#16FFFFFF" />
+            <SolidColorBrush x:Key="ClusterButtonPressedBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="ToggleHoverVeilBrush" Color="#0FFFFFFF" />
+            <SolidColorBrush x:Key="ToggleSegmentIdleBrush" Color="#FF15171C" />
+            <SolidColorBrush x:Key="ToggleSegmentFillBrush" Color="#FF20375F" />
+            <SolidColorBrush x:Key="ToggleLabelActiveBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="ToggleFocusRingBrush" Color="#FF5B8CD8" />
             <SolidColorBrush x:Key="ApplicationPageBackgroundThemeBrush" Color="Transparent" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
@@ -178,7 +202,14 @@
 
     <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
     <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="Transparent" />
-    <SolidColorBrush x:Key="NavigationViewItemBackground" Color="Transparent" />
+                <SolidColorBrush x:Key="NavigationViewItemBackground" Color="Transparent" />
+
+                <Style x:Key="RailNavSeparatorStyle" TargetType="NavigationViewItemSeparator">
+                    <Setter Property="Margin" Value="0,5" />
+                    <Setter Property="Width" Value="22" />
+                    <Setter Property="HorizontalAlignment" Value="Center" />
+                </Style>
+
 
                 <Style x:Key="RailNavItemStyle" TargetType="NavigationViewItem">
                     <Setter Property="UseSystemFocusVisuals" Value="False" />
@@ -186,9 +217,9 @@
                     <Setter Property="BorderBrush" Value="Transparent" />
                     <Setter Property="BorderThickness" Value="0" />
                     <Setter Property="FontFamily" Value="{ThemeResource ContentControlThemeFontFamily}" />
-                    <Setter Property="Width" Value="64" />
-                    <Setter Property="Height" Value="56" />
-                    <Setter Property="Margin" Value="0,2" />
+                    <Setter Property="Width" Value="44" />
+                    <Setter Property="Height" Value="44" />
+                    <Setter Property="Margin" Value="0,1" />
                     <Setter Property="Padding" Value="0" />
                     <Setter Property="HorizontalAlignment" Value="Center" />
                     <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -277,7 +308,7 @@
                                         <StackPanel.RenderTransform>
                                             <TranslateTransform x:Name="ItemShift" X="0" Y="0" />
                                         </StackPanel.RenderTransform>
-                                        <Viewbox Width="18" Height="18"
+                                        <Viewbox Width="16" Height="16"
                                                  HorizontalAlignment="Center"
                                                  VerticalAlignment="Center"
                                                  Stretch="Uniform">
@@ -303,6 +334,7 @@
                                                    TextWrapping="NoWrap"
                                                    TextTrimming="CharacterEllipsis"
                                                    MaxLines="1"
+                                                   Visibility="Collapsed"
                                                    HorizontalAlignment="Center"
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>

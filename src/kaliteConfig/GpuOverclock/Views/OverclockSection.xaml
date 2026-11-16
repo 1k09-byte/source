@@ -21,15 +21,15 @@
         </Style>
     </UserControl.Resources>
 
-    <StackPanel Spacing="8">
+    <StackPanel Spacing="6">
 
         <Border Style="{StaticResource OcCardStyle}"
                 BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
                 BorderThickness="2"
-                Padding="16"
+                Padding="11"
                 Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.IsSimulation), Mode=OneWay}">
-            <StackPanel Spacing="4">
-                <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Spacing="3">
+                <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon Glyph="&#xE7BA;" FontSize="18" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
                     <TextBlock Text="Simulation mode - nothing here touches your GPU" FontWeight="SemiBold" />
                 </StackPanel>
@@ -44,21 +44,21 @@
         <Border Style="{StaticResource OcCardStyle}"
                 BorderBrush="{ThemeResource SystemFillColorCautionBrush}"
                 BorderThickness="2"
-                Padding="20"
+                Padding="14"
                 Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.ShowCountdown), Mode=OneWay}">
-            <Grid ColumnSpacing="16">
+            <Grid ColumnSpacing="11">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <FontIcon Glyph="&#xE7BA;" FontSize="28" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
-                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                     <TextBlock Text="Keep these settings?" FontWeight="SemiBold" FontSize="16" />
                     <TextBlock Text="{x:Bind Vm.SafetyBannerText, Mode=OneWay}" FontSize="13"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <Button Content="Keep" Command="{x:Bind Vm.ConfirmChangesCommand}" />
                     <Button Content="Revert now" Command="{x:Bind Vm.RevertNowCommand}" />
                     <Button Content="Reset all to stock" Click="ResetAllToStock_Click" />
@@ -66,9 +66,9 @@
             </Grid>
         </Border>
 
-        <Border Style="{StaticResource OcCardStyle}" Padding="20"
+        <Border Style="{StaticResource OcCardStyle}" Padding="14"
                 Visibility="{x:Bind local:OverclockSection.NotSupportedVis(Vm.IsSupported), Mode=OneWay}">
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="3">
                 <TextBlock Text="Overclocking unavailable" FontWeight="SemiBold" />
                 <TextBlock Text="{x:Bind Vm.UnsupportedMessage, Mode=OneWay}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
@@ -78,14 +78,14 @@
         <Grid Visibility="{x:Bind local:OverclockSection.SupportedVis(Vm.IsSupported), Mode=OneWay}">
 
             <Border Style="{StaticResource OcCardStyle}">
-            <StackPanel Spacing="20">
+            <StackPanel Spacing="14">
 
-                <Grid ColumnSpacing="12">
+                <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Spacing="2">
+                    <StackPanel Spacing="1">
                         <TextBlock Text="Overclocking" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock Text="{x:Bind Vm.GpuTitle, Mode=OneWay}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="13" />
@@ -93,7 +93,7 @@
                     <Button Grid.Column="1" Command="{x:Bind Vm.OpenChangeLogFileCommand}"
                             VerticalAlignment="Center"
                             ToolTipService.ToolTip="See exactly what this app changed on your GPU">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE81C;" FontSize="14" />
                             <TextBlock Text="Change log" />
                         </StackPanel>
@@ -124,52 +124,52 @@
                     <Expander.Header>
                         <TextBlock Text="Monitor" FontWeight="SemiBold" />
                     </Expander.Header>
-                    <StackPanel Spacing="8" Margin="0,8,0,0">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                    <StackPanel Spacing="6" Margin="0,6,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
                             <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource AccentFillColorDefaultBrush}" />
                             <TextBlock Text="GPU" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind Vm.MonGpuTemp, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorCautionBrush}" Margin="8,0,0,0" />
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorCautionBrush}" Margin="6,0,0,0" />
                             <TextBlock Text="Hotspot" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind Vm.MonHotspotTemp, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorSuccessBrush}" Margin="8,0,0,0" />
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorSuccessBrush}" Margin="6,0,0,0" />
                             <TextBlock Text="Memory" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind Vm.MonMemTemp, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="4"
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="3"
                                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                             <Canvas x:Name="MonitorTempCanvas" Height="100" SizeChanged="MonitorCanvas_SizeChanged" />
                         </Border>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
                             <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource AccentFillColorDefaultBrush}" />
                             <TextBlock Text="Core" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind Vm.MonCoreClock, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorSuccessBrush}" Margin="8,0,0,0" />
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorSuccessBrush}" Margin="6,0,0,0" />
                             <TextBlock Text="Memory" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind Vm.MonMemClock, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="4"
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="3"
                                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                             <Canvas x:Name="MonitorClockCanvas" Height="100" SizeChanged="MonitorCanvas_SizeChanged" />
                         </Border>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
                             <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource AccentFillColorDefaultBrush}" />
                             <TextBlock Text="Power" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind Vm.MonPower, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="4"
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="3"
                                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                             <Canvas x:Name="MonitorPowerCanvas" Height="100" SizeChanged="MonitorCanvas_SizeChanged" />
                         </Border>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
                             <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource SystemFillColorSuccessBrush}" />
                             <TextBlock Text="Fan" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                             <TextBlock Text="{x:Bind Vm.MonFan, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="4"
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="3"
                                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                             <Canvas x:Name="MonitorFanCanvas" Height="100" SizeChanged="MonitorCanvas_SizeChanged" />
@@ -177,7 +177,7 @@
                     </StackPanel>
                 </Expander>
 
-                <Grid x:Name="BodyGrid" ColumnSpacing="16">
+                <Grid x:Name="BodyGrid" ColumnSpacing="11">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition x:Name="BodyCol0" Width="*" />
                         <ColumnDefinition x:Name="BodyCol1" Width="*" />
@@ -205,11 +205,11 @@
                             </VisualState>
                         </VisualStateGroup>
                     </VisualStateManager.VisualStateGroups>
-                    <StackPanel x:Name="LeftControls" Grid.Row="0" Grid.Column="0" Spacing="16">
-                <StackPanel Spacing="16">
+                    <StackPanel x:Name="LeftControls" Grid.Row="0" Grid.Column="0" Spacing="11">
+                <StackPanel Spacing="11">
 
-                    <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasCoreOffset), Mode=OneWay}">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasCoreOffset), Mode=OneWay}">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="Core clock offset (MHz)" VerticalAlignment="Center" />
                             <NumberBox Grid.Column="1" Width="104"
@@ -228,8 +228,8 @@
                                 StepFrequency="1" SnapsTo="StepValues" />
                     </StackPanel>
 
-                    <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasMemOffset), Mode=OneWay}">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasMemOffset), Mode=OneWay}">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="Memory clock offset (MHz)" VerticalAlignment="Center" />
                             <NumberBox Grid.Column="1" Width="104"
@@ -248,8 +248,8 @@
                                 StepFrequency="1" SnapsTo="StepValues" />
                     </StackPanel>
 
-                    <StackPanel Spacing="4">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="XBAR clock offset (MHz)" VerticalAlignment="Center"
                                        ToolTipService.ToolTip="Offset for the crossbar (memory interconnect) clock. Greyed out when this GPU or driver does not expose the XBAR clock domain." />
@@ -270,8 +270,8 @@
                                 StepFrequency="1" SnapsTo="StepValues" />
                     </StackPanel>
 
-                    <StackPanel Spacing="4">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="System clock offset (MHz)" VerticalAlignment="Center"
                                        ToolTipService.ToolTip="Offset for the GPU SoC/system clock. Greyed out when this GPU or driver does not expose the system clock domain." />
@@ -292,8 +292,8 @@
                                 StepFrequency="1" SnapsTo="StepValues" />
                     </StackPanel>
 
-                    <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasPowerLimit), Mode=OneWay}">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasPowerLimit), Mode=OneWay}">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="Power limit (%)" VerticalAlignment="Center" />
                             <NumberBox Grid.Column="1" Width="104"
@@ -312,8 +312,8 @@
                                 StepFrequency="1" SnapsTo="StepValues" />
                     </StackPanel>
 
-                    <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasTempLimit), Mode=OneWay}">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasTempLimit), Mode=OneWay}">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="Temperature limit (°C)" VerticalAlignment="Center" />
                             <NumberBox Grid.Column="1" Width="104"
@@ -332,10 +332,10 @@
                                 StepFrequency="1" SnapsTo="StepValues" />
                     </StackPanel>
                 </StackPanel>
-                    <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasVfCurve), Mode=OneWay}">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasVfCurve), Mode=OneWay}">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                 <TextBlock Text="Voltage boost (MHz)" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <FontIcon Glyph="&#xE946;" FontSize="13"
                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -361,10 +361,10 @@
                                    Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.VfOffsetsMixed), Mode=OneWay}" />
                     </StackPanel>
                 </StackPanel>
-                    <StackPanel x:Name="RightControls" Grid.Row="0" Grid.Column="1" Spacing="12">
-                <StackPanel Spacing="10" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.FanControlAvailable), Mode=OneWay}">
+                    <StackPanel x:Name="RightControls" Grid.Row="0" Grid.Column="1" Spacing="8">
+                <StackPanel Spacing="7" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.FanControlAvailable), Mode=OneWay}">
                     <TextBlock Text="Fan" FontWeight="SemiBold" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
                         <RadioButton Content="Auto" GroupName="fanMode"
                                      IsChecked="{x:Bind Vm.FanAutoChecked, Mode=TwoWay}" />
                         <RadioButton Content="Fixed %" GroupName="fanMode"
@@ -378,8 +378,8 @@
                                   Toggled="ZeroRpmToggle_Toggled"
                                   ToolTipService.ToolTip="Stops the fan while the card is idle. Turned off automatically if the driver resets."
                                   Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.ZeroRpmAvailable), Mode=OneWay}" />
-                    <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.FanStaticVis(Vm.FanMode), Mode=OneWay}">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="3" Visibility="{x:Bind local:OverclockSection.FanStaticVis(Vm.FanMode), Mode=OneWay}">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <TextBlock Text="Fixed fan speed (%)" VerticalAlignment="Center" />
                             <NumberBox Grid.Column="1" x:Name="FanStaticBox" Width="104"
@@ -393,10 +393,10 @@
                                 ValueChanged="FanStaticSlider_ValueChanged"
                                 StepFrequency="1" SnapsTo="StepValues" />
                     </StackPanel>
-                    <StackPanel Spacing="6" Visibility="{x:Bind local:OverclockSection.FanCurveVis(Vm.FanMode), Mode=OneWay}">
+                    <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.FanCurveVis(Vm.FanMode), Mode=OneWay}">
                         <TextBlock Text="Temperature → fan speed (%)" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="4"
+                        <Border CornerRadius="{ThemeResource ControlCornerRadius}" Padding="3"
                                 Background="{ThemeResource LayerFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                             <Canvas x:Name="FanCurveCanvas" Height="240"
@@ -412,11 +412,11 @@
                                    FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                         <ItemsRepeater ItemsSource="{x:Bind Vm.CurvePoints, Mode=OneWay}">
                             <ItemsRepeater.Layout>
-                                <StackLayout Orientation="Horizontal" Spacing="8" />
+                                <StackLayout Orientation="Horizontal" Spacing="6" />
                             </ItemsRepeater.Layout>
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate x:DataType="vm:FanCurvePointRow">
-                                    <StackPanel Spacing="2">
+                                    <StackPanel Spacing="1">
                                         <NumberBox Value="{x:Bind TempC, Mode=TwoWay}" SpinButtonPlacementMode="Compact"
                                                    Minimum="20" Maximum="100" SmallChange="1" Width="96" />
                                         <NumberBox Value="{x:Bind FanPercent, Mode=TwoWay}" SpinButtonPlacementMode="Compact"
@@ -425,13 +425,13 @@
                                 </DataTemplate>
                             </ItemsRepeater.ItemTemplate>
                         </ItemsRepeater>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="Update interval (ms)" FontSize="12" VerticalAlignment="Center"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             <NumberBox Width="96" Minimum="100" Maximum="10000"
                                        Value="{x:Bind Vm.FanIntervalMs, Mode=OneWay}"
                                        ValueChanged="FanIntervalBox_ValueChanged" SmallChange="100" />
-                            <TextBlock Text="Ramp (%/tick)" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"
+                            <TextBlock Text="Ramp (%/tick)" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,0"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        ToolTipService.ToolTip="0 = off. Otherwise the applied speed moves toward the curve target by at most this much per tick, damping audible hunting." />
                             <NumberBox Width="80" Minimum="0" Maximum="100"
@@ -453,10 +453,10 @@
                         <Expander.Header>
                             <TextBlock Text="Advanced curve editor" />
                         </Expander.Header>
-                        <StackPanel Spacing="8" Margin="0,8,0,0">
+                        <StackPanel Spacing="6" Margin="0,6,0,0">
                             <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"
                                        Text="Drag a node to shape the curve. The dashed line is the stock curve and the shaded band shows how far your curve sits above or below it. Nodes stay inside the band, and frequency can never fall as voltage rises - a bad curve is refused before anything is written. Each commit runs through the same confirmation countdown as the other controls (slightly longer for curve edits)." />
-                            <Border CornerRadius="10" Padding="2"
+                            <Border CornerRadius="10" Padding="1"
                                     Background="{ThemeResource LayerFillColorDefaultBrush}"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                                 <local:VfEditorCanvas x:Name="VfCurveCanvas" Height="360"
@@ -469,14 +469,14 @@
                                         SizeChanged="VfCurveCanvas_SizeChanged" />
                             </Border>
                             <Grid>
-                                <StackPanel Orientation="Horizontal" Spacing="18">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="13">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
                                         <Rectangle Width="20" Height="3" RadiusX="1.5" RadiusY="1.5" VerticalAlignment="Center"
                                                    Fill="{ThemeResource TextFillColorSecondaryBrush}" />
                                         <TextBlock FontSize="12" VerticalAlignment="Center"
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Stock curve" />
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
                                         <Rectangle Width="20" Height="3" RadiusX="1.5" RadiusY="1.5" VerticalAlignment="Center"
                                                    Fill="{ThemeResource AccentFillColorDefaultBrush}" />
                                         <TextBlock FontSize="12" VerticalAlignment="Center"
@@ -486,13 +486,13 @@
                                 <TextBlock x:Name="VfAxisCenter" HorizontalAlignment="Right" FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </Grid>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
                                 <Button Content="Reset to stock curve" Click="ResetVfCurve_Click" />
                                 <Button Content="Apply point edits" Click="ApplyVfCurve_Click" />
                             </StackPanel>
-                            <StackPanel Spacing="4" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasVoltageBoost), Mode=OneWay}">
+                            <StackPanel Spacing="3" Visibility="{x:Bind local:OverclockSection.BoolToVis(Vm.HasVoltageBoost), Mode=OneWay}">
                                 <Grid>
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
                                         <TextBlock Text="Driver voltage boost" />
                                         <FontIcon Glyph="&#xE946;" FontSize="13"
                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -520,35 +520,35 @@
                     <Expander.Header>
                         <TextBlock Text="Profiles" FontWeight="SemiBold" />
                     </Expander.Header>
-                    <StackPanel Spacing="10" Margin="0,8,0,0">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Spacing="7" Margin="0,6,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBox PlaceholderText="Profile name" Width="220"
                                      Text="{x:Bind Vm.NewProfileName, Mode=TwoWay}" />
                             <Button Content="Save current as profile" Command="{x:Bind Vm.SaveProfileCommand}" />
                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" OnContent="Reapply at startup" OffContent="Reapply at startup"
-                                          Margin="8,0,0,0"
+                                          Margin="6,0,0,0"
                                           IsOn="{x:Bind Vm.StartupReapplyEnabled, Mode=OneWay}"
                                           Toggled="StartupReapply_Toggled" />
                         </StackPanel>
                         <ItemsRepeater ItemsSource="{x:Bind Vm.Profiles, Mode=OneWay}">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate x:DataType="models:OverclockProfile">
-                                    <Grid ColumnSpacing="8" Margin="0,2">
+                                    <Grid ColumnSpacing="6" Margin="0,1">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
                                                 <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" />
-                                                <Border CornerRadius="6" Padding="5,1"
+                                                <Border CornerRadius="6" Padding="4,1"
                                                         Background="{ThemeResource SubtleFillColorTertiaryBrush}"
                                                          Visibility="{x:Bind local:OverclockSection.BoolToVis(HasConfirmedAt), Mode=OneTime}">
                                                     <TextBlock Text="validated" FontSize="10"
                                                                Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
                                                 </Border>
-                                                <Border CornerRadius="6" Padding="5,1"
+                                                <Border CornerRadius="6" Padding="4,1"
                                                         Background="{ThemeResource SubtleFillColorTertiaryBrush}"
                                                          Visibility="{x:Bind local:OverclockSection.BoolToVis(HasBeenManuallyValidated), Mode=OneTime}"
                                                         ToolTipService.ToolTip="Manually applied and confirmed at least once - eligible for per-game auto-switch.">
@@ -562,7 +562,7 @@
                                                        Text="Not yet validated - apply manually once to enable auto-switch."
                                                         Visibility="{x:Bind local:OverclockSection.InverseBoolToVis(HasBeenManuallyValidated), Mode=OneTime}" />
                                         </StackPanel>
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" OnContent="At startup" OffContent="At startup"
                                                           HorizontalAlignment="Left"
                                                            IsOn="{x:Bind IsStartupDefault, Mode=OneTime}"
@@ -586,7 +586,7 @@
                     <Expander.Header>
                         <TextBlock Text="Per-game auto-switch" FontWeight="SemiBold" />
                     </Expander.Header>
-                    <StackPanel Spacing="8" Margin="0,8,0,0">
+                    <StackPanel Spacing="6" Margin="0,6,0,0">
                         <TextBlock Text="{x:Bind Vm.ActiveGameProfileText, Mode=OneWay}" FontWeight="SemiBold" />
                         <TextBlock Text="{x:Bind Vm.LastAutoSwitchText, Mode=OneWay}" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"
@@ -599,17 +599,17 @@
                         <ItemsRepeater ItemsSource="{x:Bind Vm.Bindings, Mode=OneWay}">
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate x:DataType="vm:GameBindingRow">
-                                    <Grid ColumnSpacing="8" Margin="0,2">
+                                    <Grid ColumnSpacing="6" Margin="0,1">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
                                                 <TextBlock Text="{x:Bind ExeDisplay}" FontWeight="SemiBold" />
                                                 <TextBlock Text="→" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 <TextBlock Text="{x:Bind ProfileName}" />
-                                                <Border CornerRadius="6" Padding="5,1"
+                                                <Border CornerRadius="6" Padding="4,1"
                                                         Background="{ThemeResource SubtleFillColorTertiaryBrush}"
                                                         Visibility="{x:Bind local:OverclockSection.BoolToVis(IsPathLocked), Mode=OneWay}"
                                                         ToolTipService.ToolTip="Only matches this exact executable path.">
@@ -622,7 +622,7 @@
                                             <TextBlock FontSize="11" Foreground="{ThemeResource SystemFillColorCautionBrush}"
                                                        Text="{x:Bind ValidationDisplay}" TextWrapping="Wrap" />
                                         </StackPanel>
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" OnContent="Enabled" OffContent="Enabled"
                                                           IsOn="{x:Bind Enabled, Mode=OneWay}"
                                                           Toggled="BindingEnabled_Toggled" Tag="{x:Bind}" />
@@ -645,8 +645,8 @@
                     <Expander.Header>
                         <TextBlock Text="Recent changes" FontWeight="SemiBold" />
                     </Expander.Header>
-                    <StackPanel Spacing="8" Margin="0,8,0,0">
-                        <Grid ColumnSpacing="8">
+                    <StackPanel Spacing="6" Margin="0,6,0,0">
+                        <Grid ColumnSpacing="6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
@@ -678,7 +678,7 @@
                             <Button Grid.Column="5" VerticalAlignment="Bottom"
                                     Command="{x:Bind Vm.ExportVerificationRecordCommand}"
                                     ToolTipService.ToolTip="Write the change log as a Markdown verification record (same shape as Docs/OverclockVerification.md)">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xEDE1;" FontSize="14" />
                                     <TextBlock Text="Export verification record" />
                                 </StackPanel>
@@ -705,9 +705,9 @@
                     Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                     BorderBrush="{ThemeResource SystemFillColorCriticalBrush}"
                     BorderThickness="2"
-                    Padding="28"
+                    Padding="20"
                     Visibility="{x:Bind local:OverclockSection.NotRiskAcceptedVis(Vm.RiskAccepted), Mode=OneWay}">
-                <StackPanel Spacing="16" VerticalAlignment="Center" MaxWidth="720" HorizontalAlignment="Center">
+                <StackPanel Spacing="11" VerticalAlignment="Center" MaxWidth="720" HorizontalAlignment="Center">
                     <FontIcon Glyph="&#xE7BA;" FontSize="40"
                               Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
                     <TextBlock Text="Extreme caution - advanced feature"
@@ -723,9 +723,9 @@
                                Text="Safety net: every change is applied through a confirmation window and is reverted automatically to your previous working settings if you don't confirm it, or if the driver crashes. Changes beyond the driver's limits may still freeze the display before a revert can run - save your work before experimenting." />
                     <Button Style="{StaticResource AccentButtonStyle}"
                             HorizontalAlignment="Left"
-                            Margin="0,4,0,0"
+                            Margin="0,3,0,0"
                             Command="{x:Bind Vm.AcceptRiskCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE73E;" FontSize="14" />
                             <TextBlock Text="I understand - continue at my own risk" />
                         </StackPanel>

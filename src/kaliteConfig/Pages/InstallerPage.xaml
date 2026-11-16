@@ -29,7 +29,7 @@
                     BorderThickness="1"
                     CornerRadius="10"
                     MinHeight="{StaticResource InstallerCardHeight}">
-                <Grid Padding="14,12" RowSpacing="10">
+                <Grid Padding="10,8" RowSpacing="7">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -59,7 +59,7 @@
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
 
                     <Border Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left"
-                            Padding="7,2" CornerRadius="4"
+                            Padding="5,1" CornerRadius="4"
                             Background="{ThemeResource ControlFillColorSecondaryBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
                             Visibility="{x:Bind HasNote, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -73,7 +73,7 @@
                         <DropDownButton.Flyout>
                             <Flyout>
 
-                                <Grid Width="340" RowSpacing="8" MaxHeight="420"
+                                <Grid Width="340" RowSpacing="6" MaxHeight="420"
                                       PointerWheelChanged="ExtensionsFlyout_PointerWheelChanged">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -84,14 +84,14 @@
                                                   VerticalScrollMode="Auto"
                                                   HorizontalScrollMode="Disabled"
                                                   HorizontalScrollBarVisibility="Disabled">
-                                        <StackPanel Spacing="4" Padding="0,0,12,0">
+                                        <StackPanel Spacing="3" Padding="0,0,8,0">
                                             <ItemsRepeater ItemsSource="{x:Bind Extensions}">
                                                 <ItemsRepeater.ItemTemplate>
                                                     <DataTemplate x:DataType="models:ExtensionItem">
                                                         <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                                                   IsEnabled="{x:Bind IsAvailable, Mode=OneWay}"
-                                                                  Margin="0,2">
-                                                            <StackPanel Spacing="2">
+                                                                  Margin="0,1">
+                                                            <StackPanel Spacing="1">
                                                                 <TextBlock Text="{x:Bind Name}"
                                                                            Style="{StaticResource BodyStrongTextBlockStyle}"
                                                                            TextWrapping="Wrap" />
@@ -116,7 +116,7 @@
                         </DropDownButton.Flyout>
                     </DropDownButton>
 
-                    <Grid Grid.Row="4" ColumnSpacing="8">
+                    <Grid Grid.Row="4" ColumnSpacing="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -129,7 +129,7 @@
                                    Foreground="{x:Bind local:InstallerPage.StatusTextBrush(Status), Mode=OneWay}"
                                    Visibility="{x:Bind local:InstallerPage.StateTextVisibility(Status), Mode=OneWay}" />
 
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <ProgressRing Width="18" Height="18" IsActive="True"
                                           Visibility="{x:Bind local:InstallerPage.BusyVisibility(Status), Mode=OneWay}" />
                             <Button Style="{StaticResource AppCardActionStyle}"
@@ -150,7 +150,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="28,16,28,0" Spacing="2">
+        <StackPanel Grid.Row="0" Margin="13,11,13,0" Spacing="1">
             <TextBlock Text="Apps" Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock Text="Install the essentials in one click. Removing apps lives on the Uninstaller page."
                        Style="{StaticResource BodyTextBlockStyle}"
@@ -163,7 +163,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="28,10,28,4" ColumnSpacing="16">
+            <Grid Grid.Row="0" Margin="13,7,13,3" ColumnSpacing="11">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
@@ -181,20 +181,20 @@
                            Style="{StaticResource BodyTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <TextBlock Text="Show installed apps" VerticalAlignment="Center"
                                Style="{StaticResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" IsOn="{x:Bind ViewModel.ShowInstalled, Mode=TwoWay}"
-                                  OnContent="" OffContent="" MinWidth="0"
+                                  MinWidth="0"
                                   ToolTipService.ToolTip="Reveal installed apps (with uninstall option)." />
                 </StackPanel>
             </Grid>
 
-            <ScrollViewer Grid.Row="1" Padding="28,4,28,24"
+            <ScrollViewer Grid.Row="1" Padding="13,3,13,17"
                           VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto"
                           HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Spacing="26">
+                <StackPanel Spacing="18">
 
                     <InfoBar Severity="Informational" IsOpen="True" IsClosable="False"
                              Message="Everything here is already installed - nothing left to install."
@@ -204,9 +204,9 @@
                              Message="No apps match your search."
                              Visibility="{x:Bind ViewModel.NoSearchMatches, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                    <StackPanel x:Name="BrowserSection" Spacing="12"
+                    <StackPanel x:Name="BrowserSection" Spacing="8"
                                 Visibility="{x:Bind ViewModel.HasBrowsers, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
                             <FontIcon Glyph="&#xE774;" FontSize="16"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                             <TextBlock Text="Web Browsers" Style="{StaticResource AppSectionHeaderStyle}" />
@@ -221,9 +221,9 @@
                         </ItemsRepeater>
                     </StackPanel>
 
-                    <StackPanel x:Name="LauncherSection" Spacing="12"
+                    <StackPanel x:Name="LauncherSection" Spacing="8"
                                 Visibility="{x:Bind ViewModel.HasLaunchers, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
                             <FontIcon Glyph="&#xE7FC;" FontSize="16"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                             <TextBlock Text="Game Launchers" Style="{StaticResource AppSectionHeaderStyle}" />
@@ -238,9 +238,9 @@
                         </ItemsRepeater>
                     </StackPanel>
 
-                    <StackPanel x:Name="SocialSection" Spacing="12"
+                    <StackPanel x:Name="SocialSection" Spacing="8"
                                 Visibility="{x:Bind ViewModel.HasSocials, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
                             <FontIcon Glyph="&#xE8F2;" FontSize="16"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                             <TextBlock Text="Socials &amp; Communication" Style="{StaticResource AppSectionHeaderStyle}" />
@@ -255,9 +255,9 @@
                         </ItemsRepeater>
                     </StackPanel>
 
-                    <StackPanel x:Name="UtilitySection" Spacing="12"
+                    <StackPanel x:Name="UtilitySection" Spacing="8"
                                 Visibility="{x:Bind ViewModel.HasUtilities, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
                             <FontIcon Glyph="&#xE90F;" FontSize="16"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                             <TextBlock Text="Utilities" Style="{StaticResource AppSectionHeaderStyle}" />
@@ -272,9 +272,9 @@
                         </ItemsRepeater>
                     </StackPanel>
 
-                    <StackPanel x:Name="SystemToolsSection" Spacing="12"
+                    <StackPanel x:Name="SystemToolsSection" Spacing="8"
                                 Visibility="{x:Bind ViewModel.HasSystemTools, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
                             <FontIcon Glyph="&#xE770;" FontSize="16"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                             <TextBlock Text="System &amp; Hardware Tools" Style="{StaticResource AppSectionHeaderStyle}" />
@@ -289,9 +289,9 @@
                         </ItemsRepeater>
                     </StackPanel>
 
-                    <StackPanel x:Name="DevelopmentSection" Spacing="12"
+                    <StackPanel x:Name="DevelopmentSection" Spacing="8"
                                 Visibility="{x:Bind ViewModel.HasDevelopment, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
                             <FontIcon Glyph="&#xE943;" FontSize="16"
                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                             <TextBlock Text="Development" Style="{StaticResource AppSectionHeaderStyle}" />

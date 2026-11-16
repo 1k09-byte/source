@@ -15,8 +15,8 @@
         <x:Double x:Key="ContentDialogMaxWidth">600</x:Double>
     </ContentDialog.Resources>
 
-    <ScrollViewer x:Name="RootScroll" Height="540" Padding="0,0,18,0" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
-    <StackPanel Spacing="10">
+    <ScrollViewer x:Name="RootScroll" Height="540" Padding="0,0,13,0" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+    <StackPanel Spacing="7">
         <TextBlock Text="NVIDIA packages the display driver with optional extras. Everything unchecked is excluded from the silent install. The base display driver cannot be removed."
                    TextWrapping="Wrap"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -31,7 +31,7 @@
                   IsItemClickEnabled="False">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:NvidiaComponentVm">
-                    <Grid Padding="0,4" ColumnSpacing="10">
+                    <Grid Padding="0,3" ColumnSpacing="7">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -62,7 +62,7 @@
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
 
         <Expander Header="Package verification details" HorizontalAlignment="Stretch">
-            <StackPanel Spacing="4" Padding="4">
+            <StackPanel Spacing="3" Padding="3">
                 <TextBlock x:Name="VerFileName" FontSize="12" />
                 <TextBlock x:Name="VerSize" FontSize="12" />
                 <TextBlock x:Name="VerSha" FontSize="12" FontFamily="Consolas" TextWrapping="Wrap" IsTextSelectionEnabled="True" />

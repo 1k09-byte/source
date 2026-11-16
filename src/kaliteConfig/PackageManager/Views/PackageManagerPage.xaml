@@ -17,14 +17,14 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Grid Margin="32,24,32,0" ColumnSpacing="16">
+        <Grid Margin="22,17,22,0" ColumnSpacing="11">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0" Spacing="4">
-                <StackPanel Orientation="Horizontal" Spacing="12">
+            <StackPanel Grid.Column="0" Spacing="3">
+                <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Apps" Style="{StaticResource TitleLargeTextBlockStyle}" />
                     <InfoBadge Value="{x:Bind Module.UpdateCount, Mode=OneWay}"
                                VerticalAlignment="Center"
@@ -39,7 +39,7 @@
 
         <SelectorBar x:Name="SectionBar"
                      Grid.Row="1"
-                     Margin="32,16,32,0"
+                     Margin="22,11,22,0"
                      HorizontalAlignment="Left"
                      SelectionChanged="SectionBar_SelectionChanged">
             <SelectorBarItem x:Name="SectionDiscover" Text="Discover" Tag="Discover" IsSelected="True">
@@ -70,7 +70,7 @@
         </SelectorBar>
 
         <Border Grid.Row="2"
-                Margin="32,16,32,24"
+                Margin="22,11,22,17"
                 Style="{StaticResource CardBorder}"
                 Padding="0">
             <Frame x:Name="ContentFrame"

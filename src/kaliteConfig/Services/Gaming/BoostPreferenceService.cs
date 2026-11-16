@@ -123,6 +123,41 @@ public sealed class BoostPreferenceService
         if (removed) await SaveAsync();
     }
 
+    public async Task<int> ClearProcessAsync(string processName)
+    {
+        if (string.IsNullOrWhiteSpace(processName)) return 0;
+
+        int removed;
+        lock (_lock)
+        {
+            removed = _prefs.RemoveAll(p => string.Equals(p.Process, processName, StringComparison.OrdinalIgnoreCase));
+        }
+        if (removed > 0) await SaveAsync();
+
+        int restored = 0;
+        System.Diagnostics.Process[] procs;
+        try { procs = System.Diagnostics.Process.GetProcessesByName(processName); }
+        catch { return removed; }
+        foreach (var proc in procs)
+        {
+            try
+            {
+                foreach (System.Diagnostics.ProcessThread t in proc.Threads)
+                {
+                    try
+                    {
+                        await App.Current.ThreadTuning.SetBoostAsync((uint)t.Id, enabled: true);
+                        restored++;
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            finally { proc.Dispose(); }
+        }
+        return removed + restored;
+    }
+
     private BoostPref MakePref(string processName, int tid, string description, string startAddress, bool enabled)
         => new()
         {

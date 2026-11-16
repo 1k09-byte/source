@@ -18,8 +18,6 @@ namespace kaliteConfig.Pages
     {
         public ThreadTunerViewModel ViewModel { get; }
         public Gaming.GameMode.GameModeViewModel GameMode { get; }
-        private readonly global::kaliteConfig.Services.StartupService _startup;
-        private bool _syncingStartupToggle;
         private TunerProcessRow? _contextProcessRow;
         private bool _activationAttached;
 
@@ -29,7 +27,6 @@ namespace kaliteConfig.Pages
             this.GameMode = new Gaming.GameMode.GameModeViewModel(App.Current.GameMode);
             this.GameMode.PropertyChanged += GameMode_PropertyChanged;
             this.InitializeComponent();
-            _startup = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::kaliteConfig.Services.StartupService>(App.Services);
             this.DataContext = ViewModel;
 
             this.Loaded += ThreadTunerPage_Loaded;
@@ -99,16 +96,10 @@ namespace kaliteConfig.Pages
 
         private void ThreadTunerPage_Loaded(object sender, RoutedEventArgs e)
         {
-            if (MainSelectorBar.SelectedItem == null)
-            {
-                MainSelectorBar.SelectedItem = TabProcesses;
-            }
-
             ViewModel.ResumePolling();
             ViewModel.LoadProcessesCommand.Execute(null);
             HookSuspendUi();
             HookRulesChanged();
-            _ = SyncStartupToggleAsync();
         }
 
         private bool _rulesHooked;
@@ -151,27 +142,6 @@ namespace kaliteConfig.Pages
                 _suspendHooked = false;
             }
             try { ViewModel.Shutdown(); } catch { }
-        }
-
-        private async Task SyncStartupToggleAsync()
-        {
-            _syncingStartupToggle = true;
-            try { StartupToggle.IsOn = await _startup.IsEnabledAsync(); }
-            catch { StartupToggle.IsOn = false; }
-            finally { _syncingStartupToggle = false; }
-        }
-
-        private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (_syncingStartupToggle) return;
-            _syncingStartupToggle = true;
-            try
-            {
-                bool ok = await _startup.SetEnabledAsync(StartupToggle.IsOn);
-                if (!ok) StartupToggle.IsOn = !StartupToggle.IsOn;
-            }
-            catch { StartupToggle.IsOn = !StartupToggle.IsOn; }
-            finally { _syncingStartupToggle = false; }
         }
 
         private TunerProcessRow? GetRow(object sender) => (sender as FrameworkElement)?.DataContext as TunerProcessRow;
@@ -646,9 +616,13 @@ namespace kaliteConfig.Pages
                 }.ShowAsync();
             });
         }
-        private void MainSelectorBar_SelectionChanged(Microsoft.UI.Xaml.Controls.SelectorBar sender, Microsoft.UI.Xaml.Controls.SelectorBarSelectionChangedEventArgs args)
+        private void Tab_Click(object sender, RoutedEventArgs e) => ShowTab(ReferenceEquals(sender, TabRules));
+
+        private void ShowTab(bool rules)
         {
-            if (sender.SelectedItem == TabRules)
+            ApplyTabVisual(TabProcesses, !rules);
+            ApplyTabVisual(TabRules, rules);
+            if (rules)
             {
                 ProcessesPanel.Visibility = Visibility.Collapsed;
                 RulesPanel.Visibility = Visibility.Visible;
@@ -660,6 +634,28 @@ namespace kaliteConfig.Pages
                 RulesPanel.Visibility = Visibility.Collapsed;
                 ProcessesPanel.Visibility = Visibility.Visible;
             }
+        }
+
+        private static void ApplyTabVisual(Button tab, bool selected)
+        {
+            tab.Background = selected
+                ? ThemeBrush("ToggleSegmentFillBrush", Microsoft.UI.Colors.White)
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            tab.Foreground = selected
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White)
+                : ThemeBrush("TextFillColorSecondaryBrush", Microsoft.UI.Colors.Gray);
+        }
+
+        private static Microsoft.UI.Xaml.Media.Brush ThemeBrush(string key, Windows.UI.Color fallback)
+        {
+            try
+            {
+                if (Application.Current.Resources.TryGetValue(key, out object? value)
+                    && value is Microsoft.UI.Xaml.Media.Brush brush)
+                    return brush;
+            }
+            catch { }
+            return new Microsoft.UI.Xaml.Media.SolidColorBrush(fallback);
         }
 
         private void RefreshRulesMeta()

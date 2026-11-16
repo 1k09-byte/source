@@ -8,15 +8,15 @@
 
     <Border BorderThickness="0,1,0,0"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-            Margin="0,10,0,0"
-            Padding="0,18,0,0">
+            Margin="0,6,0,0"
+            Padding="0,8,0,0">
         <Grid>
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="Slide" Y="-14" />
             </Grid.RenderTransform>
 
-            <StackPanel x:Name="Body" Spacing="24" Opacity="0">
-                <StackPanel Spacing="4">
+            <StackPanel x:Name="Body" Spacing="10" Opacity="0">
+                <StackPanel Spacing="3">
                     <TextBlock Text="{x:Bind Device.CategoryLabel, Mode=OneWay, FallbackValue=''}"
                                Style="{StaticResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -26,7 +26,7 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <StackPanel Spacing="16">
+                <StackPanel Spacing="7">
                     <TextBlock Text="MSI settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" Header="MSI mode"
                                   OnContent="Enabled" OffContent="Disabled"
@@ -46,7 +46,7 @@
                                Style="{StaticResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="Max MSI"
                                    Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -57,7 +57,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Spacing="16">
+                <StackPanel Spacing="7">
                     <TextBlock Text="Advanced policies" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <ComboBox Header="Device priority"
                               HorizontalAlignment="Stretch"
@@ -80,7 +80,7 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <StackPanel Spacing="8"
+                <StackPanel Spacing="6"
                             Visibility="{x:Bind local:AffinityDevicePanel.BoolToVis(Device.IsNetwork), Mode=OneWay}">
                     <TextBlock Text="Receive Side Scaling (NDIS)" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <TextBlock Text="{x:Bind Device.RssText, Mode=OneWay, FallbackValue=''}"
@@ -92,7 +92,7 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <StackPanel Spacing="16">
+                <StackPanel Spacing="7">
                     <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                               IsExpanded="{x:Bind Device.IsProcessorMaskExpanded, Mode=TwoWay}">
                         <Expander.Header>
@@ -103,8 +103,8 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                         </Expander.Header>
-                        <StackPanel Spacing="12">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
                                 <Button Content="Select all" Click="SelectAll_Click" />
                                 <Button Content="Clear" Click="Clear_Click" />
                             </StackPanel>
@@ -117,12 +117,12 @@
                                 </ItemsRepeater.Layout>
                                 <ItemsRepeater.ItemTemplate>
                                     <DataTemplate x:DataType="models:ProcessorCoreGroup">
-                                        <StackPanel Spacing="6">
+                                        <StackPanel Spacing="4">
                                             <TextBlock Text="{x:Bind Title}"
                                                        Style="{StaticResource BodyStrongTextBlockStyle}" />
                                             <ItemsRepeater ItemsSource="{x:Bind Threads}">
                                                 <ItemsRepeater.Layout>
-                                                    <StackLayout Spacing="4" />
+                                                    <StackLayout Spacing="3" />
                                                 </ItemsRepeater.Layout>
                                                 <ItemsRepeater.ItemTemplate>
                                                     <DataTemplate x:DataType="models:ProcessorThreadItem">
@@ -142,7 +142,7 @@
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
                     <Button Content="Cancel" Click="Cancel_Click" />
                     <Button Style="{ThemeResource AccentButtonStyle}" Content="Apply" Click="Apply_Click" />
                 </StackPanel>

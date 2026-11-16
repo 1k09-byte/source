@@ -397,11 +397,6 @@ namespace kaliteConfig.Pages
             ApplyContentInset();
         }
 
-        private async void DiscordInvite_Click(object sender, RoutedEventArgs e)
-        {
-            try { await Windows.System.Launcher.LaunchUriAsync(new Uri("https://discord.gg/faQgV6yayY")); } catch { }
-        }
-
         private bool _syncingPresence;
 
         private void PresenceToggle_Toggled(object sender, RoutedEventArgs e)

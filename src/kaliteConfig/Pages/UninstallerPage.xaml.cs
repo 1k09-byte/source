@@ -12,7 +12,13 @@ namespace kaliteConfig.Pages
         public UninstallerPage()
         {
             this.InitializeComponent();
+            FilterBar.SelectedItem = FilterBar.Items[0] as SelectorBarItem;
             ViewModel.IsUninstallerTabActive = true;
+            ViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ViewModel.ShowSystem)) UpdateShowSystemButton();
+            };
+            UpdateShowSystemButton();
             this.Loaded += async (s, e) =>
             {
                 if (ViewModel.Apps.Count == 0 && !ViewModel.IsLoading)
@@ -20,6 +26,29 @@ namespace kaliteConfig.Pages
                     await ViewModel.LoadAppsCommand.ExecuteAsync(null);
                 }
             };
+        }
+
+        private void FilterBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+        {
+            int index = sender.Items.IndexOf(sender.SelectedItem);
+            if (index >= 0 && ViewModel.FilterIndex != index) ViewModel.FilterIndex = index;
+        }
+
+        private void ShowSystemButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.ShowSystem = !ViewModel.ShowSystem;
+            UpdateShowSystemButton();
+        }
+
+        private void UpdateShowSystemButton()
+        {
+            bool on = ViewModel.ShowSystem;
+            ShowSystemButton.Content = on ? "On" : "Off";
+            ShowSystemButton.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(
+                on ? Windows.UI.Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF) : Windows.UI.Color.FromArgb(0x1A, 0xFF, 0xFF, 0xFF));
+            ShowSystemButton.Foreground = on
+                ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White)
+                : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"];
         }
 
         private void AppList_SelectionChanged(object sender, Microsoft.UI.Xaml.Controls.SelectionChangedEventArgs e)

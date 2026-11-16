@@ -52,47 +52,17 @@ namespace kaliteConfig.Pages
             try { ViewModel.RefreshDevices(); } catch { }
         }
 
-        private void SectionBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
-        {
-            string tag = sender.SelectedItem?.Text ?? "Mouse";
-            MouseSection.Visibility = tag == "Mouse" ? Visibility.Visible : Visibility.Collapsed;
-            ButtonsSection.Visibility = tag == "Buttons" ? Visibility.Visible : Visibility.Collapsed;
-            WindowsSection.Visibility = tag == "Windows" ? Visibility.Visible : Visibility.Collapsed;
-            TestsSection.Visibility = tag == "Tests" ? Visibility.Visible : Visibility.Collapsed;
-            IgnoredSection.Visibility = tag == "Ignored" ? Visibility.Visible : Visibility.Collapsed;
-            LogSection.Visibility = tag == "Log" ? Visibility.Visible : Visibility.Collapsed;
-        }
-
         private void Rescan_Click(object sender, RoutedEventArgs e) => ViewModel.Rescan();
 
         private void VendorSoftware_Click(object sender, RoutedEventArgs e) => ViewModel.OpenVendorSoftware();
 
         private void UseRecommendation_Click(object sender, RoutedEventArgs e) => ViewModel.UseRecommendation();
 
-        private void ShowIgnored_Click(object sender, RoutedEventArgs e)
-        {
-            if ((sender as FrameworkElement)?.Tag is MouseDeviceRow row) ViewModel.ShowIgnoredAnyway(row);
-        }
-
         private void NicknameSave_Click(object sender, RoutedEventArgs e) => ViewModel.SaveNickname();
 
         private async void DeviceApply_Click(object sender, RoutedEventArgs e) => await ViewModel.ApplyDeviceAsync();
 
         private async void DeviceRevert_Click(object sender, RoutedEventArgs e) => await ViewModel.RevertDeviceAsync();
-
-        private async void WindowsApply_Click(object sender, RoutedEventArgs e) => await ViewModel.ApplyWindowsAsync();
-
-        private async void WindowsReset_Click(object sender, RoutedEventArgs e) => await ViewModel.ResetWindowsSectionAsync();
-
-        private async void WindowsRevert_Click(object sender, RoutedEventArgs e) => await ViewModel.RevertWindowsAsync();
-
-        private void TestStart_Click(object sender, RoutedEventArgs e) => ViewModel.StartTestManually();
-
-        private void TestStop_Click(object sender, RoutedEventArgs e) => ViewModel.StopTest();
-
-        private void DpiAnalyze_Click(object sender, RoutedEventArgs e) => ViewModel.AnalyzeDpi();
-
-        private void ClickTestArea_PointerPressed(object sender, PointerRoutedEventArgs e) => ViewModel.RegisterClick();
 
         private void OnMotion(InputMotionSample sample)
         {

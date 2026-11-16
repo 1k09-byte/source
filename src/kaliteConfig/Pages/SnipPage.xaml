@@ -102,8 +102,8 @@
                 <NavigationViewItem Tag="Settings" Content="Settings" Icon="Setting" Style="{StaticResource HubTabStyle}"/>
             </NavigationView.MenuItems>
             
-            <Border Margin="20,8,20,16" Style="{StaticResource SnipSurface}">
-            <Grid Padding="4">
+            <Border Margin="14,6,14,11" Style="{StaticResource SnipSurface}">
+            <Grid Padding="3">
                 <ScrollViewer VerticalScrollBarVisibility="Hidden">
                     <Grid>
                         <Grid x:Name="ViewCapture" Visibility="Visible">
@@ -123,8 +123,8 @@
                             
                             
 
-                            <TextBlock Grid.Row="2" Text="Capture Profile" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,0,0,12"/>
-                            <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" Margin="0,0,0,24">
+                            <TextBlock Grid.Row="2" Text="Capture Profile" Style="{StaticResource SubtitleTextBlockStyle}" Margin="0,0,0,8"/>
+                            <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="6" Margin="0,0,0,17">
                                 <ComboBox x:Name="ProfilePicker" Width="260" SelectedIndex="0" AutomationProperties.Name="Capture profile" SelectionChanged="ProfilePicker_SelectionChanged">
                                     <ComboBoxItem Content="Default (High Quality PNG)"/>
                                     <ComboBoxItem Content="Bug Report (Redact &amp; Copy)"/>
@@ -133,7 +133,7 @@
                                 <Button Content="Edit Profiles" Click="EditProfiles_Click"/>
                             </StackPanel>
 
-                            <Grid Grid.Row="4" Margin="0,0,0,8">
+                            <Grid Grid.Row="4" Margin="0,0,0,6">
                                 <TextBlock Text="Recent Snips" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center"/>
                                 <HyperlinkButton Content="View all" HorizontalAlignment="Right" Click="ViewAllSnips_Click"/>
                             </Grid>
@@ -145,13 +145,13 @@
                                 </ListView.ItemsPanel>
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="vm:SnipThumbnailItem">
-                                         <Border Width="260" Height="160" Margin="0,0,12,0"
+                                         <Border Width="260" Height="160" Margin="0,0,8,0"
                                                  Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                                  BorderThickness="2"
                                                  BorderBrush="Transparent"
                                                  CornerRadius="{ThemeResource ControlCornerRadius}"
                                                  ToolTipService.ToolTip="{x:Bind Card.FullErrorText, Mode=OneWay}">
-                                              <Grid Margin="2">
+                                              <Grid Margin="1">
                                                   <Grid.RowDefinitions>
                                                       <RowDefinition Height="*"/>
                                                       <RowDefinition Height="Auto"/>
@@ -172,7 +172,7 @@
                                                              Width="{x:Bind Card.ImageWidth, Mode=OneWay}" Height="{x:Bind Card.ImageHeight, Mode=OneWay}"
                                                              HorizontalAlignment="Center" VerticalAlignment="Center"
                                                              Visibility="{x:Bind Card.ImageVisibility, Mode=OneWay}"/>
-                                                      <StackPanel Spacing="6" Padding="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      <StackPanel Spacing="4" Padding="7" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                                   Visibility="{x:Bind Card.ErrorVisibility, Mode=OneWay}">
                                                           <FontIcon Glyph="&#xE783;" FontSize="20" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                                           <TextBlock Text="{x:Bind Card.ShortErrorText, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -182,22 +182,22 @@
                                                           <Button Content="Remove from gallery" Click="CardRemoveMissing_Click" Visibility="{x:Bind Card.RemoveMissingVisibility, Mode=OneWay}"/>
                                                       </StackPanel>
                                                       <Border Visibility="{x:Bind Card.BlankBadgeVisibility, Mode=OneWay}" Background="#CC3A3A00" CornerRadius="10"
-                                                              Padding="6,2" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6"
+                                                              Padding="4,1" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="4"
                                                               ToolTipService.ToolTip="Every pixel is identical. Protected or DRM content can legitimately capture as a flat frame.">
-                                                          <StackPanel Orientation="Horizontal" Spacing="4">
+                                                          <StackPanel Orientation="Horizontal" Spacing="3">
                                                               <FontIcon Glyph="&#xE7BA;" FontSize="11" Foreground="#FFFFD24D"/>
                                                               <TextBlock Text="Image looks blank" FontSize="11" Foreground="#FFFFD24D"/>
                                                           </StackPanel>
                                                       </Border>
                                                   </Grid>
-                                                  <StackPanel Grid.Row="1" Margin="8,6" Spacing="2">
+                                                  <StackPanel Grid.Row="1" Margin="6,4" Spacing="1">
                                                       <TextBlock Text="{x:Bind Filename}" Style="{ThemeResource BodyStrongTextBlockStyle}" FontSize="12" TextTrimming="CharacterEllipsis" MaxLines="1" ToolTipService.ToolTip="{x:Bind Filename}"/>
-                                                      <StackPanel Orientation="Horizontal" Spacing="8">
+                                                      <StackPanel Orientation="Horizontal" Spacing="6">
                                                           <TextBlock Text="{x:Bind RelativeTimeText, Mode=OneWay}" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.7"/>
                                                           <TextBlock Text="{x:Bind ResolutionText, Mode=OneWay}" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.7"/>
                                                       </StackPanel>
                                                   </StackPanel>
-                                                  <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" Spacing="4">
+                                                  <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0" Spacing="3">
                                                       <Button Click="RecentCopy_Click" ToolTipService.ToolTip="Copy image" AutomationProperties.Name="Copy image"><FontIcon Glyph="&#xE8C8;"/></Button>
                                                       <Button Click="RecentEdit_Click" ToolTipService.ToolTip="Edit in Snip" AutomationProperties.Name="Edit snip"><FontIcon Glyph="&#xE70F;"/></Button>
                                                       <Button Click="RecentFolder_Click" ToolTipService.ToolTip="Show in folder" AutomationProperties.Name="Show in folder"><FontIcon Glyph="&#xE8BB;"/></Button>
@@ -209,10 +209,10 @@
                                 </ListView.ItemTemplate>
                             </ListView>
 
-                            <Border Grid.Row="8" Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="24" MinHeight="72" AllowDrop="True" Drop="SnipDropZone_Drop" DragOver="SnipDropZone_DragOver">
+                            <Border Grid.Row="8" Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="17" MinHeight="72" AllowDrop="True" Drop="SnipDropZone_Drop" DragOver="SnipDropZone_DragOver">
                                 <TextBlock Text="Drop or paste an image to edit" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                             </Border>
-                            <TextBlock Grid.Row="9" Text="{x:Bind ViewModel.StorageText, Mode=OneWay}" Margin="0,12,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}"/>
+                            <TextBlock Grid.Row="9" Text="{x:Bind ViewModel.StorageText, Mode=OneWay}" Margin="0,8,0,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </Grid>
 
                         <Grid x:Name="ViewGallery" Visibility="Collapsed">
@@ -222,13 +222,13 @@
                                  <RowDefinition Height="*"/>
                              </Grid.RowDefinitions>
 
-                             <Grid Margin="0,0,0,8">
+                             <Grid Margin="0,0,0,6">
                                  <Grid.ColumnDefinitions>
                                      <ColumnDefinition Width="*"/>
                                      <ColumnDefinition Width="Auto"/>
                                  </Grid.ColumnDefinitions>
                                  <TextBlock Text="Gallery" Style="{StaticResource TitleLargeTextBlockStyle}" VerticalAlignment="Center"/>
-                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                      <Button Content="Import Images..." Click="ImportImages_Click"/>
                                      <Button Content="Find blanks..." Click="FindBlanks_Click"
                                              ToolTipService.ToolTip="Find flat blank captures taking up space"/>
@@ -240,7 +240,7 @@
                                  </StackPanel>
                              </Grid>
 
-                             <InfoBar x:Name="GalleryInfoBar" Grid.Row="1" Margin="0,0,0,8" IsOpen="False" IsClosable="True" Severity="Success">
+                             <InfoBar x:Name="GalleryInfoBar" Grid.Row="1" Margin="0,0,0,6" IsOpen="False" IsClosable="True" Severity="Success">
                                  <InfoBar.ActionButton>
                                      <Button Content="Undo" Click="UndoInfoBar_Click" x:Name="UndoInfoButton"/>
                                  </InfoBar.ActionButton>
@@ -258,19 +258,19 @@
                                      <ColumnDefinition Width="300"/>
                                  </Grid.ColumnDefinitions>
 
-                                 <Grid Grid.Row="0" Grid.Column="0" Margin="0,0,0,8">
+                                 <Grid Grid.Row="0" Grid.Column="0" Margin="0,0,0,6">
                                      <Grid.ColumnDefinitions>
                                          <ColumnDefinition Width="*"/>
                                          <ColumnDefinition Width="Auto"/>
                                      </Grid.ColumnDefinitions>
-                                     <StackPanel Orientation="Horizontal" Spacing="8">
+                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                          <AutoSuggestBox Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay}" VerticalAlignment="Bottom" PlaceholderText="Search name, app, tags, OCR..." Width="240" QueryIcon="Find"/>
                                          <ComboBox Header="Type" MinWidth="110" VerticalAlignment="Bottom" ItemsSource="{x:Bind ViewModel.TypeOptions}" SelectedIndex="{x:Bind ViewModel.TypeIndex, Mode=TwoWay}"/>
                                          <ComboBox Header="Format" MinWidth="110" VerticalAlignment="Bottom" ItemsSource="{x:Bind ViewModel.FormatOptions}" SelectedIndex="{x:Bind ViewModel.FormatIndex, Mode=TwoWay}"/>
                                          <ComboBox Header="Date" MinWidth="120" VerticalAlignment="Bottom" ItemsSource="{x:Bind ViewModel.DateOptions}" SelectedIndex="{x:Bind ViewModel.DateIndex, Mode=TwoWay}"/>
                                          <ComboBox Header="App" MinWidth="140" VerticalAlignment="Bottom" ItemsSource="{x:Bind ViewModel.AvailableAppOptions}" SelectedIndex="{x:Bind ViewModel.SelectedAppIndex, Mode=TwoWay}"/>
                                          <ToggleButton IsChecked="{x:Bind ViewModel.FavoritesOnly, Mode=TwoWay}" VerticalAlignment="Bottom" ToolTipService.ToolTip="Show only favorited snips" AutomationProperties.Name="Favorites only">
-                                             <StackPanel Orientation="Horizontal" Spacing="8">
+                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                  <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE735;" FontSize="14"/>
                                                  <TextBlock Text="Favorites only"/>
                                              </StackPanel>
@@ -278,7 +278,7 @@
                                      </StackPanel>
                                  </Grid>
 
-                                 <Grid Grid.Row="1" Grid.Column="0" Margin="0,0,0,8">
+                                 <Grid Grid.Row="1" Grid.Column="0" Margin="0,0,0,6">
                                      <Grid.ColumnDefinitions>
                                          <ColumnDefinition Width="Auto"/>
                                          <ColumnDefinition Width="Auto"/>
@@ -288,16 +288,16 @@
                                          <ColumnDefinition Width="Auto"/>
                                      </Grid.ColumnDefinitions>
                                      <ComboBox Header="Sort" MinWidth="140" VerticalAlignment="Bottom" ItemsSource="{x:Bind ViewModel.SortOptions}" SelectedIndex="{x:Bind ViewModel.SortIndex, Mode=TwoWay}"/>
-                                     <Slider Header="Thumbnail size" Grid.Column="1" Width="140" VerticalAlignment="Bottom" Margin="12,0" Minimum="120" Maximum="380" Value="{x:Bind ViewModel.GalleryThumbSize, Mode=TwoWay}" ToolTipService.ToolTip="Gallery thumbnail size in pixels"/>
+                                     <Slider Header="Thumbnail size" Grid.Column="1" Width="140" VerticalAlignment="Bottom" Margin="8,0" Minimum="120" Maximum="380" Value="{x:Bind ViewModel.GalleryThumbSize, Mode=TwoWay}" ToolTipService.ToolTip="Gallery thumbnail size in pixels"/>
                                      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Bottom" CornerRadius="4" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                                         <RadioButton Content="&#xE80A;" FontFamily="{ThemeResource SymbolThemeFontFamily}" IsChecked="{x:Bind ViewModel.IsGridView, Mode=TwoWay}" GroupName="ViewMode" MinWidth="40" Padding="8,4" ToolTipService.ToolTip="Grid view" AutomationProperties.Name="Grid view"/>
-                                         <RadioButton Content="&#xE8FD;" FontFamily="{ThemeResource SymbolThemeFontFamily}" IsChecked="{x:Bind ViewModel.IsListView, Mode=TwoWay}" GroupName="ViewMode" MinWidth="40" Padding="8,4" ToolTipService.ToolTip="List view" AutomationProperties.Name="List view"/>
+                                         <RadioButton Content="&#xE80A;" FontFamily="{ThemeResource SymbolThemeFontFamily}" IsChecked="{x:Bind ViewModel.IsGridView, Mode=TwoWay}" GroupName="ViewMode" MinWidth="40" Padding="6,3" ToolTipService.ToolTip="Grid view" AutomationProperties.Name="Grid view"/>
+                                         <RadioButton Content="&#xE8FD;" FontFamily="{ThemeResource SymbolThemeFontFamily}" IsChecked="{x:Bind ViewModel.IsListView, Mode=TwoWay}" GroupName="ViewMode" MinWidth="40" Padding="6,3" ToolTipService.ToolTip="List view" AutomationProperties.Name="List view"/>
                                      </StackPanel>
-                                     <HyperlinkButton Grid.Column="3" Content="Clear filters" Margin="12,0,0,0" VerticalAlignment="Bottom" Click="ClearFilters_Click" Visibility="{x:Bind ViewModel.HasActiveFiltersVisibility, Mode=OneWay}"/>
+                                     <HyperlinkButton Grid.Column="3" Content="Clear filters" Margin="8,0,0,0" VerticalAlignment="Bottom" Click="ClearFilters_Click" Visibility="{x:Bind ViewModel.HasActiveFiltersVisibility, Mode=OneWay}"/>
                                      <TextBlock Grid.Column="5" Text="{x:Bind ViewModel.StorageText, Mode=OneWay}" VerticalAlignment="Bottom" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                  </Grid>
 
-                                 <ScrollViewer Grid.Row="2" Grid.Column="0" Margin="0,0,0,8"
+                                 <ScrollViewer Grid.Row="2" Grid.Column="0" Margin="0,0,0,6"
                                               HorizontalScrollBarVisibility="Auto" HorizontalScrollMode="Auto"
                                               VerticalScrollBarVisibility="Disabled" VerticalScrollMode="Disabled">
                                   <Grid Visibility="{x:Bind ViewModel.SelectionBarVisibility, Mode=OneWay}">
@@ -309,12 +309,12 @@
                                       <ColumnDefinition Width="Auto"/>
                                       <ColumnDefinition Width="Auto"/>
                                   </Grid.ColumnDefinitions>
-                                      <TextBlock Text="{x:Bind ViewModel.SelectedCountText, Mode=OneWay}" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,8,0"/>
+                                      <TextBlock Text="{x:Bind ViewModel.SelectedCountText, Mode=OneWay}" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,6,0"/>
                                       <Button Grid.Column="1" Content="Copy" Click="CopySelected_Click"/>
-                                      <Button Grid.Column="2" Content="Delete" Click="DeleteSelected_Click" Margin="8,0,0,0"/>
-                                      <Button Grid.Column="3" Content="Export ZIP" Click="ExportZipSelected_Click" Margin="8,0,0,0"/>
-                                      <Button Grid.Column="4" Content="Convert..." Click="ConvertSelected_Click" Margin="8,0,0,0"/>
-                                      <Button Grid.Column="5" Content="Move..." Click="MoveSelected_Click" Margin="8,0,0,0"/>
+                                      <Button Grid.Column="2" Content="Delete" Click="DeleteSelected_Click" Margin="6,0,0,0"/>
+                                      <Button Grid.Column="3" Content="Export ZIP" Click="ExportZipSelected_Click" Margin="6,0,0,0"/>
+                                      <Button Grid.Column="4" Content="Convert..." Click="ConvertSelected_Click" Margin="6,0,0,0"/>
+                                      <Button Grid.Column="5" Content="Move..." Click="MoveSelected_Click" Margin="6,0,0,0"/>
                                   </Grid>
                                   </ScrollViewer>
 
@@ -339,7 +339,7 @@
                                          </GridView.ItemsPanel>
                                          <GridView.ItemTemplate>
                                              <DataTemplate x:DataType="vm:GalleryItem">
-                                                  <Border Width="{x:Bind ThumbSize, Mode=OneWay}" Height="{x:Bind ThumbSize, Mode=OneWay}" Margin="4"
+                                                  <Border Width="{x:Bind ThumbSize, Mode=OneWay}" Height="{x:Bind ThumbSize, Mode=OneWay}" Margin="3"
                                                           Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                                           BorderBrush="{x:Bind TileBorder, Mode=OneWay}"
                                                           BorderThickness="2"
@@ -361,7 +361,7 @@
                                                              <MenuFlyoutSeparator/>
                                                              <MenuFlyoutItem Text="Delete" Command="{x:Bind DeleteCommand}"/>
                                                          </MenuFlyout>
-                                                     </Border.ContextFlyout>                                                     <Grid Margin="2">
+                                                     </Border.ContextFlyout>                                                     <Grid Margin="1">
                                                          <Grid.RowDefinitions>
                                                              <RowDefinition Height="*"/>
                                                              <RowDefinition Height="36"/>
@@ -382,7 +382,7 @@
                                                                     Width="{x:Bind Card.ImageWidth, Mode=OneWay}" Height="{x:Bind Card.ImageHeight, Mode=OneWay}"
                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
                                                                     Visibility="{x:Bind Card.ImageVisibility, Mode=OneWay}"/>
-                                                             <StackPanel Spacing="6" Padding="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                             <StackPanel Spacing="4" Padding="7" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                                          Visibility="{x:Bind Card.ErrorVisibility, Mode=OneWay}">
                                                                  <FontIcon Glyph="&#xE783;" FontSize="20" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                                                  <TextBlock Text="{x:Bind Card.ShortErrorText, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -392,11 +392,11 @@
                                                                  <Button Content="Remove from gallery" Click="CardRemoveMissing_Click" Visibility="{x:Bind Card.RemoveMissingVisibility, Mode=OneWay}"/>
                                                              </StackPanel>
                                                              <Border Visibility="{x:Bind Card.BlankBadgeVisibility, Mode=OneWay}" Background="#CC3A3A00" CornerRadius="10"
-                                                                     Padding="6,2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4"
+                                                                     Padding="4,1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="3"
                                                                      ToolTipService.ToolTip="Every pixel is identical. Protected or DRM content can legitimately capture as a flat frame.">
                                                                  <FontIcon Glyph="&#xE7BA;" FontSize="11" Foreground="#FFFFD24D"/>
                                                              </Border>
-                                                             <Button Margin="4" VerticalAlignment="Top" HorizontalAlignment="Left" Command="{x:Bind ToggleFavoriteCommand}" Visibility="{x:Bind StarVisibility, Mode=OneWay}">
+                                                             <Button Margin="3" VerticalAlignment="Top" HorizontalAlignment="Left" Command="{x:Bind ToggleFavoriteCommand}" Visibility="{x:Bind StarVisibility, Mode=OneWay}">
                                                                  <FontIcon Glyph="{x:Bind FavoriteGlyph}" FontSize="14" Foreground="{x:Bind StarBrush, Mode=OneWay}"/>
                                                              </Button>
                                                          </Grid>
@@ -411,8 +411,8 @@
                                                                  </LinearGradientBrush>
                                                              </Border.Background>
                                                          </Border>
-                                                         <TextBlock Text="{x:Bind Name}" Foreground="White" VerticalAlignment="Bottom" Margin="8,4" TextTrimming="CharacterEllipsis" MaxLines="1" FontSize="11"/>
-                                                         <Border CornerRadius="12" Width="22" Height="22" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="4" Background="#CC2F2F2F" Visibility="{x:Bind IsSelected, Mode=OneWay}">
+                                                         <TextBlock Text="{x:Bind Name}" Foreground="White" VerticalAlignment="Bottom" Margin="6,3" TextTrimming="CharacterEllipsis" MaxLines="1" FontSize="11"/>
+                                                         <Border CornerRadius="12" Width="22" Height="22" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="3" Background="#CC2F2F2F" Visibility="{x:Bind IsSelected, Mode=OneWay}">
                                                              <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="White"/>
                                                          </Border>
                                                      </Grid>
@@ -434,7 +434,7 @@
                                                Visibility="{x:Bind ViewModel.ListViewVisibility, Mode=OneWay}">
                                          <ListView.ItemTemplate>
                                              <DataTemplate x:DataType="vm:GalleryItem">
-                                                 <Border Margin="4"
+                                                 <Border Margin="3"
                                                          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                                          BorderBrush="{x:Bind TileBorder, Mode=OneWay}"
                                                          BorderThickness="2"
@@ -456,7 +456,7 @@
                                                              <MenuFlyoutItem Text="Delete" Command="{x:Bind DeleteCommand}"/>
                                                          </MenuFlyout>
                                                      </Border.ContextFlyout>
-                                                     <Grid Margin="2" Height="96">
+                                                     <Grid Margin="1" Height="96">
                                                          <Grid.ColumnDefinitions>
                                                              <ColumnDefinition Width="128"/>
                                                              <ColumnDefinition Width="*"/>
@@ -465,7 +465,7 @@
                                                              <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" Visibility="{x:Bind Card.SkeletonVisibility, Mode=OneWay}"/>
                                                              <Image x:Name="CardImage" Source="{x:Bind Card.Image, Mode=OneWay}" Stretch="Uniform" Width="128" Height="96"
                                                                     Visibility="{x:Bind Card.ImageVisibility, Mode=OneWay}"/>
-                                                             <StackPanel Spacing="4" Padding="6" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                             <StackPanel Spacing="3" Padding="4" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                                          Visibility="{x:Bind Card.ErrorVisibility, Mode=OneWay}">
                                                                  <FontIcon Glyph="&#xE783;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                                                  <TextBlock Text="{x:Bind Card.ShortErrorText, Mode=OneWay}" FontSize="10" TextWrapping="Wrap" TextAlignment="Center"
@@ -473,10 +473,10 @@
                                                                             ToolTipService.ToolTip="{x:Bind Card.FullErrorText, Mode=OneWay}"/>
                                                              </StackPanel>
                                                          </Grid>
-                                                         <StackPanel Grid.Column="1" Margin="12,8" VerticalAlignment="Center" Spacing="2">
+                                                         <StackPanel Grid.Column="1" Margin="8,6" VerticalAlignment="Center" Spacing="1">
                                                              <TextBlock Text="{x:Bind Name}" Style="{ThemeResource BodyStrongTextBlockStyle}" TextTrimming="CharacterEllipsis"/>
                                                              <TextBlock Text="{x:Bind CreatedText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
-                                                             <StackPanel Orientation="Horizontal" Spacing="8">
+                                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                                  <TextBlock Text="{x:Bind SizeText}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
                                                                  <TextBlock Text="{x:Bind ResolutionText, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
                                                              </StackPanel>
@@ -490,13 +490,13 @@
                                      </ListView>
                                  </Grid>
 
-                                 <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Margin="16,0,0,0" Padding="16" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
-                                     <ScrollViewer VerticalScrollBarVisibility="Hidden" Padding="0,0,8,0">
-                                         <StackPanel Spacing="12">
+                                 <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="1" Margin="11,0,0,0" Padding="11" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
+                                     <ScrollViewer VerticalScrollBarVisibility="Hidden" Padding="0,0,6,0">
+                                         <StackPanel Spacing="8">
                                              <TextBlock Text="Item Details" Style="{StaticResource SubtitleTextBlockStyle}"/>
                                              <TextBlock Text="Select a snip to see its details." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"
                                                         Visibility="{x:Bind ViewModel.DetailsEmptyVisibility, Mode=OneWay}"/>
-                                             <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.DetailsContentVisibility, Mode=OneWay}">
+                                             <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.DetailsContentVisibility, Mode=OneWay}">
                                                  <Border Height="220" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1"
                                                          BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                                                          Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
@@ -504,7 +504,7 @@
                                                                                SourcePath="{x:Bind ViewModel.SelectedGalleryItem.FilePath, Mode=OneWay}"
                                                                                PreviewActivated="DetailsPreview_Activated"/>
                                                  </Border>
-                                                 <StackPanel Orientation="Horizontal" Spacing="8"
+                                                 <StackPanel Orientation="Horizontal" Spacing="6"
                                                              Visibility="{x:Bind ViewModel.SelectedGalleryItem.Card.ErrorVisibility, Mode=OneWay}">
                                                      <Button Content="Retry" Click="DetailsRetry_Click"
                                                              Visibility="{x:Bind ViewModel.SelectedGalleryItem.Card.RetryVisibility, Mode=OneWay}"/>
@@ -526,7 +526,7 @@
                                                          <RowDefinition Height="Auto"/>
                                                          <RowDefinition Height="Auto"/>
                                                      </Grid.RowDefinitions>
-                                                     <TextBlock Grid.Row="0" Text="Type" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,12,0"/>
+                                                     <TextBlock Grid.Row="0" Text="Type" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,8,0"/>
                                                      <TextBlock Grid.Row="0" Grid.Column="1" Text="{x:Bind ViewModel.SelectedGalleryItem.TypeText, Mode=OneWay}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ViewModel.SelectedGalleryItem.TypeText, Mode=OneWay}"/>
                                                      <TextBlock Grid.Row="1" Text="Created" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                                      <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind ViewModel.SelectedGalleryItem.CreatedText, Mode=OneWay}" TextWrapping="Wrap"/>
@@ -541,28 +541,28 @@
                                                  </Grid>
                                                 <ScrollViewer HorizontalScrollBarVisibility="Auto"
                                                               VerticalScrollBarVisibility="Disabled">
-                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
                                                     <Button Command="{x:Bind ViewModel.SelectedGalleryItem.CopyImageCommand, Mode=OneWay}"
                                                             ToolTipService.ToolTip="Copy image">
-                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
                                                             <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE8C8;" FontSize="14"/>
                                                             <TextBlock Text="Copy"/>
                                                         </StackPanel>
                                                     </Button>
                                                     <Button Click="DetailsEdit_Click" ToolTipService.ToolTip="Edit in Snip">
-                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
                                                             <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE70F;" FontSize="14"/>
                                                             <TextBlock Text="Edit"/>
                                                         </StackPanel>
                                                     </Button>
                                                     <Button Click="DetailsView_Click" ToolTipService.ToolTip="Open the full viewer">
-                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
                                                             <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE8A7;" FontSize="14"/>
                                                             <TextBlock Text="View"/>
                                                         </StackPanel>
                                                     </Button>
                                                     <Button Click="DetailsResize_Click" ToolTipService.ToolTip="Resize this snip">
-                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
                                                             <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE799;" FontSize="14"/>
                                                             <TextBlock Text="Resize"/>
                                                         </StackPanel>
@@ -575,14 +575,14 @@
                                                              <MenuFlyoutItem Text="Open" Command="{x:Bind ViewModel.SelectedGalleryItem.OpenCommand, Mode=OneWay}"/>
                                                          </MenuFlyout>
                                                      </StackPanel.ContextFlyout>
-                                                     <Button Content="Open" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Command="{x:Bind ViewModel.SelectedGalleryItem.OpenCommand, Mode=OneWay}"/>
-                                                     <Button Content="Copy path" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Command="{x:Bind ViewModel.SelectedGalleryItem.CopyPathCommand, Mode=OneWay}"/>
-                                                     <Button Content="Copy text (OCR)" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Command="{x:Bind ViewModel.SelectedGalleryItem.CopyTextCommand, Mode=OneWay}"/>
-                                                     <Button Content="Rename" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Command="{x:Bind ViewModel.SelectedGalleryItem.RenameCommand, Mode=OneWay}"/>
-                                                     <Button Content="Favorite" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Command="{x:Bind ViewModel.SelectedGalleryItem.ToggleFavoriteCommand, Mode=OneWay}"/>
-                                                     <Button Content="Show in folder" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Command="{x:Bind ViewModel.SelectedGalleryItem.OpenContainingFolderCommand, Mode=OneWay}"/>
-                                                     <Button Content="Pin to screen" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Click="DetailsPin_Click"/>
-                                                     <Button Content="Delete" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,2" Command="{x:Bind ViewModel.SelectedGalleryItem.DeleteCommand, Mode=OneWay}"/>
+                                                     <Button Content="Open" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Command="{x:Bind ViewModel.SelectedGalleryItem.OpenCommand, Mode=OneWay}"/>
+                                                     <Button Content="Copy path" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Command="{x:Bind ViewModel.SelectedGalleryItem.CopyPathCommand, Mode=OneWay}"/>
+                                                     <Button Content="Copy text (OCR)" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Command="{x:Bind ViewModel.SelectedGalleryItem.CopyTextCommand, Mode=OneWay}"/>
+                                                     <Button Content="Rename" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Command="{x:Bind ViewModel.SelectedGalleryItem.RenameCommand, Mode=OneWay}"/>
+                                                     <Button Content="Favorite" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Command="{x:Bind ViewModel.SelectedGalleryItem.ToggleFavoriteCommand, Mode=OneWay}"/>
+                                                     <Button Content="Show in folder" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Command="{x:Bind ViewModel.SelectedGalleryItem.OpenContainingFolderCommand, Mode=OneWay}"/>
+                                                     <Button Content="Pin to screen" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Click="DetailsPin_Click"/>
+                                                     <Button Content="Delete" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0,1" Command="{x:Bind ViewModel.SelectedGalleryItem.DeleteCommand, Mode=OneWay}"/>
                                                  </StackPanel>
                                              </StackPanel>
                                          </StackPanel>
@@ -592,10 +592,10 @@
                         </Grid>
 
                         <Grid x:Name="ViewStickers" Visibility="Collapsed">
-                             <StackPanel Spacing="16">
+                             <StackPanel Spacing="11">
                                  <TextBlock Text="Stickers" Style="{StaticResource TitleLargeTextBlockStyle}" />
                                  <TextBlock Text="Import your own stickers, then stamp them onto captures with the sticker tool (K) in the capture overlay." Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                 <StackPanel Orientation="Horizontal" Spacing="8">
+                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                      <Button Content="Import Stickers..." Click="ImportStickers_Click"/>
                                      <Button Content="Delete Selected" Click="DeleteStickers_Click"/>
                                  </StackPanel>
@@ -610,16 +610,16 @@
                                      </GridView.ItemsPanel>
                                      <GridView.ItemTemplate>
                                          <DataTemplate x:DataType="services:StickerEntry">
-                                             <Grid Width="140" Margin="4">
+                                             <Grid Width="140" Margin="3">
                                                  <Grid.RowDefinitions>
                                                      <RowDefinition Height="110"/>
                                                      <RowDefinition Height="Auto"/>
                                                  </Grid.RowDefinitions>
                                                  <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                                     <Image Source="{x:Bind FilePath, Mode=OneTime}" Stretch="Uniform" Margin="8"/>
+                                                     <Image Source="{x:Bind FilePath, Mode=OneTime}" Stretch="Uniform" Margin="6"/>
                                                  </Border>
                                                  <TextBlock Grid.Row="1" Text="{x:Bind Name, Mode=OneTime}" TextTrimming="CharacterEllipsis" MaxLines="1"
-                                                            HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="12"/>
+                                                            HorizontalAlignment="Center" Margin="0,3,0,0" FontSize="12"/>
                                              </Grid>
                                          </DataTemplate>
                                      </GridView.ItemTemplate>
@@ -628,10 +628,10 @@
                         </Grid>
 
                         <Grid x:Name="ViewBin" Visibility="Collapsed">
-                             <StackPanel Spacing="16">
+                             <StackPanel Spacing="11">
                                  <TextBlock Text="Bin" Style="{StaticResource TitleLargeTextBlockStyle}" />
                                  <TextBlock Text="Deleted snips wait here until you restore them or empty the bin. Nothing is purged automatically." Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                 <StackPanel Orientation="Horizontal" Spacing="8">
+                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                      <Button Content="Restore Selected" Click="RestoreTrash_Click"/>
                                      <Button Content="Delete Forever" Click="DeleteTrashForever_Click"/>
                                      <Button Content="Empty Bin" Click="EmptyBin_Click"/>
@@ -648,16 +648,16 @@
                                      </GridView.ItemsPanel>
                                      <GridView.ItemTemplate>
                                          <DataTemplate x:DataType="vm:SnipThumbnailItem">
-                                             <Grid Width="180" Margin="4">
+                                             <Grid Width="180" Margin="3">
                                                  <Grid.RowDefinitions>
                                                      <RowDefinition Height="110"/>
                                                      <RowDefinition Height="Auto"/>
                                                  </Grid.RowDefinitions>
                                                  <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                                     <Image Source="{x:Bind Thumbnail, Mode=OneWay}" Stretch="Uniform" Margin="6"/>
+                                                     <Image Source="{x:Bind Thumbnail, Mode=OneWay}" Stretch="Uniform" Margin="4"/>
                                                  </Border>
                                                  <TextBlock Grid.Row="1" Text="{x:Bind Filename, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1"
-                                                            HorizontalAlignment="Center" Margin="0,4,0,0" FontSize="12"/>
+                                                            HorizontalAlignment="Center" Margin="0,3,0,0" FontSize="12"/>
                                              </Grid>
                                          </DataTemplate>
                                      </GridView.ItemTemplate>
@@ -666,51 +666,51 @@
                         </Grid>
 
                         <Grid x:Name="ViewSettings" Visibility="Collapsed">
-                            <StackPanel Spacing="16" MaxWidth="800" HorizontalAlignment="Left">
+                            <StackPanel Spacing="11" MaxWidth="800" HorizontalAlignment="Left">
                                 <TextBlock Text="Snip Configuration" Style="{StaticResource TitleLargeTextBlockStyle}" />
                                 
-                                <Grid Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <Grid Padding="11" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="3">
                                         <TextBlock Text="Instant Auto-Copy" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock Text="Copy to clipboard on release and close immediately. Turn off to keep the editor toolbar instead." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}"/>
                                     </StackPanel>
                                     <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.IsInstantModeEnabled, Mode=TwoWay}" />
                                 </Grid>
 
-                                <Grid Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <Grid Padding="11" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="3">
                                         <TextBlock Text="Capture notifications" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock Text="Slide-in confirmation after capture, save, import and copy. Lasts 3 seconds, bottom-right. Undo and errors always use the banner instead." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.SnipToastEnabled, Mode=TwoWay}" />
                                 </Grid>
 
-                                <Grid Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <Grid Padding="11" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="3">
                                         <TextBlock Text="Fill card thumbnails" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock Text="Off (default): every thumbnail fits inside its card, never cropped. On: thumbnails cover the card, so very wide or tall snips are cropped to fill it." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" Grid.Column="1" VerticalAlignment="Center" IsOn="{x:Bind ViewModel.ThumbnailFillMode, Mode=TwoWay}"/>
                                 </Grid>
 
-                                <Grid Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <Grid Padding="11" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="3">
                                         <TextBlock Text="Capture Hotkey" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock Text="Select the global hardware interrupt shortcut to instantly freeze the screen." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}"/>
                                     </StackPanel>
@@ -719,28 +719,28 @@
                                               SelectedIndex="{x:Bind ViewModel.SelectedHotkeyIndex, Mode=TwoWay}" />
                                 </Grid>
 
-                                <Grid Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <Grid Padding="11" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="3">
                                         <TextBlock Text="Custom combination" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock Text="Capture any Ctrl/Shift/Alt + key. Taken keys warn and keep the old hotkey. The Win key cannot be captured." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <TextBlock x:Name="CustomHotkeyLabel" Text="{x:Bind ViewModel.CustomHotkeyText, Mode=OneWay}" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <Button x:Name="CaptureHotkeyButton" Content="Press keys…" Click="CaptureHotkeyButton_Click" KeyDown="CaptureHotkeyButton_KeyDown"
                                                 ToolTipService.ToolTip="Focus, then press the wanted combination. Esc cancels."/>
                                     </StackPanel>
                                 </Grid>
 
-                                <Grid Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <Grid Padding="11" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="3">
                                         <TextBlock Text="Auto-delete old snips" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock Text="Automatically remove snips older than the chosen age (favorites are kept)." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}"/>
                                     </StackPanel>
@@ -754,16 +754,16 @@
                                     </ComboBox>
                                 </Grid>
 
-                                <Grid Padding="16" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                <Grid Padding="11" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="3">
                                         <TextBlock Text="Override Windows Snipping Tool" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                                         <TextBlock Text="Modifies the Registry so Windows stops stealing the PrtScn key (takes effect after sign out/in), then re-registers the kalite hotkey." Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{ThemeResource CaptionTextBlockStyle}"/>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                         <Button Content="Disable Key Hijacking" Command="{x:Bind ViewModel.DisableWindowsSnippingCommand}" />
                                         <Button Content="Remove Built-in App" Command="{x:Bind ViewModel.ForceRemoveSnippingToolCommand}" ToolTipService.ToolTip="Completely rips out SnippingTool.exe and its UWP package." />
                                     </StackPanel>
@@ -776,13 +776,13 @@
             </Border>
         </NavigationView>
 
-        <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Margin="20,0,20,8" Padding="12,6">
-             <StackPanel Orientation="Horizontal" Spacing="16">
+        <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Margin="14,0,14,6" Padding="8,4">
+             <StackPanel Orientation="Horizontal" Spacing="11">
                  <TextBlock Text="{x:Bind ViewModel.StatusBarRegistrationText, Mode=OneWay}" Foreground="{x:Bind ViewModel.StatusBarHotkeyBrush, Mode=OneWay}" VerticalAlignment="Center"
                             ToolTipService.ToolTip="{x:Bind ViewModel.StatusBarHotkeyTooltip, Mode=OneWay}"/>
                  <HyperlinkButton Content="{x:Bind ViewModel.StatusBarHijackText, Mode=OneWay}" Foreground="{x:Bind ViewModel.StatusBarPrtScnBrush, Mode=OneWay}" VerticalAlignment="Center" Padding="0"
                                  ToolTipService.ToolTip="{x:Bind ViewModel.StatusBarPrtScnTooltip, Mode=OneWay}" Click="StatusBarPrtScn_Click"/>
-                 <Border Background="#33C4A483" CornerRadius="4" Padding="8,2" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.ElevationBadgeVisibility, Mode=OneWay}"
+                 <Border Background="#33C4A483" CornerRadius="4" Padding="6,1" VerticalAlignment="Center" Visibility="{x:Bind ViewModel.ElevationBadgeVisibility, Mode=OneWay}"
                          ToolTipService.ToolTip="The app runs elevated: drag-and-drop to non-elevated apps (Explorer, Discord) is blocked by Windows. Use Copy Image / Copy File instead.">
                      <TextBlock Text="{x:Bind ViewModel.ElevationBadgeText, Mode=OneWay}" FontSize="11" Foreground="#FFC4A483"/>
                  </Border>
@@ -791,14 +791,14 @@
         </Border>
 
         <Button x:Name="ToastCard" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Bottom" HorizontalContentAlignment="Stretch"
-                Margin="0,0,24,84" MaxWidth="360" Visibility="Collapsed" Canvas.ZIndex="10"
+                Margin="0,0,17,59" MaxWidth="360" Visibility="Collapsed" Canvas.ZIndex="10"
                 Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                 BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" BorderThickness="1"
-                CornerRadius="{ThemeResource ControlCornerRadius}" Padding="14,10" Click="ToastCard_Click">
+                CornerRadius="{ThemeResource ControlCornerRadius}" Padding="10,7" Click="ToastCard_Click">
             <Button.RenderTransform>
                 <TranslateTransform x:Name="ToastShift" Y="24"/>
             </Button.RenderTransform>
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="1">
                 <TextBlock x:Name="ToastTitle" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                 <TextBlock x:Name="ToastMessage" Style="{ThemeResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>

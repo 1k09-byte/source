@@ -13,19 +13,19 @@
         <x:Double x:Key="ContentDialogMaxWidth">1400</x:Double>
     </ContentDialog.Resources>
 
-    <ScrollViewer Width="1080" MaxHeight="620" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" Padding="0,0,18,0">
-        <StackPanel Spacing="14">
+    <ScrollViewer Width="1080" MaxHeight="620" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" Padding="0,0,13,0">
+        <StackPanel Spacing="10">
             <InfoBar IsOpen="True" IsClosable="False" Severity="{Binding StatusSeverity}"
                      Message="{Binding StatusText}" />
 
-            <Grid ColumnSpacing="18">
+            <Grid ColumnSpacing="13">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="320" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" Spacing="10">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                <StackPanel Grid.Column="0" Spacing="7">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Content="Preview" Click="Preview_Click" AutomationProperties.Name="Preview planned actions" />
                         <Button Content="Resume everything now" Click="Resume_Click" AutomationProperties.Name="Resume everything now" />
                     </StackPanel>
@@ -35,7 +35,7 @@
                     <TextBlock Text="Every process and service that is not important is demoted to Low or Below normal with efficiency mode (EcoQoS), and every process in the system except the game tree, dwm and the internet, Wi-Fi, WWAN and Bluetooth services has its priority boost turned off, including anti-cheat. The shell, audio, security and GPU driver services are still demoted but keep enough boost to stay responsive, and your Never touch list and rules marked Protected are left alone. Inside the game process only useless threads (telemetry, crash reporting and embedded-browser helpers) get boost disabled and Low priority; gameplay threads and the game's own priority stay untouched."
                                Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
 
-                    <Grid ColumnSpacing="12" Margin="0,4,0,0">
+                    <Grid ColumnSpacing="8" Margin="0,3,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="1.2*" />
@@ -53,7 +53,7 @@
                               Background="Transparent" BorderThickness="0">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="gamemode:GameModeAffectedRow">
-                                <Grid ColumnSpacing="12">
+                                <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="2*" />
                                         <ColumnDefinition Width="1.2*" />
@@ -72,17 +72,17 @@
                     </ListView>
                 </StackPanel>
 
-                <Border Grid.Column="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="16" VerticalAlignment="Top"
+                <Border Grid.Column="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="11" VerticalAlignment="Top"
                         Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-                    <StackPanel Spacing="12">
+                    <StackPanel Spacing="8">
                         <TextBlock Text="Settings" Style="{StaticResource GallerySectionTitle}" />
-                        <Grid ColumnSpacing="12">
+                        <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <StackPanel Spacing="1" VerticalAlignment="Center">
                                 <TextBlock Text="Game Mode" Style="{StaticResource BodyTextBlockStyle}" />
                                 <TextBlock Text="Watches for a listed game and applies the plan below while it runs."
                                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -93,12 +93,12 @@
                                           Toggled="Enabled_Toggled"
                                           ToolTipService.ToolTip="Turns the Game Mode session engine on or off. No process needs to be selected." />
                         </Grid>
-                        <Grid ColumnSpacing="12">
+                        <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <StackPanel Spacing="1" VerticalAlignment="Center">
                                 <TextBlock Text="Suspend background wake" Style="{StaticResource BodyTextBlockStyle}" />
                                 <TextBlock Text="Freezes background apps so their timers cannot wake the CPU."
                                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -109,12 +109,12 @@
                                           Toggled="SuspendWake_Toggled"
                                           ToolTipService.ToolTip="Suspends the threads of background apps so their timers cannot wake the CPU. The shell, audio, security, service and game processes are left alone." />
                         </Grid>
-                        <Grid ColumnSpacing="12">
+                        <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <StackPanel Spacing="1" VerticalAlignment="Center">
                                 <TextBlock Text="Suspend background input" Style="{StaticResource BodyTextBlockStyle}" />
                                 <TextBlock Text="Freezes background apps that own a window, so they cannot take input."
                                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -125,12 +125,12 @@
                                           Toggled="SuspendInput_Toggled"
                                           ToolTipService.ToolTip="Suspends background apps that own a window, so they cannot process the input aimed at them. The compositor keeps running." />
                         </Grid>
-                        <Grid ColumnSpacing="12">
+                        <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <StackPanel Spacing="1" VerticalAlignment="Center">
                                 <TextBlock Text="Enter Background Mode" Style="{StaticResource BodyTextBlockStyle}" />
                                 <TextBlock Text="Drops background apps to Idle priority and their threads to the lowest priority, without freezing them."
                                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -155,16 +155,16 @@
             </Grid>
 
             <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Header="Game list">
-                <StackPanel Spacing="8">
+                <StackPanel Spacing="6">
                     <InfoBar IsOpen="{Binding HasListFeedback}" Severity="{Binding ListFeedbackSeverity}"
                              Message="{Binding ListFeedback}" CloseButtonClick="ListFeedback_Close" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Content="{Binding RestorePopularGamesText}" Click="AddPopularGames_Click"
                                 ToolTipService.ToolTip="Re-adds any popular game executables you removed; nothing is installed or launched" />
                         <TextBlock Text="Popular games are added automatically on first run and matched by executable name." VerticalAlignment="Center"
                                    Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Content="Add focused app" Click="AddFocused_Click" ToolTipService.ToolTip="Adds the app you used just before kaliteConfig" />
                         <ComboBox MinWidth="150" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" SelectedIndex="{Binding AddKindIndex, Mode=TwoWay}" AutomationProperties.Name="Entry type">
                             <ComboBoxItem Content="Game" />
@@ -180,7 +180,7 @@
                               Background="Transparent" BorderThickness="0">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="gamemode:GameModeListRow">
-                                <Grid ColumnSpacing="12">
+                                <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
@@ -191,13 +191,13 @@
                                         <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}"
                                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
-                                    <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="8,2"
+                                    <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="6,1"
                                             Visibility="{x:Bind GamePillVis}"
                                             Background="{ThemeResource AccentFillColorSecondaryBrush}">
                                         <TextBlock Text="Game" Style="{StaticResource CaptionTextBlockStyle}"
                                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
                                     </Border>
-                                    <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="8,2"
+                                    <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="6,1"
                                             Visibility="{x:Bind NeverTouchPillVis}"
                                             Background="{ThemeResource SubtleFillColorSecondaryBrush}">
                                         <TextBlock Text="Never touch" Style="{StaticResource CaptionTextBlockStyle}"
@@ -212,8 +212,8 @@
             </Expander>
 
             <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Header="Activity log">
-                <StackPanel Spacing="8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
                         <ComboBox MinWidth="180" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" ItemsSource="{Binding LogFilters}" SelectedIndex="{Binding LogFilterIndex, Mode=TwoWay}" AutomationProperties.Name="Log filter" />
                         <Button Content="Copy" Click="CopyLog_Click" />
                         <Button Content="Export" Click="ExportLog_Click" />
@@ -223,7 +223,7 @@
                               Background="Transparent" BorderThickness="0">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="gamemode:GameModeLogRow">
-                                <Grid ColumnSpacing="12">
+                                <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="64" />
                                         <ColumnDefinition Width="1.4*" />

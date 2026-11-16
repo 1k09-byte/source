@@ -458,7 +458,7 @@ namespace kaliteConfig
 
             NavShell.LayoutUpdated += (_, _) => UpdateNavPill();
 
-            string startTag = "DriversPage";
+            string startTag = "HomePage";
             var startItem = NavView.MenuItems.OfType<NavigationViewItem>()
                 .FirstOrDefault(i => (i.Tag as string) == startTag)
                 ?? NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault();
@@ -1050,8 +1050,17 @@ namespace kaliteConfig
             {
                 NavView.PaneDisplayMode = top ? NavigationViewPaneDisplayMode.Top : NavigationViewPaneDisplayMode.Left;
                 NavView.IsPaneVisible = rail || top;
-                NavView.OpenPaneLength = 76;
-                NavView.CompactPaneLength = 76;
+                NavView.OpenPaneLength = 56;
+                NavView.CompactPaneLength = 56;
+                foreach (var railItem in NavView.MenuItems.Concat(NavView.FooterMenuItems).OfType<NavigationViewItem>())
+                {
+                    if (railItem.Content is string label && label.Length > 0)
+                    {
+                        ToolTipService.SetToolTip(railItem, label);
+                        if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(railItem)))
+                            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(railItem, label);
+                    }
+                }
                 NavView.IsPaneOpen = rail;
                 _pillEnabled = rail;
                 if (!_pillEnabled)
@@ -1398,10 +1407,11 @@ namespace kaliteConfig
             catch { }
         }
 
-        private sealed record DockEntry(PageKey Key, string Tag, string Label, string? Glyph, string? Path, bool SymbolFont);
+        internal sealed record DockEntry(PageKey Key, string Tag, string Label, string? Glyph, string? Path, bool SymbolFont);
 
-        private static readonly DockEntry[] DockEntries =
+        internal static readonly DockEntry[] DockEntries =
         {
+            new(PageKey.Home, "HomePage", "Home", "\uE80F", null, false),
             new(PageKey.Apps, "AppsPage", "Apps", null, Services.NavIcons.AppsPath, false),
             new(PageKey.Graphics, "GraphicsPage", "GPU", null, Services.NavIcons.GraphicsPath, false),
             new(PageKey.Gaming, "GamingPage", "Affinity", null, Services.NavIcons.AffinityPath, false),

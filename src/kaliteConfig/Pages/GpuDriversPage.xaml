@@ -40,19 +40,19 @@
         </Style>
     </Page.Resources>
 
-    <ScrollViewer x:Name="DriverScroll" Padding="36,8,36,32" VerticalScrollBarVisibility="Auto"
+    <ScrollViewer x:Name="DriverScroll" Padding="25,6,25,22" VerticalScrollBarVisibility="Auto"
                   HorizontalContentAlignment="Stretch"
                   HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+        <StackPanel Spacing="11" HorizontalAlignment="Stretch">
 
             <Border Style="{StaticResource GalleryCard}">
-                <Grid ColumnSpacing="24" RowSpacing="16">
+                <Grid ColumnSpacing="17" RowSpacing="11">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
                         <TextBlock Text="Detected hardware" Style="{StaticResource GallerySectionTitle}" />
                         <TextBlock Text="{x:Bind ViewModel.DetectStatusText, Mode=OneWay}"
                                    Style="{StaticResource GalleryPageCaption}" />
@@ -60,7 +60,7 @@
                                    Text="Pick the adapter type and driver channel, then refresh to compare installed and current versions." />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <ComboBox x:Name="NotebookToggle" Style="{StaticResource ToolbarComboStyle}"
                                   SelectedIndex="{x:Bind ViewModel.NotebookGpuIndex, Mode=TwoWay}">
                             <x:String>Desktop GPU</x:String>
@@ -72,7 +72,7 @@
                             <x:String>Studio channel</x:String>
                         </ComboBox>
                         <Button VerticalAlignment="Center" Command="{x:Bind ViewModel.DetectGpusCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
                                 <FontIcon Glyph="&#xE72C;" FontSize="14" />
                                 <TextBlock Text="Re-detect" />
                             </StackPanel>
@@ -83,16 +83,16 @@
 
             <ItemsRepeater ItemsSource="{x:Bind ViewModel.VisibleDrivers, Mode=OneWay}">
                 <ItemsRepeater.Layout>
-                    <StackLayout Spacing="16" />
+                    <StackLayout Spacing="11" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="models:GpuDriverItem">
-                        <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+                        <StackPanel Spacing="11" HorizontalAlignment="Stretch">
 
                             <Border Style="{StaticResource GalleryCard}" Padding="0">
                                 <StackPanel>
 
-                                    <Grid Padding="24,20" ColumnSpacing="16">
+                                    <Grid Padding="17,14" ColumnSpacing="11">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
@@ -104,20 +104,20 @@
                                                    Stretch="Uniform" />
                                         </Border>
 
-                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                                             <TextBlock Text="{x:Bind Vendor}" Style="{StaticResource GalleryMetaLabel}"
                                                        FontWeight="SemiBold" />
                                             <TextBlock Text="{x:Bind HardwareName}" FontSize="20" FontWeight="SemiBold"
                                                        TextWrapping="Wrap" />
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
                                                     VerticalAlignment="Center" HorizontalAlignment="Right">
-                                            <Border Style="{StaticResource GalleryPill}" Padding="8,2"
+                                            <Border Style="{StaticResource GalleryPill}" Padding="6,1"
                                                     Visibility="{x:Bind PrimaryVis, Mode=OneWay}">
                                                 <TextBlock Text="Primary" Style="{StaticResource BadgeTextStyle}" />
                                             </Border>
-                                            <Border Style="{StaticResource GalleryPill}" Padding="8,2"
+                                            <Border Style="{StaticResource GalleryPill}" Padding="6,1"
                                                     Background="{ThemeResource SubtleFillColorTertiaryBrush}"
                                                     Visibility="{x:Bind SecondaryVis, Mode=OneWay}">
                                                 <TextBlock Text="Secondary" Style="{StaticResource BadgeTextStyle}"
@@ -128,20 +128,20 @@
 
                                     <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
-                                    <Grid Padding="24,20" ColumnSpacing="32">
+                                    <Grid Padding="17,14" ColumnSpacing="22">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="1.3*" />
                                         </Grid.ColumnDefinitions>
 
-                                        <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
                                             <TextBlock Text="Installed driver" Style="{StaticResource FactLabelStyle}" />
                                             <TextBlock Text="{x:Bind InstalledVersion, Mode=OneWay, TargetNullValue='-'}"
                                                        FontSize="26" FontWeight="SemiBold" />
-                                            <Border Style="{StaticResource GalleryPill}" Padding="8,2"
-                                                    HorizontalAlignment="Left" Margin="0,4,0,0">
-                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Border Style="{StaticResource GalleryPill}" Padding="6,1"
+                                                    HorizontalAlignment="Left" Margin="0,3,0,0">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
                                                     <FontIcon FontSize="11"
                                                               Glyph="{x:Bind StateGlyph, Mode=OneWay}"
                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -152,7 +152,7 @@
                                             </Border>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
                                             <TextBlock Text="Latest available" Style="{StaticResource FactLabelStyle}" />
                                             <TextBlock Text="{x:Bind LatestVersion, Mode=OneWay, TargetNullValue='-'}"
                                                        FontSize="20" FontWeight="SemiBold"
@@ -162,8 +162,8 @@
                                                        Visibility="{x:Bind local:GpuDriversPage.UpToDateVis(Status), Mode=OneWay}" />
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center">
-                                            <Grid ColumnSpacing="12">
+                                        <StackPanel Grid.Column="2" Spacing="6" VerticalAlignment="Center">
+                                            <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
@@ -172,7 +172,7 @@
                                                 <TextBlock Grid.Column="1" Text="{x:Bind VramText}"
                                                            Style="{StaticResource FactValueStyle}" HorizontalAlignment="Right" />
                                             </Grid>
-                                            <Grid ColumnSpacing="12">
+                                            <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
@@ -181,7 +181,7 @@
                                                 <TextBlock Grid.Column="1" Text="{x:Bind GpuTypeText}"
                                                            Style="{StaticResource FactValueStyle}" HorizontalAlignment="Right" />
                                             </Grid>
-                                            <Grid ColumnSpacing="12">
+                                            <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
@@ -196,7 +196,7 @@
                                     <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"
                                             Visibility="{x:Bind local:GpuDriversPage.ProgressVis(Status), Mode=OneWay}" />
 
-                                    <StackPanel Spacing="6" Padding="24,16"
+                                    <StackPanel Spacing="4" Padding="17,11"
                                                 Visibility="{x:Bind local:GpuDriversPage.ProgressVis(Status), Mode=OneWay}">
                                         <ProgressBar Value="{x:Bind DownloadProgress, Mode=OneWay}"
                                                      Maximum="100"
@@ -206,7 +206,7 @@
                                     </StackPanel>
 
                                     <TextBlock Text="{x:Bind ErrorMessage, Mode=OneWay}"
-                                               Margin="24,0,24,8"
+                                               Margin="17,0,17,6"
                                                FontSize="12"
                                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                TextWrapping="Wrap"
@@ -214,7 +214,7 @@
 
                                     <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
-                                    <Grid Padding="24,16" ColumnSpacing="16">
+                                    <Grid Padding="17,11" ColumnSpacing="11">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -222,7 +222,7 @@
                                         <TextBlock Grid.Column="0" VerticalAlignment="Center"
                                                    Style="{StaticResource GalleryMetaLabel}"
                                                    Text="{x:Bind StatusText, Mode=OneWay}" />
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                                                     HorizontalAlignment="Right">
                                             <Button Tag="{x:Bind}"
                                                     Style="{StaticResource AccentButtonStyle}"
@@ -245,15 +245,15 @@
                                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                                       Visibility="{x:Bind local:GpuDriversPage.ToolsVis(Vendor), Mode=OneWay}">
                                 <Expander.Header>
-                                    <StackPanel Spacing="2">
+                                    <StackPanel Spacing="1">
                                         <TextBlock Text="Advanced tools" Style="{StaticResource GallerySectionTitle}" />
                                         <TextBlock Style="{StaticResource GalleryMetaLabel}"
                                                    Text="Vendor utilities that work alongside the driver." />
                                     </StackPanel>
                                 </Expander.Header>
-                                <StackPanel Spacing="16" Padding="0,8,0,0">
+                                <StackPanel Spacing="11" Padding="0,6,0,0">
 
-                                    <StackPanel Spacing="8"
+                                    <StackPanel Spacing="6"
                                                 Visibility="{x:Bind local:GpuDriversPage.AmdToolsVis(Vendor), Mode=OneWay}">
                                         <TextBlock Text="Radeon Software Slimmer" Style="{StaticResource FactValueStyle}" />
                                         <Button Tag="{x:Bind}"
@@ -268,12 +268,12 @@
                                                    Text="Third-party utility (GPL-3.0) that removes bloat from Radeon Software. Downloaded from its GitHub page on first use; needs administrator rights." />
                                     </StackPanel>
 
-                                    <StackPanel Spacing="8"
+                                    <StackPanel Spacing="6"
                                                 Visibility="{x:Bind local:GpuDriversPage.NvidiaToolsVis(Vendor), Mode=OneWay}">
                                         <TextBlock Text="NVIDIA Profile Inspector" Style="{StaticResource FactValueStyle}" />
                                         <TextBlock Style="{StaticResource GalleryMetaLabel}"
                                                    Text="Edits the hidden driver profile database — useful for low-latency and frame-pacing tweaks the control panel does not expose." />
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
                                             <Button Content="Open NVIDIA Profile Inspector" MinWidth="280"
                                                     Click="OpenNvidiaInspector_Click" />
                                             <Button Content="Apply OS default profile"

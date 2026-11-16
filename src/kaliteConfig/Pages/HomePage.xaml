@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="kaliteConfig.Pages.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    NavigationCacheMode="Required">
+
+    <Grid Padding="13,10,13,14" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                Grid.Column="0"
+                Text="Welcome"
+                Margin="2,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                FontSize="13"
+                FontWeight="SemiBold"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                <TextBlock x:Name="UpdateStatusText"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="240" />
+                <Button x:Name="UpdateButton" Click="UpdateButton_Click" Padding="12,6" CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon x:Name="UpdateIcon" Glyph="&#xE895;" FontSize="13" />
+                        <TextBlock x:Name="UpdateButtonText" Text="Check for updates" FontSize="12" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto" Padding="0,2,0,0">
+            <StackPanel Spacing="12" MaxWidth="880" HorizontalAlignment="Left">
+
+                <StackPanel Spacing="3" Margin="2,0,0,0">
+                    <TextBlock Text="kaliteConfig" Style="{StaticResource GalleryPageTitle}" FontSize="28" />
+                    <TextBlock Text="One place for this PC's tuning: app installs, GPU and power settings, process affinity, thread rules, drivers, startup entries, network and Windows kernel tweaks."
+                               Style="{StaticResource GalleryPageCaption}"
+                               MaxWidth="760" />
+                </StackPanel>
+
+                <TextBlock Text="Shortcuts"
+                           Margin="2,4,0,0"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+                <Grid x:Name="ShortcutsGrid" ColumnSpacing="8" RowSpacing="8" />
+
+                <Border Style="{StaticResource CardBorder}" Padding="14,12" Margin="0,4,0,0">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0"
+                                Width="46" Height="46"
+                                CornerRadius="12"
+                                VerticalAlignment="Center"
+                                Background="#245865F2">
+                            <Image Source="ms-appx:///Assets/discord-logo.svg"
+                                   Width="26" Height="26"
+                                   Stretch="Uniform" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Join our Discord" FontSize="14" FontWeight="SemiBold" />
+                            <TextBlock Text="Get help with a tweak, share your setup, and hear about releases before they land."
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Button Click="DiscordButton_Click"
+                        HorizontalAlignment="Left"
+                        Padding="14,8"
+                        CornerRadius="8"
+                        Background="#FF5865F2"
+                        Foreground="White"
+                        BorderThickness="0"
+                        AutomationProperties.Name="Join the kaliteConfig Discord">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF4752C4" />
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FF3C45A8" />
+                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent" />
+                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent" />
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White" />
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White" />
+                    </Button.Resources>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Width="20" Height="20" CornerRadius="10" Background="White">
+                            <Image Source="ms-appx:///Assets/discord-logo.svg"
+                                   Width="13" Height="13"
+                                   Stretch="Uniform" />
+                        </Border>
+                        <TextBlock Text="Join the server" FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                    </StackPanel>
+                </Button>
+
+                <TextBlock x:Name="VersionText"
+                           Margin="2,0,0,0"
+                           FontSize="11"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

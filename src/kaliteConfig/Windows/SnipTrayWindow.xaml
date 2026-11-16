@@ -19,7 +19,7 @@
                 BorderThickness="1"
                 BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
                 Padding="0" 
-                Margin="12"
+                Margin="8"
                 HorizontalAlignment="Center" 
                 VerticalAlignment="Center">
             

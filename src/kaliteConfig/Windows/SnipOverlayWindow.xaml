@@ -29,8 +29,8 @@
             <StackPanel x:Name="ToolbarHost" Visibility="Collapsed" Spacing="0">
                 <Border x:Name="SnipToolbar" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                         BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" BorderThickness="1"
-                        CornerRadius="{ThemeResource ControlCornerRadius}" Padding="6">
-                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        CornerRadius="{ThemeResource ControlCornerRadius}" Padding="4">
+                    <StackPanel Orientation="Horizontal" Spacing="1">
                         <ToggleButton x:Name="BtnToolSelect" Click="BtnTool_Click"
                                       ToolTipService.ToolTip="Select (V)" AutomationProperties.Name="Select tool"
                                       Tag="Select">
@@ -86,7 +86,7 @@
                             <Button.Flyout>
                                 <Flyout Opened="StickerFlyout_Opened">
                                     <StackPanel Width="280">
-                                        <Grid Margin="0,0,0,12">
+                                        <Grid Margin="0,0,0,8">
                                             <TextBlock Text="Stickers" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center"/>
                                             <Button Content="Import..." HorizontalAlignment="Right" Click="BtnImportSticker_Click"/>
                                         </Grid>
@@ -96,9 +96,9 @@
                                                   CornerRadius="4" Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}">
                                             <GridView.ItemTemplate>
                                                 <DataTemplate x:DataType="x:String">
-                                                    <Border Width="60" Height="60" Margin="4" CornerRadius="4" 
+                                                    <Border Width="60" Height="60" Margin="3" CornerRadius="4" 
                                                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                                        <Image Source="{x:Bind Mode=OneTime}" Stretch="Uniform" Margin="4"/>
+                                                        <Image Source="{x:Bind Mode=OneTime}" Stretch="Uniform" Margin="3"/>
                                                     </Border>
                                                 </DataTemplate>
                                             </GridView.ItemTemplate>
@@ -115,7 +115,7 @@
                             <FontIcon Style="{StaticResource SnipGlyph}" Glyph="&#xE799;"/>
                             <Button.Flyout>
                                 <Flyout Opening="ResizeFlyout_Opening">
-                                    <StackPanel Width="220" Spacing="8">
+                                    <StackPanel Width="220" Spacing="6">
                                         <TextBlock Text="Resize selection" Style="{StaticResource SubtitleTextBlockStyle}"/>
                                         <TextBlock x:Name="ResizeHint" Text="Select one sticker or shape first."
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
@@ -184,11 +184,11 @@
 
                 <Border x:Name="FormatRow" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                         BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}" BorderThickness="1,0,1,1"
-                        CornerRadius="0,0,8,8" Padding="8,6" Margin="0,-2,0,0" Visibility="Collapsed">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        CornerRadius="0,0,8,8" Padding="6,4" Margin="0,-2,0,0" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
                         <TextBlock Text="Color" VerticalAlignment="Center" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                        <StackPanel x:Name="SwatchPanel" Orientation="Horizontal" Spacing="4" Margin="8,0,8,0"/>
+                        <StackPanel x:Name="SwatchPanel" Orientation="Horizontal" Spacing="3" Margin="6,0,6,0"/>
                         <Button x:Name="BtnCustomColor"
                                 ToolTipService.ToolTip="Custom color" AutomationProperties.Name="Custom color">
                             <FontIcon Style="{StaticResource SnipGlyph}" Glyph="&#xEF3C;" FontSize="14"/>
@@ -221,8 +221,8 @@
                 </Border>
             </StackPanel>
         </Canvas>
-        <Border x:Name="HudPanel" Background="#CC000000" CornerRadius="6" Padding="10"
-                HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12"
+        <Border x:Name="HudPanel" Background="#CC000000" CornerRadius="6" Padding="7"
+                HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8"
                 Visibility="Collapsed" IsHitTestVisible="False">
             <TextBlock x:Name="HudText" FontFamily="Consolas" FontSize="12" Foreground="White"
                        TextWrapping="Wrap" MaxWidth="560"/>

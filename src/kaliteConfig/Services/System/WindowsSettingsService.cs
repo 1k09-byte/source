@@ -20,7 +20,8 @@ public sealed class WindowsSettingsService
         bool NeedsReboot,
         Guid PowerSubgroup = default,
         Guid PowerSetting = default,
-        bool DefaultOnWhenAbsent = false)
+        bool DefaultOnWhenAbsent = false,
+        bool DeleteWhenOff = false)
     {
         public bool IsPowerSetting => PowerSubgroup != Guid.Empty && PowerSetting != Guid.Empty;
     }
@@ -45,11 +46,23 @@ public sealed class WindowsSettingsService
             @"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity",
             "Enabled", 1, 0, false, true),
         new TweakDef(
+            "VulnerableDriverBlocklist",
+            "Vulnerable driver blocklist",
+            "Blocks signed drivers with known privilege-escalation or arbitrary-memory flaws from loading. ON is the Windows default and is what Microsoft ships; turning it OFF lets those drivers load again, which is a common cause of cheat and anti-cheat driver breakage but removes a real kernel protection. Takes effect after a restart.",
+            @"SYSTEM\CurrentControlSet\Control\CI\Config",
+            "VulnerableDriverBlocklistEnable", 1, 0, false, true, DefaultOnWhenAbsent: true),
+        new TweakDef(
             "HwSchMode",
             "Hardware-accelerated GPU scheduling (HAGS)",
             "Lets the GPU schedule and manage its own command queues instead of the CPU-side scheduler. ON usually lowers input-to-display latency and can help frame pacing on modern GPUs; OFF restores the classic scheduling path, which some older drivers and capture tools prefer. Both modes are supported by the driver - switching is safe and reversible. Takes effect after a restart.",
             @"SYSTEM\CurrentControlSet\Control\GraphicsDrivers",
             "HwSchMode", 2, 1, false, true, DefaultOnWhenAbsent: true),
+        new TweakDef(
+            "GlobalTimerResolutionRequests",
+            "Global timer resolution requests",
+            "Lets the finest timer resolution requested by any process apply to the whole system instead of only to the process that asked for it. Turning it ON writes GlobalTimerResolutionRequests = 1, which helps latency-sensitive tools and some games keep a tighter timer; turning it OFF deletes the value so Windows goes back to per-process timer requests. Needs administrator rights and a restart.",
+            @"SYSTEM\CurrentControlSet\Control\Session Manager\kernel",
+            "GlobalTimerResolutionRequests", 1, 0, false, true, DeleteWhenOff: true),
     };
 
     public const string MmcssTweakId = "MmcssStatus";
@@ -309,7 +322,10 @@ public sealed class WindowsSettingsService
             using var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
             using var key = baseKey.CreateSubKey(ResolveKey(def), true);
             if (key == null) throw new InvalidOperationException("Could not open the registry key.");
-            key.SetValue(def.ValueName, enable ? def.OnValue : def.OffValue, RegistryValueKind.DWord);
+            if (!enable && def.DeleteWhenOff)
+                key.DeleteValue(def.ValueName, false);
+            else
+                key.SetValue(def.ValueName, enable ? def.OnValue : def.OffValue, RegistryValueKind.DWord);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -332,7 +348,7 @@ public sealed class WindowsSettingsService
             def.ValueName,
             before is null ? null : (int)before.Value,
             after is null ? null : (int)after.Value,
-            after == (enable ? def.OnValue : def.OffValue)
+            (enable ? after == def.OnValue : def.DeleteWhenOff ? after is null : after == def.OffValue)
                 ? ChangeLog.ChangeResults.Verified
                 : ChangeLog.ChangeResults.Failed);
 

@@ -106,7 +106,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="28,16,28,8" Spacing="2">
+        <StackPanel Grid.Row="0" Margin="13,11,13,6" Spacing="1">
             <TextBlock Text="Startup" Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock Text="Everything that starts when Windows signs in or boots, by source, with its command line."
                        Style="{StaticResource BodyTextBlockStyle}"
@@ -114,13 +114,13 @@
                        TextWrapping="Wrap" />
         </StackPanel>
 
-        <Grid x:Name="StartupPanel" Grid.Row="1" Padding="28,0,28,20" ColumnSpacing="24">
+        <Grid x:Name="StartupPanel" Grid.Row="1" Padding="13,0,13,14" ColumnSpacing="17">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="240" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0" Spacing="8">
+            <StackPanel Grid.Column="0" Spacing="6">
                 <TextBlock Text="Sources" Style="{StaticResource BodyStrongTextBlockStyle}" />
                 <ListView ItemsSource="{Binding StartupSections}"
                           SelectedIndex="{Binding StartupSectionIndex, Mode=TwoWay}"
@@ -128,7 +128,7 @@
                           ItemContainerStyle="{StaticResource SourcesCardListViewItemStyle}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:StartupSectionVm">
-                            <Grid ColumnSpacing="8">
+                            <Grid ColumnSpacing="6">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -145,14 +145,14 @@
                 </ListView>
             </StackPanel>
 
-            <Grid Grid.Column="1" RowSpacing="12">
+            <Grid Grid.Column="1" RowSpacing="8">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Spacing="4">
+                <StackPanel Grid.Row="0" Spacing="3">
                     <TextBlock Text="{Binding CurrentStartupSection.Title}"
                                Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock Text="{Binding CurrentStartupSection.Hint}"
@@ -163,7 +163,7 @@
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                 </StackPanel>
 
-                <Grid Grid.Row="1" ColumnSpacing="16">
+                <Grid Grid.Row="1" ColumnSpacing="11">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" MaxWidth="360" />
                         <ColumnDefinition Width="Auto" />
@@ -191,9 +191,9 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Padding="12,8" Margin="0,0,12,0" ColumnSpacing="12">
+                    <Grid Grid.Row="0" Padding="8,6" Margin="0,0,8,0" ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="56" />
+                            <ColumnDefinition Width="136" />
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="96" />
                             <ColumnDefinition Width="4*" />
@@ -216,20 +216,21 @@
                               ItemContainerStyle="{StaticResource TableRowListViewItemStyle}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:StartupEntry">
-                                <Border x:Name="RowSurface" CornerRadius="{ThemeResource ControlCornerRadius}" Background="Transparent" Padding="12,8"
+                                <Border x:Name="RowSurface" CornerRadius="{ThemeResource ControlCornerRadius}" Background="Transparent" Padding="8,6"
                                         PointerEntered="StartupRow_PointerEntered"
                                         PointerExited="StartupRow_PointerExited"
                                         PointerPressed="StartupRow_PointerPressed"
                                         PointerReleased="StartupRow_PointerReleased">
-                                <Grid ColumnSpacing="12">
+                                <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="56" />
+                                        <ColumnDefinition Width="136" />
                                         <ColumnDefinition Width="2*" />
                                         <ColumnDefinition Width="96" />
                                         <ColumnDefinition Width="4*" />
                                         <ColumnDefinition Width="48" />
                                     </Grid.ColumnDefinitions>
-                                    <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" IsOn="{x:Bind IsEnabled, Mode=TwoWay}" OnContent="" OffContent=""
+                                    <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" IsOn="{x:Bind IsEnabled, Mode=TwoWay}"
+                                                  Width="126" Height="28"
                                                   VerticalAlignment="Center"
                                                   ToolTipService.ToolTip="Checked = automatic start; unchecked = disabled" />
                                     <TextBlock Grid.Column="1" Text="{x:Bind Name}"
@@ -269,7 +270,7 @@
                     <TextBlock Grid.Row="1" Text="{Binding StartupStatusText}"
                                Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               VerticalAlignment="Bottom" Margin="0,0,0,8"
+                               VerticalAlignment="Bottom" Margin="0,0,0,6"
                                Visibility="{Binding StartupStatusText, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter=invert, FallbackValue=Collapsed}" />
                 </Grid>
             </Grid>
@@ -278,7 +279,7 @@
         <Grid Grid.Row="1" Canvas.ZIndex="10"
               Visibility="{Binding IsLoadingStartup, Converter={StaticResource BoolToVisibilityConverter}}">
             <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Opacity="0.85" />
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
                 <ProgressRing IsActive="{Binding IsLoadingStartup}" Width="48" Height="48" HorizontalAlignment="Center" />
                 <TextBlock Text="Reading startup entries…" Style="{StaticResource BodyTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"

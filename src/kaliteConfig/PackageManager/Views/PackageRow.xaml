@@ -10,8 +10,8 @@
     mc:Ignorable="d">
 
     <Grid>
-        <StackPanel x:Name="ListWrap" Spacing="4">
-            <Grid ColumnSpacing="10">
+        <StackPanel x:Name="ListWrap" Spacing="3">
+            <Grid ColumnSpacing="7">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
@@ -35,7 +35,7 @@
                     <TextBlock Text="{x:Bind Package.SourceLabel, Mode=OneWay}" FontSize="11"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                     <Button Content="{x:Bind ActionLabel, Mode=OneWay}"
                             Command="{x:Bind ActionCommand, Mode=OneWay}" CommandParameter="{x:Bind Package, Mode=OneWay}"
                             Click="ActionButton_Click"
@@ -49,7 +49,7 @@
                     </Button>
                 </StackPanel>
             </Grid>
-            <StackPanel Spacing="2"
+            <StackPanel Spacing="1"
                         Visibility="{x:Bind local:PackageRow.RunningVis(Package.ActiveOperation.State), Mode=OneWay, FallbackValue=Collapsed}">
                 <ProgressBar Value="{x:Bind Package.ActiveOperation.PercentValue, Mode=OneWay, FallbackValue=0}"
                              Maximum="100"
@@ -59,7 +59,7 @@
             </StackPanel>
         </StackPanel>
 
-        <Grid x:Name="CompactGrid" ColumnSpacing="10" Visibility="Collapsed">
+        <Grid x:Name="CompactGrid" ColumnSpacing="7" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -83,9 +83,9 @@
             </Button>
         </Grid>
 
-        <Border x:Name="CardBorder" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="14" Visibility="Collapsed">
-            <StackPanel Spacing="6">
-                <Grid ColumnSpacing="8">
+        <Border x:Name="CardBorder" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="10" Visibility="Collapsed">
+            <StackPanel Spacing="4">
+                <Grid ColumnSpacing="6">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -102,7 +102,7 @@
                 <TextBlock Text="{x:Bind Package.VersionLine, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" />
                 <TextBlock Text="{x:Bind Package.SourceLabel, Mode=OneWay}" FontSize="11"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="4">
                     <Button Content="{x:Bind ActionLabel, Mode=OneWay}"
                             Command="{x:Bind ActionCommand, Mode=OneWay}" CommandParameter="{x:Bind Package, Mode=OneWay}"
                             Click="ActionButton_Click"

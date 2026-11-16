@@ -127,49 +127,18 @@ public sealed class ProfileWatcherService : IDisposable
 
     private List<TunerProfile> CreateBuiltInDefaults()
     {
-        return new List<TunerProfile>
-        {
-            BuildEasyAntiCheatRule(),
-        };
+        return new List<TunerProfile>();
     }
 
     private static readonly string[] RetiredBuiltInRuleNames =
     {
         "FortniteClient-Win64-Shipping",
         "FortniteClient-Win64-Shipping_EAC_EOS",
+        "EasyAntiCheat_EOS",
     };
 
     internal static bool IsRetiredBuiltInRule(TunerProfile p) =>
         RetiredBuiltInRuleNames.Contains(p.Name, StringComparer.OrdinalIgnoreCase);
-
-    private static TunerProfile BuildEasyAntiCheatRule()
-    {
-        var rule = new TunerProfile
-        {
-            Name = "EasyAntiCheat_EOS",
-            Pattern = "EasyAntiCheat_EOS",
-            PriorityClass = (uint)TunerPriorityClass.BelowNormal,
-            BoostEnabled = false,
-            EfficiencyMode = true,
-            AutoApply = true,
-            Enabled = true,
-        };
-        AddThreadRule(rule, string.Empty, -1, "ntdll.dll+0x56120");
-        AddThreadRule(rule, string.Empty, -1, "sechost.dll+0x1E2B0");
-        AddThreadRule(rule, string.Empty, -1, "EasyAntiCheat_EOS.exe+0x83840");
-        return rule;
-    }
-
-    private static void AddThreadRule(TunerProfile rule, string description, int priority, string startAddress = "")
-    {
-        rule.ThreadRules.Add(new TunerThreadRule
-        {
-            Description = description,
-            StartAddress = startAddress,
-            MatchAllThreads = false,
-            Priority = priority,
-        });
-    }
 
     public async Task EnsureBuiltInDefaultsAsync()
     {
@@ -278,7 +247,7 @@ public sealed class ProfileWatcherService : IDisposable
 
     private static readonly string[] ProtectedProcessPatterns =
     {
-        "csrss", "winlogon", "wininit", "services", "lsass", "smss", "system", "registry", "memory compression",
+        "winlogon", "wininit", "services", "lsass", "smss", "system", "registry", "memory compression",
         "kaliteconfig",
     };
 
@@ -649,6 +618,7 @@ public sealed class ProfileWatcherService : IDisposable
             }
         }
         Log($"add: pattern=[{profile.Pattern}] actions={profile.ProcessActionCount} threadrules={profile.ThreadRules?.Count ?? 0}");
+        if (!profile.Enabled) await ClearBoostPreferencesAsync(profile);
         bool saved = await SaveProfilesAsync();
         RaiseChanged();
 
@@ -663,10 +633,23 @@ public sealed class ProfileWatcherService : IDisposable
             ActiveProfiles.Remove(profile);
         }
         Log($"remove: pattern=[{profile.Pattern}]");
+        await ClearBoostPreferencesAsync(profile);
         bool saved = await SaveProfilesAsync();
         RaiseChanged();
         EvaluateGamingModeRules();
         return saved;
+    }
+
+    private static async Task ClearBoostPreferencesAsync(TunerProfile profile)
+    {
+        string pattern = profile.Pattern ?? string.Empty;
+        foreach (string part in pattern.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            string name = part.Trim('*', ' ').ToLowerInvariant();
+            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) name = name[..^4];
+            if (name.Length == 0 || name.Contains('*') || name.Contains('?')) continue;
+            try { await BoostPreferenceService.Instance.ClearProcessAsync(name); } catch { }
+        }
     }
 
     public List<TunerProfile> FindMatches(string processName)
