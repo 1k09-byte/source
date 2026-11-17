@@ -304,18 +304,9 @@ public sealed class WindowsSettingsService
         if (def.IsPowerSetting)
         {
             WritePowerSetting(def, enable);
-            ChangeLog.ChangeLedger.RecordRegistryChange(
-                "kernel-tweaks",
-                def.Name + ": " + (enable ? "on" : "off"),
-                "power:" + def.PowerSubgroup.ToString("D"),
-                def.PowerSetting.ToString("D"),
-                null, null,
-                ChangeLog.ChangeResults.Informational,
-                "Restored with Reset to original.");
             return;
         }
 
-        uint? before = ReadRaw(def);
         try
         {
             EnsureBackup(def);
@@ -329,28 +320,10 @@ public sealed class WindowsSettingsService
         }
         catch (UnauthorizedAccessException ex)
         {
-            ChangeLog.ChangeLedger.RecordRegistryChange(
-                "kernel-tweaks",
-                def.Name + ": " + (enable ? "on" : "off"),
-                ResolveKey(def), def.ValueName,
-                before is null ? null : (int)before.Value,
-                null,
-                ChangeLog.ChangeResults.Failed,
-                "Access denied.");
             throw Denied(def, ex);
         }
 
         uint? after = ReadRaw(def);
-        ChangeLog.ChangeLedger.RecordRegistryChange(
-            "kernel-tweaks",
-            def.Name + ": " + (enable ? "on" : "off"),
-            ResolveKey(def),
-            def.ValueName,
-            before is null ? null : (int)before.Value,
-            after is null ? null : (int)after.Value,
-            (enable ? after == def.OnValue : def.DeleteWhenOff ? after is null : after == def.OffValue)
-                ? ChangeLog.ChangeResults.Verified
-                : ChangeLog.ChangeResults.Failed);
 
         if (def.Id.Equals(MmcssTweakId, StringComparison.OrdinalIgnoreCase))
             ApplySystemResponsivenessForMmcss(enable);
@@ -360,7 +333,6 @@ public sealed class WindowsSettingsService
 
     public void WriteSystemResponsiveness(uint value)
     {
-        uint? before = ReadRaw(SystemResponsivenessDef);
         try
         {
             EnsureBackup(SystemResponsivenessDef);
@@ -375,14 +347,6 @@ public sealed class WindowsSettingsService
         }
 
         uint? after = ReadRaw(SystemResponsivenessDef);
-        ChangeLog.ChangeLedger.RecordRegistryChange(
-            "kernel-tweaks",
-            "System responsiveness: " + value,
-            SystemResponsivenessKey,
-            SystemResponsivenessValueName,
-            before is null ? null : (int)before.Value,
-            after is null ? null : (int)after.Value,
-            after == value ? ChangeLog.ChangeResults.Verified : ChangeLog.ChangeResults.Failed);
     }
 
     private void ApplySystemResponsivenessForMmcss(bool enable) =>

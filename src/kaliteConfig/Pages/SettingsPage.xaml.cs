@@ -303,7 +303,6 @@ namespace kaliteConfig.Pages
             };
             ApplyFontPreviews();
             _fontsReady = true;
-            RefreshLogSummary();
 
             LoadTintIntoUi();
 
@@ -465,102 +464,5 @@ namespace kaliteConfig.Pages
                 _syncingStartupToggle = false;
             }
         }
-
-        private static string LogsDirectory => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "kaliteConfig", "logs");
-
-        private static string GameModeDirectory => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "kaliteConfig", "game-mode");
-
-        private sealed class LogEntry
-        {
-            public string Name { get; init; } = "";
-            public string FullPath { get; init; } = "";
-            public DateTime Modified { get; init; }
-
-            public override string ToString() =>
-                Modified == default
-                    ? Name
-                    : $"{Name}  ({Modified.ToLocalTime():MMM d HH:mm})";
-        }
-
-        private static System.Collections.Generic.List<LogEntry> LogFiles()
-        {
-            var files = new System.Collections.Generic.List<LogEntry>();
-            string root = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "kaliteConfig");
-
-            foreach (string dir in new[] { LogsDirectory, GameModeDirectory, root })
-            {
-                try
-                {
-                    if (!Directory.Exists(dir)) continue;
-                    foreach (var file in new DirectoryInfo(dir).GetFiles("*.log"))
-                    {
-                        files.Add(new LogEntry
-                        {
-                            Name = file.Name,
-                            FullPath = file.FullName,
-                            Modified = file.LastWriteTimeUtc,
-                        });
-                    }
-                }
-                catch { }
-            }
-
-            files.Sort((a, b) => b.Modified.CompareTo(a.Modified));
-            return files;
-        }
-
-        private void RefreshLogSummary()
-        {
-            try
-            {
-                var files = LogFiles();
-                object? previous = (LogPicker.SelectedItem as LogEntry)?.FullPath;
-                LogPicker.ItemsSource = files;
-
-                int index = previous is null
-                    ? -1
-                    : files.FindIndex(f => string.Equals(f.FullPath, previous as string, StringComparison.OrdinalIgnoreCase));
-                LogPicker.SelectedIndex = index >= 0 ? index : (files.Count > 0 ? 0 : -1);
-
-                LogFolderText.Text = files.Count == 0
-                    ? "No logs written yet. They appear here after a crash, a game mode session or a driver change."
-                    : $"{files.Count} log file(s). Folder: {LogsDirectory}";
-            }
-            catch { }
-        }
-
-        private void OpenLogsFolder_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Directory.CreateDirectory(LogsDirectory);
-                Process.Start(new ProcessStartInfo { FileName = LogsDirectory, UseShellExecute = true });
-            }
-            catch { }
-        }
-
-        private void OpenLogFile_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string? path = (LogPicker.SelectedItem as LogEntry)?.FullPath;
-                if (path is null || !File.Exists(path))
-                {
-                    Directory.CreateDirectory(LogsDirectory);
-                    Process.Start(new ProcessStartInfo { FileName = LogsDirectory, UseShellExecute = true });
-                    return;
-                }
-
-                Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
-            }
-            catch { }
-        }
-
     }
 }

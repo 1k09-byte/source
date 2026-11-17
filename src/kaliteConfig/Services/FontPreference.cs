@@ -86,16 +86,13 @@ internal static class FontPreference
         try
         {
             var resources = Application.Current.Resources;
-            Diag($"Apply: Selected={Selected}");
             if (!resources.TryGetValue("KaliteFontFamily", out var current) ||
                 current is not FontFamily before)
             {
-                Diag($"Apply: early-return, current={current?.GetType().Name ?? "null"}");
                 return;
             }
 
             var after = Resolve(Selected);
-            Diag($"Apply: before='{before.Source}' after='{after.Source}' same={Same(before, after)}");
             if (Same(before, after)) return;
 
             resources["KaliteFontFamily"] = after;
@@ -105,16 +102,11 @@ internal static class FontPreference
             resources["ContentControlThemeFontFamily"] = DefaultFace;
             resources["TextControlThemeFontFamily"] = DefaultFace;
 
-            Diag("Apply: rewriting styles");
             RewriteStyles(resources, before, after);
-            Diag("Apply: styles rewritten");
 
             if (liveRoot is not null) Stamp(liveRoot, before, after);
         }
-        catch (Exception ex)
-        {
-            Diag("Apply FAILED: " + ex);
-        }
+        catch { }
     }
 
     private static void RewriteStyles(ResourceDictionary root, FontFamily before, FontFamily after)
@@ -217,18 +209,5 @@ internal static class FontPreference
             if (inline is Span span)
                 StampInlines(span.Inlines, before, after);
         }
-    }
-
-    private static void Diag(string line)
-    {
-        try
-        {
-            var path = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "kaliteConfig", "font-debug.log");
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.AppendAllText(path, $"[{DateTime.Now:HH:mm:ss.fff}] {line}\n");
-        }
-        catch { }
     }
 }

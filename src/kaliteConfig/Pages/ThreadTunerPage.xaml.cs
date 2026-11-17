@@ -16,6 +16,10 @@ namespace kaliteConfig.Pages
 {
     public sealed partial class ThreadTunerPage : Page
     {
+        // Remembers the active tab across page rebuilds: the content frame does not cache
+        // pages, so a fresh instance must restore whichever tab the user was working on.
+        private static bool _lastRulesTab;
+
         public ThreadTunerViewModel ViewModel { get; }
         public Gaming.GameMode.GameModeViewModel GameMode { get; }
         private TunerProcessRow? _contextProcessRow;
@@ -28,6 +32,7 @@ namespace kaliteConfig.Pages
             this.GameMode.PropertyChanged += GameMode_PropertyChanged;
             this.InitializeComponent();
             this.DataContext = ViewModel;
+            ShowTab(_lastRulesTab);
 
             this.Loaded += ThreadTunerPage_Loaded;
             this.Unloaded += ThreadTunerPage_Unloaded;
@@ -131,6 +136,7 @@ namespace kaliteConfig.Pages
         private void ThreadTunerPage_Unloaded(object sender, RoutedEventArgs e)
         {
             try { GameMode.PropertyChanged -= GameMode_PropertyChanged; } catch { }
+            try { GameMode.Detach(); } catch { }
             if (_rulesHooked)
             {
                 App.Current.ProfileWatcher.RulesChanged -= ProfileWatcher_RulesChanged;
@@ -194,8 +200,8 @@ namespace kaliteConfig.Pages
             else
             {
                 PageGamingStatusText.Text = GameMode.HasGames
-                    ? "Game Mode is off. Press Enable Gaming mode, then start a listed game."
-                    : "Game Mode is off. Press Enable Gaming mode, then add your game in the Game Mode card below.";
+                    ? "Gaming Mode is off. Press Enable Gaming mode, then start a listed game."
+                    : "Gaming Mode is off. Press Enable Gaming mode, then add your game in the Gaming Mode card below.";
             }
         }
 
@@ -205,7 +211,8 @@ namespace kaliteConfig.Pages
             {
                 var hwnd = Native.NativeMethods.GameMode.GetForegroundWindow();
                 if (hwnd != IntPtr.Zero
-                    && Gaming.GameMode.ForegroundWatcher.TryResolveForeground(hwnd, out int pid, out _, out _))
+                    && Gaming.GameMode.ForegroundWatcher.TryResolveForeground(hwnd, out int pid, out _, out _)
+                    && pid != Environment.ProcessId)
                     return pid;
             }
             catch { }
@@ -218,19 +225,32 @@ namespace kaliteConfig.Pages
             PageGamingModeButton.IsEnabled = false;
             try
             {
-                if (!GameMode.Enabled)
+                // The engine decides the flip and returns the new state; branching on
+                // the (possibly stale) view-model value here is what made Enable act
+                // like Disable and vice versa.
+                bool nowEnabled = GameMode.ToggleEnabled();
+                if (nowEnabled)
                 {
-                    GameMode.ToggleEnabled();
+                    int target = SelectedProcess?.Pid ?? 0;
+                    if (target == 0 && App.Current.GameMode.TryGetPreferredTargetPid(out int preferred))
+                        target = preferred;
+                    if (target == 0) target = ForegroundPid() ?? 0;
 
-                    int target = SelectedProcess?.Pid ?? ForegroundPid() ?? Environment.ProcessId;
-                    var result = await svc.AcquireAsync(GameModeOwner.UserInterface, target, reason: "Threads page button");
-                    RefreshPageGamingModeUi();
-                    PageGamingStatusText.Text = $"{GameMode.StatusText} · {result.Summary}";
+                    if (target > 0)
+                    {
+                        var result = await svc.AcquireAsync(GameModeOwner.UserInterface, target, reason: "Threads page button");
+                        RefreshPageGamingModeUi();
+                        PageGamingStatusText.Text = $"{GameMode.StatusText} · {result.Summary}";
+                    }
+                    else
+                    {
+                        RefreshPageGamingModeUi();
+                        PageGamingStatusText.Text = $"{GameMode.StatusText} · engine on; legacy hold skipped (no target process)";
+                    }
                 }
                 else
                 {
-                    GameMode.ToggleEnabled();
-                    bool ended = svc.Release(GameModeOwner.UserInterface);
+                    bool ended = await Task.Run(() => svc.Release(GameModeOwner.UserInterface));
                     RefreshPageGamingModeUi();
                     PageGamingStatusText.Text = ended || svc.Holds.Count == 0
                         ? "Gaming mode off · priorities restored"
@@ -250,7 +270,7 @@ namespace kaliteConfig.Pages
 
         private async void Page_RestorePriorities(object sender, RoutedEventArgs e)
         {
-            App.Current.LegacyGamingMode.ReleaseAll();
+            await Task.Run(() => App.Current.LegacyGamingMode.ReleaseAll());
             PageGamingStatusText.Text = "Priorities restored";
             RefreshPageGamingModeUi();
 
@@ -336,18 +356,18 @@ namespace kaliteConfig.Pages
             {
                 string text = (item as MenuFlyoutItem)?.Text ?? (item as MenuFlyoutSubItem)?.Text ?? "";
                 if (text.Contains("Terminate") || text.Contains("Suspend") || text.Contains("Resume") || 
-                    text.Contains("Priority") || text.Contains("Affinity") || 
-                    text.Contains("boost") || text.Contains("Efficiency"))
+                    text.Contains("priority", StringComparison.OrdinalIgnoreCase) || text.Contains("Affinity") || 
+                    text.Contains("boost") || text.Contains("Efficiency") || text.Contains("I/O"))
                 {
                     if (item is Control c) c.IsEnabled = !row.IsProtected;
                 }
             }
 
             var priority = menu.Items.OfType<MenuFlyoutSubItem>()
-                .FirstOrDefault(x => x.Text.StartsWith("Priority", StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(x => x.Text.StartsWith("CPU priority", StringComparison.OrdinalIgnoreCase));
             if (priority != null)
             {
-                priority.Text = $"Priority  (current: {row.PriorityText})";
+                priority.Text = $"CPU priority  (current: {row.PriorityText})";
                 MarkMenuChoice(priority, row.PriorityText);
             }
 
@@ -383,6 +403,19 @@ namespace kaliteConfig.Pages
                 }
             }
             catch { }
+
+            try
+            {
+                uint io = await App.Current.ProcessTuning.GetIoPriorityAsync(row.Pid);
+                var ioMenu = menu.Items.OfType<MenuFlyoutSubItem>()
+                    .FirstOrDefault(x => x.Text.StartsWith("I/O priority", StringComparison.OrdinalIgnoreCase));
+                if (ioMenu != null)
+                {
+                    ioMenu.Text = $"I/O priority  (current: {DescribeIoPriority(io)})";
+                    MarkIoMenuChoice(ioMenu, io);
+                }
+            }
+            catch { }
         }
 
         private static void MarkMenuChoice(MenuFlyoutSubItem menu, string current)
@@ -399,6 +432,31 @@ namespace kaliteConfig.Pages
                 item.Text = string.Equals(label, current, StringComparison.OrdinalIgnoreCase)
                     ? $"{label}  ✓"
                     : label;
+            }
+        }
+
+        private static string DescribeIoPriority(uint level) => level switch
+        {
+            0 => "Very low",
+            1 => "Low",
+            2 => "Normal",
+            3 => "High",
+            _ => $"Level {level}",
+        };
+
+        private static void MarkIoMenuChoice(MenuFlyoutSubItem menu, uint current)
+        {
+            foreach (var item in menu.Items.OfType<MenuFlyoutItem>())
+            {
+                uint level = item.Tag?.ToString() switch
+                {
+                    "VeryLow" => 0,
+                    "Low" => 1,
+                    "High" => 3,
+                    _ => 2,
+                };
+                string label = DescribeIoPriority(level);
+                item.Text = level == current ? $"{label}  ✓" : label;
             }
         }
 
@@ -440,6 +498,21 @@ namespace kaliteConfig.Pages
             if (sender is FrameworkElement { Tag: string eco })
             {
                 await App.Current.ProcessTuning.SetEfficiencyAsync(row.Pid, eco == "Enabled");
+            }
+        });
+
+        private void Action_IoPriority(object sender, RoutedEventArgs e) => ExecuteTuning(sender, async row =>
+        {
+            if (sender is FrameworkElement { Tag: string tag })
+            {
+                uint ioPriority = tag switch
+                {
+                    "VeryLow" => Native.NativeMethods.Ntdll.IoPriorityVeryLow,
+                    "Low" => Native.NativeMethods.Ntdll.IoPriorityLow,
+                    "High" => Native.NativeMethods.Ntdll.IoPriorityHigh,
+                    _ => Native.NativeMethods.Ntdll.IoPriorityNormal,
+                };
+                await App.Current.ProcessTuning.SetIoPriorityAsync(row.Pid, ioPriority);
             }
         });
 
@@ -620,6 +693,7 @@ namespace kaliteConfig.Pages
 
         private void ShowTab(bool rules)
         {
+            _lastRulesTab = rules;
             ApplyTabVisual(TabProcesses, !rules);
             ApplyTabVisual(TabRules, rules);
             if (rules)

@@ -15,7 +15,7 @@ public static class ServiceCollectionExtensions
         s.AddSingleton<CpuSetService>();
         s.AddSingleton<GamingModeService>();
         s.AddSingleton<Gaming.GameMode.GameModeSettingsStore>();
-        s.AddSingleton(sp => new Gaming.GameMode.GameModeLog(Gaming.GameMode.GameModeSettingsStore.LogPath));
+        s.AddSingleton(sp => new Gaming.GameMode.GameModeLog());
         s.AddSingleton(sp => new Gaming.GameMode.GameModeEngine(
             sp.GetRequiredService<Gaming.GameMode.GameModeSettingsStore>(),
             sp.GetRequiredService<Gaming.GameMode.GameModeLog>()));

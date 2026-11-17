@@ -27,7 +27,7 @@ public sealed partial class GameModeViewModel : ObservableObject
         GamePathInput = string.Empty;
         AddKindIndex = 0;
         JournalText = string.Empty;
-        EnableButtonText = "Enable Game Mode";
+        EnableButtonText = "Enable Gaming Mode";
         PreviewSummary = string.Empty;
         ListFeedback = string.Empty;
         ListFeedbackSeverity = InfoBarSeverity.Informational;
@@ -159,13 +159,13 @@ public sealed partial class GameModeViewModel : ObservableObject
                 _ => InfoBarSeverity.Informational,
             };
             Enabled = _engine.Settings.Enabled;
-            EnableButtonText = Enabled ? "Disable Game Mode" : "Enable Game Mode";
+            EnableButtonText = Enabled ? "Disable Gaming Mode" : "Enable Gaming Mode";
             DebounceMs = _engine.Settings.ClampedDebounce;
             SuspendBackgroundWake = _engine.Settings.SuspendBackgroundWake;
             SuspendBackgroundInput = _engine.Settings.SuspendBackgroundInput;
             BackgroundMode = _engine.Settings.BackgroundMode;
             JournalText = _engine.PendingJournalCount == 0
-                ? "Nothing is held by Game Mode."
+                ? "Nothing is held by Gaming Mode."
                 : $"{_engine.PendingJournalCount} journal entr(ies) held; restore happens on release.";
             Replace(Affected, _engine.Affected);
             RefreshListItems();
@@ -202,7 +202,7 @@ public sealed partial class GameModeViewModel : ObservableObject
             ListItems.Add(new GameModeListRow
             {
                 Name = pattern,
-                Detail = "Excluded from every Game Mode change",
+                Detail = "Excluded from every Gaming Mode change",
                 Kind = "Never touch",
                 IsNeverTouch = true,
                 Pattern = pattern,
@@ -226,11 +226,19 @@ public sealed partial class GameModeViewModel : ObservableObject
         Replace(LogRows, rows);
     }
 
-    public void ToggleEnabled()
+    public bool ToggleEnabled()
     {
-        _engine.SetEnabled(!_engine.Settings.Enabled);
+        _engine.ToggleEnabled();
         Refresh();
+        return Enabled;
     }
+
+    /// <summary>
+    /// Unsubscribes from the engine so a page or dialog that is discarded stops
+    /// receiving Changed events. Without this, every navigation to the Threads
+    /// page leaks another subscribing ViewModel.
+    /// </summary>
+    public void Detach() => _engine.Changed -= OnEngineChanged;
 
     public void ResumeAll()
     {
@@ -310,7 +318,7 @@ public sealed partial class GameModeViewModel : ObservableObject
     {
         ListFeedbackSeverity = result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
         ListFeedback = result.Message;
-        global::kaliteConfig.App.Notify("Game Mode", result.Message,
+        global::kaliteConfig.App.Notify("Gaming Mode", result.Message,
             result.Success
                 ? global::kaliteConfig.Services.Notifications.AppNoticeSeverity.Success
                 : global::kaliteConfig.Services.Notifications.AppNoticeSeverity.Warning);

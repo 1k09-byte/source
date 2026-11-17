@@ -51,8 +51,6 @@ public sealed class PowerKernelModeService
             using var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
             foreach (var flag in flags)
             {
-                uint? before = ReadFlag(flag);
-
                 using var key = baseKey.CreateSubKey(flag.Key, true);
                 if (key is null)
                     return $"HKLM\\{flag.Key} could not be opened. Run the app as administrator.";
@@ -61,17 +59,6 @@ public sealed class PowerKernelModeService
                     key.SetValue(flag.Name, (int)flag.Value, RegistryValueKind.DWord);
                 else
                     key.DeleteValue(flag.Name, throwOnMissingValue: false);
-
-                uint? after = ReadFlag(flag);
-                uint? expected = aggressive ? flag.Value : null;
-                ChangeLog.ChangeLedger.RecordRegistryChange(
-                    "power-kernel",
-                    (aggressive ? "Set " : "Removed ") + flag.Name,
-                    flag.Key,
-                    flag.Name,
-                    before is null ? null : (int)before.Value,
-                    after is null ? null : (int)after.Value,
-                    after == expected ? ChangeLog.ChangeResults.Verified : ChangeLog.ChangeResults.Failed);
             }
         }
         catch (UnauthorizedAccessException)

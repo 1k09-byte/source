@@ -9,16 +9,9 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Tick the cores the scheduler should keep away from normal work. At least one core must stay available and a restart is required. Needs administrator rights."
-                   Style="{StaticResource CaptionTextBlockStyle}"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   TextWrapping="Wrap" />
-
-        <StackPanel Grid.Row="1" Spacing="6">
+        <StackPanel Grid.Row="0" Spacing="6">
             <InfoBar IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
                      Severity="Error"
                      Title="Error"
@@ -38,7 +31,7 @@
                      IsClosable="False" />
         </StackPanel>
 
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />

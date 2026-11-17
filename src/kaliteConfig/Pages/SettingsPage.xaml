@@ -301,31 +301,6 @@
                         <Button Content="Remove background image" Click="BgRemove_Click" />
                     </StackPanel>
                 </toolkit:SettingsCard>
-
-                <TextBlock
-                    Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
-                    Text="Diagnostics" />
-
-                <toolkit:SettingsCard
-                    Description="Crash, shutdown, game mode, GPU and driver logs written by kaliteConfig"
-                    Header="Log files">
-                    <toolkit:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE9D9;" />
-                    </toolkit:SettingsCard.HeaderIcon>
-                    <StackPanel MinWidth="280" Spacing="4">
-                        <ComboBox x:Name="LogPicker" HorizontalAlignment="Stretch" PlaceholderText="No log files yet" />
-                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="6">
-                            <Button Content="Open folder" Click="OpenLogsFolder_Click" />
-                            <Button Content="Open file" Click="OpenLogFile_Click" Style="{StaticResource AccentButtonStyle}" />
-                        </StackPanel>
-                        <TextBlock
-                            x:Name="LogFolderText"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            TextAlignment="Right"
-                            TextWrapping="Wrap" />
-                    </StackPanel>
-                </toolkit:SettingsCard>
             </StackPanel>
         </ScrollViewer>
     </Grid>

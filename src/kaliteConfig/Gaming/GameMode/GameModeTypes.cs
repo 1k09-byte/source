@@ -274,7 +274,6 @@ public sealed class GameModeSettingsStore
 
     public static string SettingsPath => Path.Combine(RootDirectory, "settings.json");
     public static string JournalPath => Path.Combine(RootDirectory, "journal.json");
-    public static string LogPath => Path.Combine(RootDirectory, "activity.log");
 
     private static readonly JsonSerializerOptions Options = new()
     {

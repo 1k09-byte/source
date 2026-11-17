@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Win32;
-using kaliteConfig.Services.ChangeLog;
 
 namespace kaliteConfig.Services;
 
@@ -236,30 +235,12 @@ internal static class FeatureFixRegistry
                 key.SetValue(valueName, target, RegistryValueKind.DWord);
 
                 int? after = ReadInt(keyPath, valueName);
-                ChangeLedger.RecordRegistryChange(
-                    subsystem,
-                    $"{valueName} {Format(before)} -> {after?.ToString() ?? "absent"}",
-                    keyPath,
-                    valueName,
-                    before,
-                    after,
-                    after == target ? ChangeResults.Verified : ChangeResults.Failed,
-                    null);
 
                 if (after == target) changed.Add($"{valueName} {before} -> {target}");
                 else failed.Add(valueName);
             }
-            catch (Exception ex)
+            catch
             {
-                ChangeLedger.RecordRegistryChange(
-                    subsystem,
-                    $"{valueName} {Format(before)} -> {target}",
-                    keyPath,
-                    valueName,
-                    before,
-                    null,
-                    ChangeResults.Failed,
-                    ex.Message);
                 failed.Add(valueName);
             }
         }

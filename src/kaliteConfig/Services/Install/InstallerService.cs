@@ -672,7 +672,6 @@ namespace kaliteConfig.Services
                 int cost = dir.Length + (loadable.Count == 0 ? 0 : 1);
                 if (used + cost > HeliumLoadFlagBudget)
                 {
-                    UpdateCheckService.LogDiag($"Helium: {dir} left out, shortcut argument budget reached");
                     continue;
                 }
                 loadable.Add(dir);
@@ -743,7 +742,6 @@ namespace kaliteConfig.Services
                             if (string.Equals(args, desired, StringComparison.Ordinal)) continue;
                             if (desired.Length > MaxShortcutArgumentLength)
                             {
-                                UpdateCheckService.LogDiag($"Helium: skipped {lnk}, arguments would exceed the shortcut limit");
                                 continue;
                             }
 
@@ -1334,15 +1332,13 @@ namespace kaliteConfig.Services
 				if (!refreshedSources && LooksLikeMissingPackage(stdout, stderr))
 				{
 					refreshedSources = true;
-					UpdateCheckService.LogDiag($"winget {item.WingetId}: no package found, refreshing sources and retrying once");
 					try { await RunWingetAsync("source update --disable-interactivity", ct); } catch { }
 					continue;
-			}
+				}
 				break;
 			}
                 if (exitCode != 0)
                 {
-                    LogWingetFailure(item.WingetId, baseArgs, exitCode, stdout, stderr, retriedMachineScope);
                     errorProgress.Report(DescribeWingetFailure(item.WingetId, exitCode, stdout, stderr, elevated, retriedMachineScope));
                     progress.Report(BrowserInstallStatus.Failed);
                     return;
@@ -1351,7 +1347,6 @@ namespace kaliteConfig.Services
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                UpdateCheckService.LogDiag($"winget {item.WingetId}: launcher threw {ex.GetType().Name} - {ex.Message}");
                 errorProgress.Report(DescribeWingetLaunchFailure(item.WingetId, ex));
                 progress.Report(BrowserInstallStatus.Failed);
                 return;
@@ -1429,23 +1424,13 @@ namespace kaliteConfig.Services
             message += " If every app fails the same way, run `winget source update` in a terminal and update App Installer from the Microsoft Store.";
             message += " Full log: %LOCALAPPDATA%\\Packages\\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe\\LocalState\\DiagOutputDir.";
             return message;
-        }	private static string TruncateForLog(string? t, int maxChars = 6000)
-	{
-		if (string.IsNullOrEmpty(t)) return string.Empty;
-		string s = t.Replace('\r', '\n');
-		return s.Length > maxChars ? s.Substring(0, maxChars) + "\n...(truncated)" : s;
-	}
-
-	private static void LogWingetFailure(string wingetId, string args, int exitCode, string stdout, string stderr, bool retriedMachineScope)
-	{
-		UpdateCheckService.LogDiag($"winget {wingetId} exit {exitCode} (scope-retry: {retriedMachineScope}) args: {args}\n--- stdout ---\n{TruncateForLog(stdout)}\n--- stderr ---\n{TruncateForLog(stderr)}");
-	}
+        }
 
 	private static string DescribeWingetLaunchFailure(string wingetId, Exception ex)
 	{
 		if (ex is System.ComponentModel.Win32Exception)
-			return $"winget could not be started for {wingetId} ({ex.Message}). Reinstall or update \"App Installer\" from the Microsoft Store, then try again. Full detail in %LOCALAPPDATA%\\kaliteConfig\\logs\\updater.log.";
-		return $"Install failed for {wingetId}: {ex.Message} Full detail in %LOCALAPPDATA%\\kaliteConfig\\logs\\updater.log.";
+			return $"winget could not be started for {wingetId} ({ex.Message}). Reinstall or update \"App Installer\" from the Microsoft Store, then try again.";
+		return $"Install failed for {wingetId}: {ex.Message}";
 	}
 
 	private static bool LooksLikeMissingPackage(string stdout, string stderr)

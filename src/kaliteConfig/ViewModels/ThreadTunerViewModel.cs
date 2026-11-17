@@ -68,7 +68,7 @@ public sealed partial class ThreadTunerViewModel : ObservableObject
     }
 
     private int _threadScanTicks;
-    private const int ThreadScanTickInterval = 4;
+    private const int ThreadScanTickInterval = 10;
 
     private void Profiles_RulesChanged(object? sender, EventArgs e) => SyncProfiles();
 
@@ -348,6 +348,17 @@ public sealed partial class ThreadTunerViewModel : ObservableObject
                 DisplayedProcesses.Add(p);
             }
         }
+
+        EnsureDisplayedIcons();
+    }
+
+    private void EnsureDisplayedIcons()
+    {
+        foreach (var row in DisplayedProcesses)
+        {
+            if (row.AppIcon == null && _iconTried.Add(row.Pid))
+                _ = ExtractIconAsync(row);
+        }
     }
 
     private List<TunerProcessRow> OrderAsTree(IEnumerable<TunerProcessRow> all)
@@ -478,6 +489,8 @@ public sealed partial class ThreadTunerViewModel : ObservableObject
             var known = new Dictionary<int, TunerProcessRow>(Processes.Count);
             foreach (var row in Processes) known[row.Pid] = row;
 
+            _iconTried.RemoveWhere(pid => !livePids.Contains(pid));
+
             foreach (var p in active)
             {
                 known.TryGetValue(p.Pid, out var existing);
@@ -485,7 +498,6 @@ public sealed partial class ThreadTunerViewModel : ObservableObject
                 {
                     Processes.Add(p);
                     changed = true;
-                    _ = ExtractIconAsync(p);
                 }
                 else
                 {
@@ -498,8 +510,6 @@ public sealed partial class ThreadTunerViewModel : ObservableObject
                     if (existing.BoostAllowed != p.BoostAllowed) existing.BoostAllowed = p.BoostAllowed;
                     if (existing.State != p.State) existing.State = p.State;
                     if (existing.Error != p.Error) existing.Error = p.Error;
-                    if (existing.AppIcon == null && _iconTried.Add(existing.Pid))
-                        _ = ExtractIconAsync(existing);
                 }
             }
 

@@ -12,6 +12,8 @@ namespace kaliteConfig.Pages
         private readonly Services.HibernateSettingService _hibernate = new();
         private readonly Services.KernelDmaService _dma = new();
         private readonly Services.SystemResponsivenessService _responsiveness = new();
+        private readonly Services.SpectreMeltdownService _spectre = new();
+        private readonly Services.ControlFlowGuardService _cfg = new();
         private readonly Services.ExplorerUiService _explorerUi = new();
         private bool _loadingKernelToggles;
         private bool _loadingDma;
@@ -20,12 +22,14 @@ namespace kaliteConfig.Pages
         private bool _loadingHibernate;
         private bool _loadingPowerMode;
         private bool _loadingExplorerUi;
+        private bool _loadingSpectre;
+        private bool _loadingCfg;
         private readonly Services.PowerKernelModeService _powerMode = new();
 
         public WindowsSettingsHubPage()
         {
             this.InitializeComponent();
-            this.Loaded += (_, _) => { LoadKernelToggles(); LoadSvcSplit(); LoadDmaToggle(); LoadResponsiveness(); LoadPowerMode(); LoadExplorerUi(); };
+            this.Loaded += (_, _) => { LoadKernelToggles(); LoadSvcSplit(); LoadDmaToggle(); LoadResponsiveness(); LoadPowerMode(); LoadExplorerUi(); LoadSpectre(); LoadCfg(); };
         }
 
         private void LoadKernelToggles()
@@ -51,9 +55,6 @@ namespace kaliteConfig.Pages
             {
                 var status = _hibernate.Read();
                 HibernateToggle.IsOn = status.Enabled;
-                HibernateCard.Description = status.Error is null
-                    ? "Turning it off clears the hibernate flags and keeps fast startup off. Needs administrator rights."
-                    : $"Can't read: {status.Error}";
             }
             finally { _loadingHibernate = false; }
         }
@@ -65,9 +66,6 @@ namespace kaliteConfig.Pages
             {
                 bool? value = _dma.Read();
                 DmaToggle.IsOn = value == true;
-                DmaCard.Description = value is null
-                    ? "IOMMUFlags is not set. Turning this on writes 1, turning it off writes 0. Needs a restart."
-                    : $"IOMMUFlags is {value.Value switch { true => 1, false => 0 }}. Takes effect after a restart.";
             }
             finally { _loadingDma = false; }
         }
@@ -92,9 +90,6 @@ namespace kaliteConfig.Pages
             {
                 uint? value = _responsiveness.Read();
                 SystemResponsivenessToggle.IsOn = value == 10;
-                SystemResponsivenessCard.Description = value is null
-                    ? "Not set - Windows default (20). Turning this on writes 10. Needs administrator rights and a restart."
-                    : $"SystemResponsiveness is {value.Value}. Takes effect after a restart.";
             }
             finally { _loadingResponsiveness = false; }
         }
@@ -119,9 +114,6 @@ namespace kaliteConfig.Pages
             {
                 bool old = _explorerUi.IsOld();
                 ExplorerUiToggle.IsOn = old;
-                ExplorerUiCard.Description = old
-                    ? "Old is applied. Switching to Default restores the stock Windows 11 Explorer. Explorer restarts to apply."
-                    : "Default - the stock Windows 11 Explorer is in place. Switching to Old applies the classic Explorer preset. Explorer restarts to apply.";
             }
             finally { _loadingExplorerUi = false; }
         }
@@ -144,6 +136,56 @@ namespace kaliteConfig.Pages
                             : "Default Explorer UI applied. Explorer restarted."),
                         error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
                 });
+            });
+        }
+
+        private void LoadSpectre()
+        {
+            _loadingSpectre = true;
+            try
+            {
+                bool? value = _spectre.Read();
+                SpectreToggle.IsOn = value != false; // absent = Windows default, mitigations on
+            }
+            finally { _loadingSpectre = false; }
+        }
+
+        private void Spectre_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_loadingSpectre || sender is not ToggleSwitch toggle) return;
+            bool target = toggle.IsOn;
+            string? error = _spectre.Write(target);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                LoadSpectre();
+                App.Notify("Spectre & Meltdown mitigations",
+                    error ?? $"Mitigations {(target ? "enabled" : "disabled")} and verified. Restart to apply.",
+                    error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            });
+        }
+
+        private void LoadCfg()
+        {
+            _loadingCfg = true;
+            try
+            {
+                bool? value = _cfg.Read();
+                CfgToggle.IsOn = value != false; // absent or custom = Windows default, CFG on
+            }
+            finally { _loadingCfg = false; }
+        }
+
+        private void Cfg_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_loadingCfg || sender is not ToggleSwitch toggle) return;
+            bool target = toggle.IsOn;
+            string? error = _cfg.Write(target);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                LoadCfg();
+                App.Notify("Control Flow Guard",
+                    error ?? $"CFG {(target ? "enabled" : "disabled")} and verified. Restart to apply.",
+                    error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
             });
         }
 
@@ -171,14 +213,6 @@ namespace kaliteConfig.Pages
             {
                 var mode = _powerMode.Read();
                 PowerModeToggle.IsOn = mode == Services.PowerKernelMode.Aggressive;
-                PowerModeCard.Description = mode switch
-                {
-                    Services.PowerKernelMode.Aggressive =>
-                        "Aggressive is applied: power-event processing and parked-core requests are off, QoS hints and IPI last-clock-owner handling are on, core parking is forced off. Restart to apply.",
-                    Services.PowerKernelMode.Balanced =>
-                        "Balanced - Windows defaults are in place. Switching to Aggressive writes the power and kernel flags, switching back removes them again. Needs a restart.",
-                    _ => "Custom - some of these values were written by another tool. Pick Balanced or Aggressive to overwrite them.",
-                };
             }
             finally { _loadingPowerMode = false; }
         }
@@ -216,23 +250,11 @@ namespace kaliteConfig.Pages
                 bool unset = det.State == Services.WindowsSettingsService.TweakState.WindowsDefault;
                 toggle.IsOn = det.State == Services.WindowsSettingsService.TweakState.On
                     || (unset && def.DefaultOnWhenAbsent);
-                card.Description = string.Empty;
             }
             catch
             {
-                card.Description = string.Empty;
             }
         }
-
-        private CommunityToolkit.WinUI.Controls.SettingsCard? CardFor(string id) => id switch
-        {
-            "MmcssStatus" => MmcssCard,
-            "Vbs" => VbsCard,
-            "Hvci" => HvciCard,
-            "HwSchMode" => HagsCard,
-            "GlobalTimerResolutionRequests" => TimerResolutionCard,
-            _ => null,
-        };
 
         private void KernelToggle_Toggled(object sender, RoutedEventArgs e)
         {
@@ -254,7 +276,6 @@ namespace kaliteConfig.Pages
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     LoadKernelToggles();
-                    if (CardFor(id) is { } card) card.Description += $" Write denied: {ex.Message}";
                     App.Notify(def.Name, $"Could not apply the change: {ex.Message}", Services.Notifications.AppNoticeSeverity.Error);
                 });
             }
@@ -289,7 +310,7 @@ namespace kaliteConfig.Pages
                 SvcSplitBox.Items.Clear();
                 uint? current = null;
                 try { current = _kernel.ReadSvcSplit(); }
-                catch (Exception ex) { SvcSplitCard.Description = $"Unreadable: {ex.Message}"; return; }
+                catch { return; }
 
                 int selected = -1;
                 for (int i = 0; i < Services.WindowsSettingsService.SvcSplitPresets.Length; i++)
@@ -301,18 +322,12 @@ namespace kaliteConfig.Pages
                 if (current == null)
                 {
                     selected = 0;
-                    SvcSplitCard.Description = "Not set - Windows default (380000 KB). Takes effect after a restart.";
                 }
                 else if (selected < 0)
                 {
                     string custom = $"Custom: {current} KB";
                     SvcSplitBox.Items.Add(custom);
                     selected = SvcSplitBox.Items.Count - 1;
-                    SvcSplitCard.Description = $"Detected: {current} KB. Takes effect after a restart.";
-                }
-                else
-                {
-                    SvcSplitCard.Description = $"Detected: {current} KB. Takes effect after a restart.";
                 }
                 SvcSplitBox.SelectedIndex = selected;
             }
@@ -340,7 +355,6 @@ namespace kaliteConfig.Pages
             catch (Exception ex)
             {
                 LoadSvcSplit();
-                SvcSplitCard.Description += $" Write denied: {ex.Message}";
                 App.Notify("Service host splitting", $"Could not apply the change: {ex.Message}", Services.Notifications.AppNoticeSeverity.Error);
             }
         }

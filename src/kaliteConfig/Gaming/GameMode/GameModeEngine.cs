@@ -22,6 +22,9 @@ public sealed class GameModeEngine : IDisposable
     private readonly ForegroundWatcher _watcher = new();
     private readonly Action<string> _watcherDiagnostic;
     private readonly object _gate = new();
+    // Serializes enable/disable transitions coming from the page button, the dialog
+    // toggle and the tray menu so a flip can never read a mid-flight state.
+    private readonly object _setGate = new();
 
     private GameModeState _state = GameModeState.Idle;
     private string _activeGame = string.Empty;
@@ -48,9 +51,18 @@ public sealed class GameModeEngine : IDisposable
         SeedPopularGames();
         if (removedDuplicates > 0) _store.Save(Settings);
         _journal = new GameModeJournal(GameModeSettingsStore.JournalPath);
-        _executor = new GameModeExecutor(_journal, log);
+        _executor = new GameModeExecutor(_journal, log)
+        {
+            // Re-checked inside the executor's action gate: if a release (or a disable)
+            // started while this apply was queued, the apply must not touch the process.
+            ApplyAllowed = () =>
+            {
+                lock (_gate)
+                    return _state == GameModeState.Active && Settings.Enabled;
+            },
+        };
         _watcher.ForegroundChanged += OnForegroundChanged;
-        _watcherDiagnostic = message => _log.Add("Game Mode", "Watcher", "Applied and verified", message);
+        _watcherDiagnostic = message => _log.Add("Gaming Mode", "Watcher", "Applied and verified", message);
         _watcher.Diagnostic += _watcherDiagnostic;
     }
 
@@ -61,6 +73,36 @@ public sealed class GameModeEngine : IDisposable
     public GameModeState State { get { lock (_gate) return _state; } }
 
     public string ActiveGame { get { lock (_gate) return _activeGame; } }
+
+    /// <summary>
+    /// Returns the best current game target for legacy callers: the active game first,
+    /// then the last foreign foreground process that still matches its recorded instance.
+    /// </summary>
+    public bool TryGetPreferredTargetPid(out int pid)
+    {
+        int activePid, foreignPid;
+        long activeTicks, foreignTicks;
+        lock (_gate)
+        {
+            activePid = _activeGamePid;
+            activeTicks = _activeGameTicks;
+            foreignPid = _lastForeignPid;
+            foreignTicks = _lastForeignTicks;
+        }
+
+        if (activePid > 0 && GameModeExecutor.SameInstance(activePid, activeTicks))
+        {
+            pid = activePid;
+            return true;
+        }
+        if (foreignPid != 0 && GameModeExecutor.SameInstance(foreignPid, foreignTicks))
+        {
+            pid = foreignPid;
+            return true;
+        }
+        pid = 0;
+        return false;
+    }
 
     public string StatusText
     {
@@ -97,7 +139,7 @@ public sealed class GameModeEngine : IDisposable
         _started = true;
         _watcher.Start();
         Recover();
-        _log.Add("-", "Game Mode", "Start", "Applied and verified", "Foreground monitoring started");
+        _log.Add("-", "Gaming Mode", "Start", "Applied and verified", "Foreground monitoring started");
         if (Settings.Enabled) Raise();
     }
 
@@ -105,13 +147,13 @@ public sealed class GameModeEngine : IDisposable
     {
         if (_journal.LoadFailed)
         {
-            _log.Add("-", "Game Mode", "Recovery", "Could not restore",
+            _log.Add("-", "Gaming Mode", "Recovery", "Could not restore",
                 "The journal could not be read, so earlier changes may not have been restored");
             return;
         }
         if (_journal.Count == 0) return;
         var summary = _executor.RestoreAll("Recovered after unclean exit");
-        _log.Add("-", "Game Mode", "Recovery", summary.Failed > 0 ? "Could not restore" : "Restored and verified",
+        _log.Add("-", "Gaming Mode", "Recovery", summary.Failed > 0 ? "Could not restore" : "Restored and verified",
             summary.Failed > 0
                 ? $"Recovered after unclean exit: {summary.Restored} restored, {summary.Failed} could not be restored"
                 : $"Recovered after unclean exit: {summary.Restored} process(es) restored");
@@ -127,21 +169,36 @@ public sealed class GameModeEngine : IDisposable
 
     public void SetEnabled(bool enabled)
     {
-        Settings.Enabled = enabled;
-        _store.Save(Settings);
-        if (enabled)
+        lock (_setGate)
         {
-            _log.Add("-", "Game Mode", "Enable", "Applied and verified", "Game Mode turned on");
-            var hwnd = NativeMethods.GameMode.GetForegroundWindow();
-            if (hwnd != IntPtr.Zero) OnForegroundChanged(hwnd);
+            Settings.Enabled = enabled;
+            _store.Save(Settings);
+            if (enabled)
+            {
+                _log.Add("-", "Gaming Mode", "Enable", "Applied and verified", "Gaming Mode turned on");
+                var hwnd = NativeMethods.GameMode.GetForegroundWindow();
+                if (hwnd != IntPtr.Zero) OnForegroundChanged(hwnd);
+            }
+            else
+            {
+                _log.Add("-", "Gaming Mode", "Disable", "Applied and verified", "Gaming Mode turned off");
+                BeginRelease("Gaming Mode turned off");
+            }
+            Raise();
         }
-        else
+    }
+
+    /// <summary>
+    /// Flips Gaming Mode atomically and returns the new state, so callers (page button,
+    /// tray) never act on a stale read of the current value.
+    /// </summary>
+    public bool ToggleEnabled()
+    {
+        lock (_setGate)
         {
-            var summary = ReleaseNow("Game Mode turned off");
-            _log.Add("-", "Game Mode", "Disable", summary.Failed > 0 ? "Could not restore" : "Restored and verified",
-                summary.Failed > 0 ? $"Game Mode turned off; {summary.Failed} process(es) could not be restored" : "Game Mode turned off");
+            SetEnabled(!Settings.Enabled);
+            return Settings.Enabled;
         }
-        Raise();
     }
 
     public void SetDebounce(int milliseconds)
@@ -182,7 +239,7 @@ public sealed class GameModeEngine : IDisposable
         if (!changed) return;
 
         _store.Save(Settings);
-        _log.Add("Game Mode", "Settings", "Applied and verified",
+        _log.Add("Gaming Mode", "Settings", "Applied and verified",
             $"Suspend background wake {(Settings.SuspendBackgroundWake ? "on" : "off")}, suspend background input {(Settings.SuspendBackgroundInput ? "on" : "off")}, background mode {(Settings.BackgroundMode ? "on" : "off")}");
 
         bool active;
@@ -285,7 +342,7 @@ public sealed class GameModeEngine : IDisposable
         Raise();
         return resolved is not null
             ? GameModeEditResult.Ok($"Added {entry.Name} to the game list.")
-            : GameModeEditResult.Ok($"Added {entry.Name}. No file with that name was found, so Game Mode matches it by image name.");
+            : GameModeEditResult.Ok($"Added {entry.Name}. No file with that name was found, so Gaming Mode matches it by image name.");
     }
 
     private void SeedPopularGames()
@@ -504,7 +561,7 @@ public sealed class GameModeEngine : IDisposable
             _loggedSkips.Clear();
             ApplyRestoreResultLocked();
         }
-        _log.Add("-", "Game Mode", "Resume everything", summary.Failed > 0 ? "Could not restore" : "Restored and verified",
+        _log.Add("-", "Gaming Mode", "Resume everything", summary.Failed > 0 ? "Could not restore" : "Restored and verified",
             summary.Failed > 0
                 ? $"{summary.Restored} process(es) restored, {summary.Failed} could not be restored and stay in the journal"
                 : $"{summary.Restored} process(es) restored");
@@ -543,15 +600,19 @@ public sealed class GameModeEngine : IDisposable
         }
 
         var facts = BuildFacts();
-        var gamePids = gamePid > 0 ? GameModeGuard.ExpandGameTree(facts, gamePid) : new HashSet<int>();
+        var gamePids = gamePid > 0 ? new HashSet<int>(GameModeGuard.ExpandGameTree(facts, gamePid)) : new HashSet<int>();
         var gamePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!string.IsNullOrEmpty(gamePath)) gamePaths.Add(gamePath);
+        var (listedPids, listedPaths) = ListedGameProtection(facts);
+        gamePids.UnionWith(listedPids);
+        gamePaths.UnionWith(listedPaths);
+        var lockedRules = LockedRules();
 
         var rows = new List<GameModeAffectedRow>();
         foreach (var fact in facts)
         {
             var entry = BackgroundCatalog.FindByImage(fact.Name) ?? BackgroundCatalog.SweepFallback(fact.Name);
-            var (action, category, outcome, message) = Plan(fact, entry, gamePids, gamePaths);
+            var (action, category, outcome, message) = Plan(fact, entry, gamePids, gamePaths, lockedRules);
             rows.Add(new GameModeAffectedRow(fact.Name, fact.Pid, Label(category), Label(action), OutcomeLabel(outcome), message, fact.CreationTicks));
         }
         if (gamePid > 0)
@@ -587,11 +648,15 @@ public sealed class GameModeEngine : IDisposable
         var match = FindGame(pid, name, imagePath);
         if (match != null)
         {
-            bool alreadyActive;
+            bool alreadyTracked;
             lock (_gate)
             {
-                alreadyActive = _state == GameModeState.Active && _activeGamePid == pid;
-                if (alreadyActive) return;
+                // Pending for the same game: the debounce timer is already running.
+                // Resetting it on every focus event would let a game whose focus
+                // bounces (loading screens, launcher hand-off) postpone activation
+                // forever, so only re-arm when the game actually changed.
+                alreadyTracked = (_state == GameModeState.Active || _state == GameModeState.Pending) && _activeGamePid == pid;
+                if (alreadyTracked) return;
                 _activeGame = match.Name;
                 _activeGamePid = pid;
                 _activeGameTicks = TryStartTicks(pid);
@@ -619,7 +684,17 @@ public sealed class GameModeEngine : IDisposable
         lock (_gate)
         {
             if (generation != _generation) return;
-            if (!GameModeExecutor.SameInstance(gamePid, _activeGameTicks))
+            if (!Settings.Enabled)
+            {
+                // Gaming Mode was switched off while the debounce was pending; the
+                // disable path already restored everything, so just drop this activation.
+                _state = GameModeState.Idle;
+                _activeGame = string.Empty;
+                _activeGamePid = 0;
+                _activeGameTicks = 0;
+                _activeGameEntry = null;
+            }
+            else if (!GameModeExecutor.SameInstance(gamePid, _activeGameTicks))
             {
                 _state = GameModeState.Idle;
                 _activeGame = string.Empty;
@@ -632,7 +707,7 @@ public sealed class GameModeEngine : IDisposable
             active = _activeGameEntry ?? game;
         }
 
-        if (State != GameModeState.Active)
+        if (State != GameModeState.Active || !Settings.Enabled)
         {
             Raise();
             return;
@@ -642,9 +717,12 @@ public sealed class GameModeEngine : IDisposable
         var gamePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var path = ProcessPath(gamePid);
         if (!string.IsNullOrEmpty(path)) gamePaths.Add(path);
-        var gamePids = GameModeGuard.ExpandGameTree(facts, gamePid);
+        var gamePids = new HashSet<int>(GameModeGuard.ExpandGameTree(facts, gamePid));
+        var (listedPids, listedPaths) = ListedGameProtection(facts);
+        gamePids.UnionWith(listedPids);
+        gamePaths.UnionWith(listedPaths);
 
-        _log.Add("Game Mode", "Scan", "Applied and verified", $"{facts.Count} background candidates, {gamePids.Count} protected game-tree process(es).");
+        _log.Add("Gaming Mode", "Scan", "Applied and verified", $"{facts.Count} background candidates, {gamePids.Count} protected game-tree process(es).");
         lock (_gate) _loggedSkips.Clear();
         ApplyPlan(facts, gamePids, gamePaths, active.Name);
         ApplyGameScheduling(gamePid, active);
@@ -658,7 +736,7 @@ public sealed class GameModeEngine : IDisposable
         }
 
         int held = Affected.Count;
-        _log.Add(active.Name, "Focus", "Active", "Applied and verified", $"Game mode active; {held} process(es) affected");
+        _log.Add(active.Name, "Focus", "Active", "Applied and verified", $"Gaming mode active; {held} process(es) affected");
         Raise();
     }
 
@@ -671,6 +749,14 @@ public sealed class GameModeEngine : IDisposable
             active = _activeGameEntry;
         }
 
+        if (!Settings.Enabled)
+        {
+            // Gaming Mode was disabled while a rescan was already in flight; never
+            // re-apply the plan after the user turned the mode off.
+            BeginRelease("Gaming Mode turned off");
+            return;
+        }
+
         if (!GameModeExecutor.SameInstance(gamePid, _activeGameTicks))
         {
             BeginRelease($"{gameName} exited");
@@ -681,7 +767,10 @@ public sealed class GameModeEngine : IDisposable
         var gamePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var path = ProcessPath(gamePid);
         if (!string.IsNullOrEmpty(path)) gamePaths.Add(path);
-        var gamePids = GameModeGuard.ExpandGameTree(facts, gamePid);
+        var gamePids = new HashSet<int>(GameModeGuard.ExpandGameTree(facts, gamePid));
+        var (listedPids, listedPaths) = ListedGameProtection(facts);
+        gamePids.UnionWith(listedPids);
+        gamePaths.UnionWith(listedPaths);
         int before = Affected.Count;
         ApplyPlan(facts, gamePids, gamePaths, gameName);
         if (active != null) ApplyGameScheduling(gamePid, active);
@@ -702,9 +791,11 @@ public sealed class GameModeEngine : IDisposable
 
     private int ApplyPlan(IReadOnlyList<ProcessFact> facts, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths, string gameName)
     {
+        if (!Settings.Enabled) return 0;
         PruneJournal();
         PruneRows();
         var journaled = _journal.Snapshot().Select(e => (e.Pid, e.CreationTicks)).ToHashSet();
+        var lockedRules = LockedRules();
         int cap = Math.Max(0, JournalLimit - journaled.Count);
         int applied = 0;
         foreach (var fact in facts)
@@ -712,7 +803,7 @@ public sealed class GameModeEngine : IDisposable
             if (applied >= cap) break;
             if (journaled.Contains((fact.Pid, fact.CreationTicks))) continue;
             var entry = BackgroundCatalog.FindByImage(fact.Name) ?? BackgroundCatalog.SweepFallback(fact.Name);
-            var (action, category, outcome, message) = Plan(fact, entry, gamePids, gamePaths);
+            var (action, category, outcome, message) = Plan(fact, entry, gamePids, gamePaths, lockedRules);
             if (outcome == GameModeOutcome.SkippedProtected)
             {
                 bool first;
@@ -736,6 +827,7 @@ public sealed class GameModeEngine : IDisposable
 
     private int ApplyBoostPlan(IReadOnlyList<ProcessFact> facts, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths)
     {
+        if (!Settings.Enabled) return 0;
         var journaled = _journal.Snapshot().Select(e => (e.Pid, e.CreationTicks)).ToHashSet();
         var lockedRules = LockedRules();
         int cap = Math.Max(0, JournalLimit - journaled.Count);
@@ -755,21 +847,23 @@ public sealed class GameModeEngine : IDisposable
             applied++;
         }
         if (applied > 0)
-            _log.Add("Game Mode", "Boost sweep", "Applied and verified", $"Priority boost off for {applied} process(es) that are not important");
+            _log.Add("Gaming Mode", "Boost sweep", "Applied and verified", $"Priority boost off for {applied} process(es) that are not important");
         return applied;
     }
 
     private int ApplyThreadPolicy(IReadOnlyList<ProcessFact> facts, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths)
     {
+        if (!Settings.Enabled) return 0;
         if (!Settings.SuspendBackgroundWake && !Settings.SuspendBackgroundInput && !Settings.BackgroundMode) return 0;
 
         int applied = 0;
         var planned = BackgroundAction.None;
+        var lockedRules = LockedRules();
         foreach (var fact in facts)
         {
             if (applied >= ThreadPolicyLimit) break;
             if (_guard.IsService(fact.Pid)) continue;
-            if (!_guard.Evaluate(fact, gamePids, gamePaths, Settings).Allowed) continue;
+            if (!_guard.Evaluate(fact, gamePids, gamePaths, Settings, lockedRules).Allowed) continue;
 
             var decision = DecideThreadPolicy(fact);
             if (decision is null) continue;
@@ -782,7 +876,7 @@ public sealed class GameModeEngine : IDisposable
         }
 
         if (applied > 0)
-            _log.Add("Game Mode", "Thread policy", "Applied and verified",
+            _log.Add("Gaming Mode", "Thread policy", "Applied and verified",
                 $"{applied} background process(es): {Label(planned)}");
         return applied;
     }
@@ -832,9 +926,9 @@ public sealed class GameModeEngine : IDisposable
         return locked;
     }
 
-    private GameModeOutcomeLabelTuple Plan(ProcessFact fact, BackgroundCatalogEntry entry, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths)
+    private GameModeOutcomeLabelTuple Plan(ProcessFact fact, BackgroundCatalogEntry entry, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths, IReadOnlySet<string> lockedRules)
     {
-        var guard = _guard.Evaluate(fact, gamePids, gamePaths, Settings);
+        var guard = _guard.Evaluate(fact, gamePids, gamePaths, Settings, lockedRules);
         var category = _guard.IsService(fact.Pid) ? BackgroundCategory.Services : entry.Category;
         if (!guard.Allowed)
             return new(BackgroundAction.None, entry.Category, GameModeOutcome.SkippedProtected, "Skipped (protected: " + guard.Reason + ")");
@@ -874,15 +968,21 @@ public sealed class GameModeEngine : IDisposable
                 watch.Stop();
                 lock (_gate)
                 {
-                    _activeGame = string.Empty;
-                    _activeGamePid = 0;
-                    _activeGameTicks = 0;
-                    _activeGameEntry = null;
-                    _state = GameModeState.Idle;
-                    _loggedSkips.Clear();
-                    ApplyRestoreResultLocked();
+                    // A newer enable/pending activation may have started while the
+                    // restore was running. Only finish the release if this release
+                    // still owns the state, otherwise the pending game would be lost.
+                    if (_state == GameModeState.Releasing)
+                    {
+                        _activeGame = string.Empty;
+                        _activeGamePid = 0;
+                        _activeGameTicks = 0;
+                        _activeGameEntry = null;
+                        _state = GameModeState.Idle;
+                        _loggedSkips.Clear();
+                        ApplyRestoreResultLocked();
+                    }
                 }
-                _log.Add("-", "Game Mode", "Release", summary.Failed > 0 ? "Could not restore" : "Restored and verified",
+                _log.Add("-", "Gaming Mode", "Release", summary.Failed > 0 ? "Could not restore" : "Restored and verified",
                     summary.Failed > 0
                         ? $"Released in {watch.ElapsedMilliseconds} ms with {summary.Failed} process(es) still held after {reason}"
                         : $"Released in {watch.ElapsedMilliseconds} ms ({summary.Restored} process(es)) after {reason}");
@@ -891,13 +991,16 @@ public sealed class GameModeEngine : IDisposable
             {
                 lock (_gate)
                 {
-                    _state = GameModeState.Idle;
-                    _activeGame = string.Empty;
-                    _activeGamePid = 0;
-                    _activeGameTicks = 0;
-                    _activeGameEntry = null;
+                    if (_state == GameModeState.Releasing)
+                    {
+                        _state = GameModeState.Idle;
+                        _activeGame = string.Empty;
+                        _activeGamePid = 0;
+                        _activeGameTicks = 0;
+                        _activeGameEntry = null;
+                    }
                 }
-                _log.Add("-", "Game Mode", "Release", "Could not restore", ex.Message);
+                _log.Add("-", "Gaming Mode", "Release", "Could not restore", ex.Message);
             }
             Raise();
         })
@@ -1011,11 +1114,11 @@ public sealed class GameModeEngine : IDisposable
                 UseShellExecute = false,
                 CreateNoWindow = true,
             });
-            _log.Add("-", "Game Mode", "Watchdog", "Applied and verified", "Guard process started for crash safety");
+            _log.Add("-", "Gaming Mode", "Watchdog", "Applied and verified", "Guard process started for crash safety");
         }
         catch (Exception ex)
         {
-            _log.Add("-", "Game Mode", "Watchdog", "Skipped (safety check failed: " + ex.Message + ")", "Guard could not start");
+            _log.Add("-", "Gaming Mode", "Watchdog", "Skipped (safety check failed: " + ex.Message + ")", "Guard could not start");
         }
     }
 
@@ -1036,7 +1139,7 @@ public sealed class GameModeEngine : IDisposable
         try
         {
             var journal = new GameModeJournal(journalPath);
-            var log = new GameModeLog(GameModeSettingsStore.LogPath);
+            var log = new GameModeLog();
             var executor = new GameModeExecutor(journal, log);
             var summary = executor.RestoreAll("kaliteConfig exited unexpectedly");
             log.Add("-", "Watchdog", "Recovery", summary.Failed > 0 ? "Could not restore" : summary.Restored > 0 ? "Restored and verified" : "Already in that state",
@@ -1046,6 +1149,44 @@ public sealed class GameModeEngine : IDisposable
         {
         }
         return true;
+    }
+
+    /// <summary>
+    /// Pids and image paths of every running process that matches an entry in the
+    /// Games list - not just the game that is currently active. Anything in these
+    /// sets is treated like the active game's tree and is never demoted.
+    /// </summary>
+    private (HashSet<int> Pids, HashSet<string> Paths) ListedGameProtection(IReadOnlyList<ProcessFact> facts)
+    {
+        var pids = new HashSet<int>();
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (Settings.Games.Count == 0) return (pids, paths);
+        var parents = facts.ToDictionary(f => f.Pid, f => f.ParentPid);
+        foreach (var fact in facts)
+        {
+            bool listed = false;
+            foreach (var game in Settings.Games)
+            {
+                if (game.MatchByPath && !string.IsNullOrEmpty(game.Path)
+                    && !string.IsNullOrEmpty(fact.ImagePath)
+                    && string.Equals(game.Path, fact.ImagePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    listed = true;
+                    break;
+                }
+                if (string.Equals(game.Name, fact.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    listed = true;
+                    break;
+                }
+            }
+            if (!listed) continue;
+            // Descendants only - unlike the active game, a listed game's launcher
+            // (browser, launcher, shell) must not become protected by association.
+            pids.UnionWith(GameModeGuard.ExpandGameDescendants(parents, fact.Pid));
+            if (!string.IsNullOrEmpty(fact.ImagePath)) paths.Add(fact.ImagePath);
+        }
+        return (pids, paths);
     }
 
     private GameModeGameEntry? FindGame(int pid, string name, string? imagePath)
@@ -1187,6 +1328,7 @@ public sealed class GameModeEngine : IDisposable
 
     private void ApplyGameScheduling(int gamePid, GameModeGameEntry game)
     {
+        if (!Settings.Enabled) return;
         var descendants = GameModeGuard.ExpandGameDescendants(SnapshotParents(), gamePid);
         int applied = 0;
         foreach (var fact in BuildGameFacts(descendants))

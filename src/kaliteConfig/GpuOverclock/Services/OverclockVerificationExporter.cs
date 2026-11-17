@@ -44,7 +44,7 @@ namespace kaliteConfig.GpuOverclock.Services
             if (!string.IsNullOrWhiteSpace(driverVersion)) sb.Append(" · driver ").Append(driverVersion);
             sb.AppendLine();
             sb.AppendLine();
-            sb.AppendLine("Source: in-app change log (`gpu-overclock-changes.log`), most recent entries.")
+            sb.AppendLine("Source: in-app change log (kept in memory for this session), most recent entries.")
               .AppendLine("Every row is one audited driver write made by this app, including reverts and refusals.")
               .AppendLine();
 

@@ -520,6 +520,10 @@ public sealed partial class RuleEditorDialog : ContentDialog, INotifyPropertyCha
             RuleMemoryCurrent.Text = rule.MemoryPriority is uint memLevel
                 ? "Current: " + DescribeMemoryPriority(memLevel)
                 : "Current: system default";
+            SelectMemoryCombo(RuleIoPriorityCombo, rule.IoPriority);
+            RuleIoPriorityCurrent.Text = rule.IoPriority is uint ioLevel
+                ? "Current: " + DescribeIoPriority(ioLevel)
+                : "Current: system default";
             RuleEcoToggle.IsOn = rule.EfficiencyMode ?? false;
             RuleAffinityCurrent.Text = "Current: " + DescribeRuleAffinity(rule.AffinityMask);
             BuildRuleAffinityBoxes(rule.AffinityMask ?? AllMask());
@@ -693,6 +697,31 @@ public sealed partial class RuleEditorDialog : ContentDialog, INotifyPropertyCha
         _selectedRule.MemoryPriority = level;
         RuleMemoryCurrent.Text = level is uint m
             ? "Current: " + DescribeMemoryPriority(m)
+            : "Current: system default";
+        Draft.RefreshSummaries();
+        UpdateSummary();
+        RuleEditorStatus(null);
+    }
+
+    private static string DescribeIoPriority(uint level) => level switch
+    {
+        0 => "Very low",
+        1 => "Low",
+        2 => "Normal",
+        3 => "High",
+        _ => $"Level {level}",
+    };
+
+    private void RuleIoPriorityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingRuleEditor || _selectedRule == null) return;
+        string? tag = (RuleIoPriorityCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+        uint? level = tag is not null && uint.TryParse(tag, out uint parsed) && parsed <= 3
+            ? parsed
+            : null;
+        _selectedRule.IoPriority = level;
+        RuleIoPriorityCurrent.Text = level is uint io
+            ? "Current: " + DescribeIoPriority(io)
             : "Current: system default";
         Draft.RefreshSummaries();
         UpdateSummary();

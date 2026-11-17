@@ -17,7 +17,6 @@ public sealed partial class GameModeDialog : ContentDialog
         InitializeComponent();
         kaliteConfig.Services.Theming.ThemeHelper.ApplyTheme(this);
         DataContext = game;
-        if (!game.Enabled) game.Enabled = true;
     }
 
     public Task ShowOverAsync(XamlRoot root)

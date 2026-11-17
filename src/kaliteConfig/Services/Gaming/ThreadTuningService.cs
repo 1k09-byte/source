@@ -353,4 +353,44 @@ public sealed class ThreadTuningService
             }
         }).ConfigureAwait(false);
     }
+
+    public async Task<uint> GetThreadIoPriorityAsync(uint tid)
+    {
+        return await CpuSetService.RunNativeAsync(() =>
+        {
+            using var thread = NativeMethods.Handles.OpenThread(
+                NativeMethods.ThreadAccess.QueryInformation, false, tid);
+            CpuSetService.ThrowIfInvalid(thread, tid);
+            uint value = 0;
+            int status = NativeMethods.Ntdll.NtQueryInformationThread(
+                thread, NativeMethods.Ntdll.ThreadIoPriority, ref value, sizeof(uint), out _);
+            if (status != 0)
+            {
+                throw CpuSetService.Friendly(tid,
+                    new System.ComponentModel.Win32Exception(status, $"Reading I/O priority for thread {tid} failed (ntstatus 0x{status:X})."));
+            }
+
+            return value;
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SetThreadIoPriorityAsync(uint tid, uint ioPriority)
+    {
+        // Clamp to the highest level the app offers; Critical is never requested.
+        ioPriority = Math.Min(ioPriority, NativeMethods.Ntdll.IoPriorityHigh);
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var thread = NativeMethods.Handles.OpenThread(
+                NativeMethods.ThreadAccess.SetInformation, false, tid);
+            CpuSetService.ThrowIfInvalid(thread, tid);
+            uint value = ioPriority;
+            int status = NativeMethods.Ntdll.NtSetInformationThread(
+                thread, NativeMethods.Ntdll.ThreadIoPriority, ref value, sizeof(uint));
+            if (status != 0)
+            {
+                throw CpuSetService.Friendly(tid,
+                    new System.ComponentModel.Win32Exception(status, $"Setting I/O priority for thread {tid} failed (ntstatus 0x{status:X})."));
+            }
+        }).ConfigureAwait(false);
+    }
 }

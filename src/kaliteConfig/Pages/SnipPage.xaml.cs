@@ -144,7 +144,7 @@ public sealed partial class SnipPage : Page
     private void StartFolderWatch()
     {
         _folderWatcher ??= SnipFolderWatcher.Start(
-            SnipGalleryService.GetSnipsDirectory(), OnSnipsFolderChanged, log: SnipThumbnailItem.ThumbLog);
+            SnipGalleryService.GetSnipsDirectory(), OnSnipsFolderChanged);
     }
 
     private void StopFolderWatch()
@@ -711,7 +711,6 @@ public sealed partial class SnipPage : Page
         }
         else
         {
-            SnipThumbnailItem.ThumbLog("ccc gallery: content not ready, deferring");
             args.RegisterUpdateCallback(GalleryGrid_ContainerDeferred);
         }
         args.Handled = false;
@@ -740,7 +739,6 @@ public sealed partial class SnipPage : Page
         }
         else
         {
-            SnipThumbnailItem.ThumbLog("ccc recent: content not ready, deferring");
             args.RegisterUpdateCallback(RecentList_ContainerDeferred);
         }
         args.Handled = false;

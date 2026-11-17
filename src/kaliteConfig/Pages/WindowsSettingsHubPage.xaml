@@ -30,8 +30,7 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="CPU and power tuning" Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
-                        <toolkit:SettingsCard x:Name="PowerModeCard" Header="Kernel/Power settings"
-                                              Description="Balanced keeps the Windows defaults. Aggressive applies the power and kernel flags: power-event processing and parked-core requests off, QoS hint computation and IPI last-clock-owner handling on, no display burst on power-source change, and forced core parking off. Needs administrator rights and a restart. Strongly recommended to test between Balanced and Aggressive.">
+                        <toolkit:SettingsCard x:Name="PowerModeCard" Header="Kernel/Power settings">
                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="PowerModeToggle" OffContent="Balanced" OnContent="Aggressive" Toggled="PowerMode_Toggled" />
                         </toolkit:SettingsCard>
                     </StackPanel>
@@ -41,9 +40,9 @@
                         <TextBlock Text="Multimedia and system scheduling" Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
                         <toolkit:SettingsCard x:Name="MmcssCard" Header="Multimedia Class Scheduler (MMCSS)"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="MmcssToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="MmcssStatus"/></toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Name="TimerResolutionCard" Header="Global timer resolution requests" Description="Lets the finest timer resolution requested by any process apply to the whole system instead of only to the process that asked for it. Needs administrator rights and a restart."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="TimerResolutionToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="GlobalTimerResolutionRequests"/></toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Name="SystemResponsivenessCard" Header="System Responsiveness" Description="Caps the CPU share MMCSS reserves for background work. 10 favors foreground apps and games under load; 20 is the Windows default. Needs administrator rights and a restart."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="SystemResponsivenessToggle" OffContent="20" OnContent="10" Toggled="SystemResponsiveness_Toggled" /></toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Name="HibernateCard" Header="Hibernation" Description="Turning it off clears the hibernate flags and keeps fast startup off. Needs administrator rights."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="HibernateToggle" Toggled="Hibernate_Toggled"/></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="TimerResolutionCard" Header="Global timer resolution requests"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="TimerResolutionToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="GlobalTimerResolutionRequests"/></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="SystemResponsivenessCard" Header="System Responsiveness"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="SystemResponsivenessToggle" OffContent="20" OnContent="10" Toggled="SystemResponsiveness_Toggled" /></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="HibernateCard" Header="Hibernation"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="HibernateToggle" Toggled="Hibernate_Toggled"/></toolkit:SettingsCard>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource CardBorder}" Padding="6">
@@ -52,8 +51,10 @@
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
                         <toolkit:SettingsCard x:Name="VbsCard" Header="Virtualization-Based Security (VBS)"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="VbsToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="Vbs"/></toolkit:SettingsCard>
                         <toolkit:SettingsCard x:Name="HvciCard" Header="Memory integrity (HVCI)"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="HvciToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="Hvci"/></toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Name="DriverBlocklistCard" Header="Vulnerable driver blocklist" Description="Blocks signed drivers with known vulnerabilities from loading. Needs administrator rights and a restart."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="DriverBlocklistToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="VulnerableDriverBlocklist"/></toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Name="DmaCard" Header="Kernel DMA Protection" Description="Writes GraphicsDrivers\IOMMUFlags (1 = on, 0 = off). Needs administrator rights and a restart."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="DmaToggle" Toggled="Dma_Toggled"/></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="DriverBlocklistCard" Header="Vulnerable driver blocklist"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="DriverBlocklistToggle" Toggled="KernelToggle_Toggled" RightTapped="KernelToggle_RightTapped" Tag="VulnerableDriverBlocklist"/></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="SpectreCard" Header="Spectre &amp; Meltdown mitigations"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="SpectreToggle" Toggled="Spectre_Toggled" /></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="CfgCard" Header="Control Flow Guard"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="CfgToggle" Toggled="Cfg_Toggled" /></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="DmaCard" Header="Kernel DMA Protection"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="DmaToggle" Toggled="Dma_Toggled"/></toolkit:SettingsCard>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource CardBorder}" Padding="6">
@@ -67,12 +68,12 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="Explorer" Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
-                        <toolkit:SettingsCard x:Name="ExplorerUiCard" Header="Explorer UI" Description="Old applies the classic Explorer preset: Windows 10-style context menu, compact mode, classic taskbar and search tweaks. Default restores the stock Windows 11 Explorer. Explorer restarts to apply."><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="ExplorerUiToggle" OffContent="Default" OnContent="Old" Toggled="ExplorerUi_Toggled" /></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="ExplorerUiCard" Header="Explorer UI"><ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="ExplorerUiToggle" OffContent="Default" OnContent="Old" Toggled="ExplorerUi_Toggled" /></toolkit:SettingsCard>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource CardBorder}" Padding="6">
                     <StackPanel Spacing="6">
-                        <toolkit:SettingsCard x:Name="SvcSplitCard" Header="Service host splitting threshold" Description="Reading…"><StackPanel Orientation="Horizontal" Spacing="6"><ComboBox x:Name="SvcSplitBox" PlaceholderText="Select RAM size" SelectionChanged="SvcSplitBox_SelectionChanged" MinWidth="220"/><Button Content="Reset" Click="SvcSplitReset_Click"/></StackPanel></toolkit:SettingsCard>
+                        <toolkit:SettingsCard x:Name="SvcSplitCard" Header="Service host splitting threshold"><StackPanel Orientation="Horizontal" Spacing="6"><ComboBox x:Name="SvcSplitBox" PlaceholderText="Select RAM size" SelectionChanged="SvcSplitBox_SelectionChanged" MinWidth="220"/><Button Content="Reset" Click="SvcSplitReset_Click"/></StackPanel></toolkit:SettingsCard>
                     </StackPanel>
                 </Border>
 

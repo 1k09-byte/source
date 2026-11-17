@@ -136,6 +136,17 @@
                         <ComboBoxItem Content="Normal (5)" Tag="5" />
                     </ComboBox>
 
+                    <TextBlock Text="I/O priority" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="IoPriorityCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <ComboBox x:Name="IoPriorityCombo" Width="220" HorizontalAlignment="Left" PlaceholderText="Select I/O priority…" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1"
+                              SelectionChanged="IoPriorityCombo_SelectionChanged"
+                              ToolTipService.ToolTip="I/O priority for this thread. High usually needs elevation; critical is never offered here.">
+                        <ComboBoxItem Content="Very low" Tag="0" />
+                        <ComboBoxItem Content="Low" Tag="1" />
+                        <ComboBoxItem Content="Normal" Tag="2" />
+                        <ComboBoxItem Content="High" Tag="3" />
+                    </ComboBox>
+
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -173,7 +184,6 @@
 
                     <TextBlock x:Name="EditorStatusBox" FontSize="12" TextWrapping="Wrap"
                                Foreground="{ThemeResource SystemFillColorCautionBrush}" Visibility="Collapsed" />
-                    <TextBlock Text="Every control above maps to a documented Win32 thread API (SetThreadPriority, SetThreadPriorityBoost, SetThreadInformation/ThreadMemoryPriority, SetThreadGroupAffinity, SetThreadIdealProcessorEx, SuspendThread, TerminateThread)." FontSize="11" Foreground="{ThemeResource TextFillColorDisabledBrush}" TextWrapping="Wrap" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

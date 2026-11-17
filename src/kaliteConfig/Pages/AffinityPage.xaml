@@ -117,7 +117,7 @@
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Padding="0" BorderThickness="0" Background="Transparent"
                     AutomationProperties.Name="{x:Bind Name}">
-            <Grid ColumnSpacing="10">
+            <Grid ColumnSpacing="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="{StaticResource AffinityDeviceColumn}" />
                     <ColumnDefinition Width="{StaticResource AffinityMsiColumn}" />
@@ -128,7 +128,7 @@
                     <ColumnDefinition Width="{StaticResource AffinityChevronColumn}" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="1">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="0">
                     <TextBlock Text="{x:Bind Name}"
                                Style="{StaticResource BodyStrongTextBlockStyle}"
                                TextWrapping="WrapWholeWords"
@@ -141,33 +141,33 @@
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
                     <TextBlock Text="MSI" FontSize="10.5" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     <TextBlock Text="{x:Bind MsiEnabledText, Mode=OneWay}"
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="1">
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="0">
                     <TextBlock Text="Limit" FontSize="10.5" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     <TextBlock Text="{x:Bind MsiLimitText, Mode=OneWay}"
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextTrimming="CharacterEllipsis" />
-                    <StackPanel Orientation="Horizontal" Spacing="3">
+                    <StackPanel Orientation="Horizontal" Spacing="0">
                         <TextBlock Text="max" FontSize="10.5" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                         <TextBlock Text="{x:Bind MaxMsiLimitText, Mode=OneWay}" FontSize="10.5"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="1">
+                <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="0">
                     <TextBlock Text="Policy" FontSize="10.5" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     <TextBlock Text="{x:Bind DevicePolicyShort, Mode=OneWay}"
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <StackPanel Grid.Column="4" VerticalAlignment="Center" Spacing="1">
+                <StackPanel Grid.Column="4" VerticalAlignment="Center" Spacing="0">
                     <TextBlock Text="Priority" FontSize="10.5" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     <TextBlock Text="{x:Bind DevicePriorityShort, Mode=OneWay}"
                                Style="{StaticResource BodyTextBlockStyle}"
@@ -175,7 +175,7 @@
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <StackPanel Grid.Column="5" VerticalAlignment="Center" Spacing="1">
+                <StackPanel Grid.Column="5" VerticalAlignment="Center" Spacing="0">
                     <TextBlock Text="Processors" FontSize="10.5" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                     <TextBlock Text="{x:Bind AffinityText, Mode=OneWay}"
                                Style="{StaticResource BodyTextBlockStyle}"
@@ -201,8 +201,8 @@
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Padding="0" BorderThickness="0" Background="Transparent"
                     AutomationProperties.Name="{x:Bind Name}">
-            <StackPanel Spacing="4">
-                <Grid ColumnSpacing="6">
+            <StackPanel Spacing="0">
+                <Grid ColumnSpacing="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -221,7 +221,7 @@
                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                               VerticalAlignment="Center" />
                 </Grid>
-                <Grid ColumnSpacing="8">
+                <Grid ColumnSpacing="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="*" />
@@ -232,14 +232,14 @@
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap" />
                 </Grid>
-                <Grid ColumnSpacing="8">
+                <Grid ColumnSpacing="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="Limit" FontSize="11" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="0">
                         <TextBlock Text="{x:Bind MsiLimitText, Mode=OneWay}"
                                    Style="{StaticResource BodyTextBlockStyle}" />
                         <TextBlock Text="max" FontSize="11" VerticalAlignment="Center"
@@ -248,7 +248,7 @@
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
                 </Grid>
-                <Grid ColumnSpacing="8">
+                <Grid ColumnSpacing="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="*" />
@@ -259,7 +259,7 @@
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap" />
                 </Grid>
-                <Grid ColumnSpacing="8">
+                <Grid ColumnSpacing="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="*" />
@@ -271,7 +271,7 @@
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap" />
                 </Grid>
-                <Grid ColumnSpacing="8">
+                <Grid ColumnSpacing="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="96" />
                         <ColumnDefinition Width="*" />
@@ -292,7 +292,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ChangeRowTemplate">
-            <StackPanel Spacing="3">
+            <StackPanel Spacing="0">
                 <TextBlock Text="{Binding Device}"
                            Style="{StaticResource BodyStrongTextBlockStyle}" />
                 <TextBlock Text="{Binding Detail}"
@@ -403,10 +403,6 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
-            <TextBlock Text="Every edit is written immediately and stays reversible until the app closes."
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                       TextWrapping="Wrap" />
         </StackPanel>
 
         <ScrollViewer Grid.Row="2" Padding="13,8,13,14"
@@ -414,14 +410,12 @@
                       HorizontalContentAlignment="Stretch"
                       VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto"
                       HorizontalScrollBarVisibility="Disabled">
-            <StackPanel HorizontalAlignment="Stretch" Spacing="7">
+            <StackPanel HorizontalAlignment="Stretch" Spacing="0">
 
                 <Expander Style="{StaticResource GalleryCardExpander}" IsExpanded="True">
                     <Expander.Header>
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="0">
                             <TextBlock Text="Reserved CPU sets" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
-                            <TextBlock Text="cores kept away from normal scheduling" FontSize="11"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Expander.Header>
                     <Frame x:Name="ReservedCpuSetsFrame" CacheSize="0" UseLayoutRounding="True">
@@ -439,7 +433,7 @@
 
                 <Expander Style="{StaticResource GalleryCardExpander}" IsExpanded="True">
                     <Expander.Header>
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="0">
                             <Border Width="30" Height="30" CornerRadius="9"
                                     Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                     VerticalAlignment="Center">
@@ -449,17 +443,14 @@
                             <TextBlock Text="Scheduling" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Expander.Header>
-                    <StackPanel Spacing="8">
-                        <Grid ColumnSpacing="12">
+                    <StackPanel Spacing="0">
+                        <Grid ColumnSpacing="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <TextBlock Text="Small Processor Mask" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                <TextBlock Text="Marks the logical processors Windows should treat as little/efficient cores."
-                                           Style="{StaticResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
                             </StackPanel>
                             <Border Grid.Column="1" VerticalAlignment="Center" Padding="0" CornerRadius="8"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
@@ -483,17 +474,11 @@
                             </Border>
                         </Grid>
 
-                        <TextBlock Text="Select little/efficient logical processors" Style="{StaticResource BodyTextBlockStyle}" />
-
-                        <StackPanel Spacing="3">
+                        <StackPanel Spacing="0">
                             <TextBlock Text="Cores" Style="{StaticResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <StackPanel x:Name="SpmCoresHost" Spacing="2" />
+                            <StackPanel x:Name="SpmCoresHost" Spacing="0" />
                         </StackPanel>
-
-                        <TextBlock x:Name="SpmMaskText" FontFamily="Consolas" FontSize="12"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   Text="Windows default (no SmallProcessorMask set)" />
                     </StackPanel>
                 </Expander>
 
@@ -501,7 +486,7 @@
                           IsExpanded="{x:Bind ViewModel.IsGraphicsExpanded, Mode=TwoWay}"
                           Visibility="{x:Bind local:AffinityPage.NonEmptyToVisibility(ViewModel.GraphicsDevices.Count), Mode=OneWay}">
                     <Expander.Header>
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="0">
                             <TextBlock Text="Graphics cards" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
                             <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="9" Padding="6,1" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Bind local:AffinityPage.CountText(ViewModel.GraphicsDevices.Count), Mode=OneWay}"
@@ -510,7 +495,7 @@
                             </Border>
                         </StackPanel>
                     </Expander.Header>
-                    <StackPanel Spacing="3">
+                    <StackPanel Spacing="0">
                         <ListView x:Name="GraphicsList"
                                   ItemsSource="{x:Bind ViewModel.GraphicsDevices, Mode=OneWay}"
                                   SelectionMode="None"
@@ -527,7 +512,7 @@
                           IsExpanded="{x:Bind ViewModel.IsNetworkExpanded, Mode=TwoWay}"
                           Visibility="{x:Bind local:AffinityPage.NonEmptyToVisibility(ViewModel.NetworkDevices.Count), Mode=OneWay}">
                     <Expander.Header>
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="0">
                             <TextBlock Text="Network controllers" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
                             <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="9" Padding="6,1" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Bind local:AffinityPage.CountText(ViewModel.NetworkDevices.Count), Mode=OneWay}"
@@ -536,7 +521,7 @@
                             </Border>
                         </StackPanel>
                     </Expander.Header>
-                    <StackPanel Spacing="3">
+                    <StackPanel Spacing="0">
                         <ListView x:Name="NetworkList"
                                   ItemsSource="{x:Bind ViewModel.NetworkDevices, Mode=OneWay}"
                                   SelectionMode="None"
@@ -553,7 +538,7 @@
                           IsExpanded="{x:Bind ViewModel.IsUsbExpanded, Mode=TwoWay}"
                           Visibility="{x:Bind local:AffinityPage.NonEmptyToVisibility(ViewModel.UsbDevices.Count), Mode=OneWay}">
                     <Expander.Header>
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="0">
                             <TextBlock Text="USB controllers" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
                             <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="9" Padding="6,1" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Bind local:AffinityPage.CountText(ViewModel.UsbDevices.Count), Mode=OneWay}"
@@ -562,7 +547,7 @@
                             </Border>
                         </StackPanel>
                     </Expander.Header>
-                    <StackPanel Spacing="3">
+                    <StackPanel Spacing="0">
                         <ListView x:Name="UsbList"
                                   ItemsSource="{x:Bind ViewModel.UsbDevices, Mode=OneWay}"
                                   SelectionMode="None"
@@ -579,7 +564,7 @@
                           IsExpanded="{x:Bind ViewModel.IsAudioExpanded, Mode=TwoWay}"
                           Visibility="{x:Bind local:AffinityPage.NonEmptyToVisibility(ViewModel.AudioDevices.Count), Mode=OneWay}">
                     <Expander.Header>
-                        <StackPanel Orientation="Horizontal" Spacing="7">
+                        <StackPanel Orientation="Horizontal" Spacing="0">
                             <TextBlock Text="Audio controllers" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
                             <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="9" Padding="6,1" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Bind local:AffinityPage.CountText(ViewModel.AudioDevices.Count), Mode=OneWay}"
@@ -588,7 +573,7 @@
                             </Border>
                         </StackPanel>
                     </Expander.Header>
-                    <StackPanel Spacing="3">
+                    <StackPanel Spacing="0">
                         <ListView x:Name="AudioList"
                                   ItemsSource="{x:Bind ViewModel.AudioDevices, Mode=OneWay}"
                                   SelectionMode="None"

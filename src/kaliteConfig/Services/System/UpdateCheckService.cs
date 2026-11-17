@@ -48,20 +48,6 @@ public sealed class UpdateCheckService
 
     internal sealed record SetupAsset(string Name, string DownloadUrl, long SizeBytes, bool IsMsix);
 
-    internal static void LogDiag(string message)
-    {
-        try
-        {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "kaliteConfig", "logs");
-            Directory.CreateDirectory(dir);
-            File.AppendAllText(Path.Combine(dir, "updater.log"),
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}\n");
-        }
-        catch { }
-    }
-
     private static string PendingMarkerPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "kaliteConfig", "update-pending.json");
@@ -220,15 +206,13 @@ public sealed class UpdateCheckService
             };
             if (!isAdmin) psi.Verb = "runas";
 
-            LogDiag($"handoff: launching installed copy {installedExe} (was {runningPath ?? "?"})");
             Process.Start(psi);
             ClearPendingUpdate();
             Environment.Exit(0);
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            LogDiag($"handoff: failed - {ex.Message}");
             return false;
         }
     }
@@ -250,11 +234,9 @@ public sealed class UpdateCheckService
         return TryLaunchInstalledCopyAndExit();
     }
 
-    internal static string BuildSilentInstallerArguments(string? installDirectory, string? logPath = null)
+    internal static string BuildSilentInstallerArguments(string? installDirectory)
     {
         var args = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS";
-        if (!string.IsNullOrWhiteSpace(logPath))
-            args += $" /LOG=\"{logPath.Trim()}\"";
         if (!string.IsNullOrWhiteSpace(installDirectory))
         {
             var dir = installDirectory.Trim().TrimEnd('\\');
@@ -280,11 +262,7 @@ public sealed class UpdateCheckService
     internal sealed record PendingUpdate(
         string Version,
         string? InstallerPath,
-        string? LogPath,
         bool Reported);
-
-    internal static string SetupLogPath(string version) => Path.Combine(
-        Path.GetTempPath(), $"kaliteConfig-setup-{version.Trim()}.log");
 
     internal static string SetupDownloadPath(string version, bool isMsix = false) => isMsix
         ? Path.Combine(Path.GetTempPath(), $"{MsixAssetNamePrefix}{version.Trim()}.msix")
@@ -319,7 +297,6 @@ public sealed class UpdateCheckService
     internal static void WritePendingUpdate(
         string version,
         string? installerPath = null,
-        string? logPath = null,
         bool reported = false)
     {
         try
@@ -332,7 +309,6 @@ public sealed class UpdateCheckService
                     version,
                     at = DateTime.Now,
                     installer = installerPath,
-                    log = logPath,
                     reported,
                 }));
         }
@@ -351,7 +327,6 @@ public sealed class UpdateCheckService
             return new PendingUpdate(
                 version.Trim(),
                 StringProperty(root, "installer"),
-                StringProperty(root, "log"),
                 root.TryGetProperty("reported", out var reported)
                     && reported.ValueKind == JsonValueKind.True);
         }
@@ -367,83 +342,7 @@ public sealed class UpdateCheckService
     {
         var pending = ReadPendingUpdate();
         if (pending is null) return;
-        WritePendingUpdate(pending.Version, pending.InstallerPath, pending.LogPath, reported: true);
-    }
-
-    internal static string? ReadInstallerLogSummary(string? logPath)
-    {
-        if (string.IsNullOrWhiteSpace(logPath) || !File.Exists(logPath)) return null;
-        try
-        {
-            using var stream = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(stream);
-            var lines = new System.Collections.Generic.List<string>();
-            while (reader.ReadLine() is { } line) lines.Add(line);
-            return SummarizeInstallerLog(lines);
-        }
-        catch { return null; }
-    }
-
-    internal static string? SummarizeInstallerLog(System.Collections.Generic.IReadOnlyList<string>? lines)
-    {
-        if (lines is null || lines.Count == 0) return null;
-
-        const string AbortMarker = "Defaulting to Abort for suppressed message box";
-        for (int i = lines.Count - 1; i >= 0; i--)
-        {
-            if (lines[i].IndexOf(AbortMarker, StringComparison.OrdinalIgnoreCase) < 0) continue;
-            var message = new System.Collections.Generic.List<string>();
-            for (int j = i + 1; j < lines.Count; j++)
-            {
-                var text = StripLogPrefix(lines[j]);
-                if (text.Length == 0) break;
-                message.Add(text);
-            }
-            return message.Count > 0 ? string.Join(" ", message) : "Setup aborted.";
-        }
-
-        foreach (var (marker, summary) in LogFailureMarkers)
-        {
-            for (int i = lines.Count - 1; i >= 0; i--)
-            {
-                if (lines[i].IndexOf(marker, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                return summary;
-            }
-        }
-
-        for (int i = lines.Count - 1; i >= 0; i--)
-        {
-            if (lines[i].IndexOf("Rolling back changes", StringComparison.OrdinalIgnoreCase) >= 0)
-                return "Setup rolled the installation back.";
-        }
-
-        return null;
-    }
-
-    private static readonly (string Marker, string Summary)[] LogFailureMarkers =
-    {
-        ("Some applications could not be shut down",
-            "Setup could not close the running kaliteConfig copy, so it aborted before replacing any file."),
-        ("Setup files are corrupted",
-            "The downloaded installer was corrupt - retry the download."),
-        ("is not a valid Win32 application",
-            "The downloaded installer was not a valid program - retry the download."),
-        ("Access is denied",
-            "Setup was denied access to the install folder (permissions or antivirus)."),
-        ("The process cannot access the file",
-            "An installed file was locked by another process while Setup replaced it."),
-    };
-
-    private static string StripLogPrefix(string line)
-    {
-        var text = line.Trim();
-        if (text.Length > 23
-            && text[4] == '-' && text[7] == '-' && text[10] == ' '
-            && text[13] == ':' && text[16] == ':')
-        {
-            text = text[23..].Trim();
-        }
-        return text;
+        WritePendingUpdate(pending.Version, pending.InstallerPath, reported: true);
     }
 
     public static string? CurrentVersion
@@ -515,7 +414,6 @@ public sealed class UpdateCheckService
                 LastError = response.StatusCode == System.Net.HttpStatusCode.Forbidden
                     ? "GitHub rate limit reached (HTTP 403). Try again in a few minutes."
                     : $"GitHub returned HTTP {(int)response.StatusCode}.";
-                LogDiag($"check: HTTP {(int)response.StatusCode} - no offer");
                 return null;
             }
 
@@ -530,7 +428,6 @@ public sealed class UpdateCheckService
 
             if (!IsNewer(tag, CurrentVersion))
             {
-                LogDiag($"check: tag '{tag}' not newer than running {CurrentVersion ?? "?"} - no offer");
                 return null;
             }
 
@@ -540,17 +437,14 @@ public sealed class UpdateCheckService
 
             if (picked is null)
             {
-                LogDiag($"check: tag '{tag}' has no setup asset matching its own version - no offer (not installing a stale asset)");
                 return null;
             }
 
-            LogDiag($"check: offering {picked.Name} ({picked.SizeBytes} bytes) over running {CurrentVersion}");
             return new LatestRelease(tag.TrimStart('v', 'V'), notes, picked.DownloadUrl, picked.SizeBytes, picked.IsMsix);
         }
         catch (Exception ex)
         {
             LastError = "Could not reach GitHub: " + ex.Message;
-            LogDiag($"check: {ex.GetType().Name} - {ex.Message}");
             return null;
         }
     }
@@ -604,7 +498,6 @@ public sealed class UpdateCheckService
             catch (Exception ex)
             {
                 last = ex;
-                LogDiag($"download: attempt {attempt} failed - {ex.Message}");
                 if (attempt < 3) await Task.Delay(TimeSpan.FromMilliseconds(800 * attempt), ct);
             }
         }

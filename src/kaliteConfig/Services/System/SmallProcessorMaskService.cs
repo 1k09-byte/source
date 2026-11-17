@@ -40,7 +40,6 @@ public sealed class SmallProcessorMaskService
             if (key is null)
                 return "The kernel Session Manager key could not be opened. Run the app as administrator.";
 
-            ulong? before = Read();
             if (mask == 0)
             {
                 key.DeleteValue(ValueName, throwOnMissingValue: false);
@@ -56,14 +55,6 @@ public sealed class SmallProcessorMaskService
 
             ulong? after = Read();
             ulong? expected = mask == 0 ? null : mask;
-            ChangeLog.ChangeLedger.RecordRegistryChange(
-                "scheduling",
-                mask == 0 ? "Removed SmallProcessorMask" : $"Set SmallProcessorMask to 0x{mask:X16}",
-                KernelKeyPath,
-                ValueName,
-                before is null ? null : unchecked((int)before.Value),
-                after is null ? null : unchecked((int)after.Value),
-                after == expected ? ChangeLog.ChangeResults.Verified : ChangeLog.ChangeResults.Failed);
 
             return after == expected ? null : "The value was written but reading it back did not match.";
         }

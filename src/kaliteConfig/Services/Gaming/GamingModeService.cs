@@ -60,19 +60,24 @@ public sealed class GamingModeResult
 
 public sealed class GamingModeService
 {
-    private sealed record RestoreEntry
+    private sealed class RestoreEntry
     {
-        public uint Priority { get; init; }
-        public bool? Eco { get; init; }
-        public bool? BoostDisabled { get; init; }
+        public uint Priority { get; set; }
+        public bool? Eco { get; set; }
+        public bool? BoostDisabled { get; set; }
+        public uint? OriginalIoPriority { get; set; }
+        public bool IoPriorityChanged { get; set; }
+        public Dictionary<uint, uint> ThreadIoPriorities { get; } = new();
     }
 
     private readonly Dictionary<string, RestoreEntry> _restoreMap = new();
 
-    private void Remember(string key, uint priority, bool? eco, bool? boostDisabled)
+    private RestoreEntry Remember(string key, uint priority, bool? eco, bool? boostDisabled, uint? ioPriority = null)
     {
-        if (!_restoreMap.ContainsKey(key))
-            _restoreMap[key] = new RestoreEntry { Priority = priority, Eco = eco, BoostDisabled = boostDisabled };
+        if (_restoreMap.TryGetValue(key, out var existing)) return existing;
+        var entry = new RestoreEntry { Priority = priority, Eco = eco, BoostDisabled = boostDisabled, OriginalIoPriority = ioPriority };
+        _restoreMap[key] = entry;
+        return entry;
     }
 
     private readonly GameModeHoldRegistry _holds = new();
@@ -360,8 +365,10 @@ public sealed class GamingModeService
 
                     bool? ecoOriginal = ReadEcoState(handle);
                     bool? boostOriginal = ReadBoostDisabled(handle);
+                    uint? ioOriginal = ReadIoPriority(handle);
 
-                    Remember(GetProcessKey(pid), original, ecoOriginal, boostOriginal);
+                    string key = GetProcessKey(pid);
+                    var restoreEntry = Remember(key, original, ecoOriginal, boostOriginal, ioOriginal);
 
                     if (NativeMethods.Priority.SetPriorityClass(handle, NativeMethods.Priority.Idle))
                     {
@@ -373,6 +380,13 @@ public sealed class GamingModeService
                         if (!isAntiCheat && ecoOriginal == false && TrySetEco(handle, true))
                         {
                             ecoCount++;
+                        }
+
+                        if (ioOriginal.HasValue && TrySetIoPriority(handle, NativeMethods.Ntdll.IoPriorityVeryLow))
+                        {
+                            restoreEntry.IoPriorityChanged = true;
+                            foreach (var threadIo in ApplyThreadIoPriority(pid, NativeMethods.Ntdll.IoPriorityVeryLow))
+                                restoreEntry.ThreadIoPriorities[threadIo.Key] = threadIo.Value;
                         }
                     }
                     else
@@ -492,6 +506,16 @@ public sealed class GamingModeService
             {
                 TrySetEco(handle, entry.Eco.Value);
             }
+
+            if (entry.IoPriorityChanged && entry.OriginalIoPriority.HasValue)
+            {
+                try { TrySetIoPriority(handle, entry.OriginalIoPriority.Value); }
+                catch { }
+            }
+            if (entry.ThreadIoPriorities.Count > 0)
+            {
+                RestoreThreadIoPriorities(pid, entry.ThreadIoPriorities);
+            }
         }
 
         _restoreMap.Clear();
@@ -578,6 +602,103 @@ public sealed class GamingModeService
             }
         }
         catch { }
+    }
+
+    private static uint? ReadIoPriority(SafeProcessHandle process)
+    {
+        try
+        {
+            if (process.IsInvalid) return null;
+            uint value = 0;
+            return NativeMethods.Ntdll.NtQueryInformationProcess(
+                process, NativeMethods.Ntdll.ProcessIoPriority, ref value, sizeof(uint), out _) == 0
+                ? value
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool TrySetIoPriority(SafeProcessHandle process, uint target)
+    {
+        try
+        {
+            if (process.IsInvalid) return false;
+            uint value = target;
+            return NativeMethods.Ntdll.NtSetInformationProcess(
+                process, NativeMethods.Ntdll.ProcessIoPriority, ref value, sizeof(uint)) == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetThreadIoPriority(SafeThreadHandle thread, out uint current)
+    {
+        uint value = 0;
+        int status = NativeMethods.Ntdll.NtQueryInformationThread(
+            thread, NativeMethods.Ntdll.ThreadIoPriority, ref value, sizeof(uint), out _);
+        current = value;
+        return status == 0;
+    }
+
+    private static bool TrySetThreadIoPriority(SafeThreadHandle thread, uint target)
+    {
+        uint value = target;
+        return NativeMethods.Ntdll.NtSetInformationThread(
+            thread, NativeMethods.Ntdll.ThreadIoPriority, ref value, sizeof(uint)) == 0;
+    }
+
+    private static Dictionary<uint, uint> ApplyThreadIoPriority(int pid, uint target)
+    {
+        var originals = new Dictionary<uint, uint>();
+        try
+        {
+            using var proc = Process.GetProcessById(pid);
+            foreach (ProcessThread? thread in proc.Threads)
+            {
+                if (thread == null) continue;
+                uint tid = (uint)thread.Id;
+                try
+                {
+                    using var handle = NativeMethods.Handles.OpenThread(
+                        NativeMethods.ThreadAccess.SetInformation | NativeMethods.ThreadAccess.QueryInformation,
+                        false, tid);
+                    if (handle.IsInvalid) continue;
+                    if (!TryGetThreadIoPriority(handle, out uint current) || current <= target) continue;
+                    if (!TrySetThreadIoPriority(handle, target)) continue;
+                    originals[tid] = current;
+                }
+                catch { }
+            }
+        }
+        catch { }
+        return originals;
+    }
+
+    private static void RestoreThreadIoPriorities(int pid, IReadOnlyDictionary<uint, uint> originals)
+    {
+        try
+        {
+            using var proc = Process.GetProcessById(pid);
+            if (proc.HasExited) return;
+        }
+        catch { return; }
+
+        foreach (var pair in originals)
+        {
+            try
+            {
+                using var thread = NativeMethods.Handles.OpenThread(
+                    NativeMethods.ThreadAccess.SetInformation, false, pair.Key);
+                if (thread.IsInvalid) continue;
+                TrySetThreadIoPriority(thread, pair.Value);
+            }
+            catch { }
+        }
     }
 
     private static uint ReadPriorityClass(int pid)

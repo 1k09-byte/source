@@ -10,16 +10,14 @@ public sealed class SnipFolderWatcher : IDisposable
     private readonly Timer _debounce;
     private readonly TimeSpan _debounceDelay;
     private readonly Action _onChanged;
-    private readonly Action<string> _log;
     private readonly object _gate = new();
     private int _pending;
     private bool _disposed;
 
-    private SnipFolderWatcher(string folder, Action onChanged, TimeSpan debounceDelay, Action<string> log)
+    private SnipFolderWatcher(string folder, Action onChanged, TimeSpan debounceDelay)
     {
         _onChanged = onChanged;
         _debounceDelay = debounceDelay;
-        _log = log;
         _debounce = new Timer(_ => Fire(), null, Timeout.Infinite, Timeout.Infinite);
 
         try
@@ -34,21 +32,18 @@ public sealed class SnipFolderWatcher : IDisposable
             _watcher.Changed += (_, _) => Raise();
             _watcher.Deleted += (_, _) => Raise();
             _watcher.Renamed += (_, _) => Raise();
-            _watcher.Error += (_, e) => _log($"folder watch error: {e.GetException()?.Message}");
             _watcher.EnableRaisingEvents = true;
         }
-        catch (Exception ex)
+        catch
         {
             _watcher = null;
-            _log($"folder watch unavailable, polling only: {ex.Message}");
         }
     }
 
     public bool IsWatching => _watcher is not null;
 
-    public static SnipFolderWatcher Start(string folder, Action onChanged, TimeSpan? debounce = null,
-        Action<string>? log = null)
-        => new(folder, onChanged, debounce ?? TimeSpan.FromMilliseconds(300), log ?? (static _ => { }));
+    public static SnipFolderWatcher Start(string folder, Action onChanged, TimeSpan? debounce = null)
+        => new(folder, onChanged, debounce ?? TimeSpan.FromMilliseconds(300));
 
     private void Raise()
     {
@@ -67,7 +62,7 @@ public sealed class SnipFolderWatcher : IDisposable
         Interlocked.Exchange(ref _pending, 0);
         if (_disposed) return;
         try { _onChanged(); }
-        catch (Exception ex) { _log($"folder watch callback failed: {ex.Message}"); }
+        catch { }
     }
 
     public void Dispose()

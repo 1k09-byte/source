@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:gamemode="using:kaliteConfig.Gaming.GameMode"
-    Title="Game Mode"
+    Title="Gaming Mode"
     CloseButtonText="Close"
     DefaultButton="Close"
     CornerRadius="12">
@@ -83,15 +83,15 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Spacing="1" VerticalAlignment="Center">
-                                <TextBlock Text="Game Mode" Style="{StaticResource BodyTextBlockStyle}" />
+                                <TextBlock Text="Gaming Mode" Style="{StaticResource BodyTextBlockStyle}" />
                                 <TextBlock Text="Watches for a listed game and applies the plan below while it runs."
                                            Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextWrapping="Wrap" />
                             </StackPanel>
-                            <ToggleSwitch Grid.Column="1" Style="{StaticResource KaliteToggleSwitchStyle}" AutomationProperties.Name="Game Mode"
+                            <ToggleSwitch Grid.Column="1" Style="{StaticResource KaliteToggleSwitchStyle}" AutomationProperties.Name="Gaming Mode"
                                           IsOn="{Binding Enabled, Mode=OneWay}"
                                           Toggled="Enabled_Toggled"
-                                          ToolTipService.ToolTip="Turns the Game Mode session engine on or off. No process needs to be selected." />
+                                          ToolTipService.ToolTip="Turns the Gaming Mode session engine on or off. No process needs to be selected." />
                         </Grid>
                         <Grid ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
@@ -144,8 +144,8 @@
                         <NumberBox Header="Activation delay (ms)" Minimum="250" Maximum="5000" SmallChange="50"
                                    SpinButtonPlacementMode="Inline" Value="{Binding DebounceMs, Mode=OneWay}"
                                    ValueChanged="Debounce_ValueChanged"
-                                   ToolTipService.ToolTip="How long a listed game must stay in the foreground before Game Mode activates." />
-                        <TextBlock Text="Game Mode starts when a listed game comes to the foreground and restores every change when it exits. The three options above are off by default and only add to the normal plan; when two are on, suspension wins over Background Mode. Shell, audio, security, service and game processes are never touched."
+                                   ToolTipService.ToolTip="How long a listed game must stay in the foreground before Gaming Mode activates." />
+                        <TextBlock Text="Gaming Mode starts when a listed game comes to the foreground and restores every change when it exits. The three options above are off by default and only add to the normal plan; when two are on, suspension wins over Background Mode. Shell, audio, security, service and game processes are never touched."
                                    Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap" />
                         <TextBlock Text="{Binding JournalText}" Style="{StaticResource CaptionTextBlockStyle}"
