@@ -1,8 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Threading.Tasks;
 
 namespace kaliteConfig.Pages
@@ -10,65 +8,79 @@ namespace kaliteConfig.Pages
     public sealed partial class TroubleshootingPage : Page
     {
         private readonly Services.RecoveryService _recovery = new();
-        private readonly Services.ServiceStartFixService _fixes = new();
-        private readonly ObservableCollection<ChangeRow> _changes = new();
-
-        public sealed class ChangeRow
-        {
-            public string Id { get; init; } = "";
-            public string Title { get; init; } = "";
-            public string Detail { get; init; } = "";
-            public bool CanUndo { get; init; }
-        }
+        private readonly Services.FaceitUpdatesFixService _faceit = new();
+        private readonly Services.RemoteDesktopFixService _remoteDesktop = new();
+        private readonly Services.PrinterFixService _printer = new();
 
         public TroubleshootingPage()
         {
             this.InitializeComponent();
-            ChangesList.ItemsSource = _changes;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            RefreshSafeState();
-            RefreshServiceFixes();
-            RefreshChanges();
+            RefreshFixStates();
         }
 
-        private void RefreshServiceFixes()
+        private void RefreshFixStates()
         {
-            try { ObsCaptureState.Text = _fixes.Status(Services.ServiceStartFixService.ObsCapture).Summary; }
+            SetFix(FaceitFixButton, SafeStatus(() => _faceit.Status()));
+            SetFix(RemoteDesktopFixButton, SafeStatus(() => _remoteDesktop.Status()));
+            SetFix(PrinterFixButton, SafeStatus(() => _printer.Status()));
+        }
+
+        private static Services.ServiceFixStatus SafeStatus(Func<Services.ServiceFixStatus> read)
+        {
+            try { return read(); }
+            catch { return new Services.ServiceFixStatus(false, string.Empty); }
+        }
+
+        private static void SetFix(Button button, Services.ServiceFixStatus status)
+        {
+            bool applied = status.Applied;
+            button.Background = ThemeBrush(
+                applied ? "ToggleSegmentIdleBrush" : "ToggleSegmentFillBrush",
+                applied ? Microsoft.UI.Colors.Gray : Microsoft.UI.Colors.DarkBlue);
+            button.Foreground = applied
+                ? ThemeBrush("TextFillColorTertiaryBrush", Microsoft.UI.Colors.Gray)
+                : new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
+        }
+
+        private static Microsoft.UI.Xaml.Media.Brush ThemeBrush(string key, Windows.UI.Color fallback)
+        {
+            try
+            {
+                if (Application.Current.Resources.TryGetValue(key, out object? value)
+                    && value is Microsoft.UI.Xaml.Media.Brush brush)
+                    return brush;
+            }
             catch { }
-
-            try { HyperVState.Text = _fixes.Status(Services.ServiceStartFixService.HyperV).Summary; }
-            catch { }
+            return new Microsoft.UI.Xaml.Media.SolidColorBrush(fallback);
         }
 
-        private void ApplyObsFix_Click(object sender, RoutedEventArgs e) =>
-            ApplyFix(Services.ServiceStartFixService.ObsCapture);
+        private void ApplyFaceitFix_Click(object sender, RoutedEventArgs e) =>
+            ApplyFixWork(() => _faceit.Apply());
 
-        private void ApplyHyperVFix_Click(object sender, RoutedEventArgs e) =>
-            ApplyFix(Services.ServiceStartFixService.HyperV);
+        private void ApplyRemoteDesktopFix_Click(object sender, RoutedEventArgs e) =>
+            ApplyFixWork(() => _remoteDesktop.Apply());
 
-        private void ApplyFix(Services.ServiceFix fix)
+        private void ApplyPrinterFix_Click(object sender, RoutedEventArgs e) =>
+            ApplyFixWork(() => _printer.Apply());
+
+        private void ApplyFixWork(Func<Services.ServiceFixResult> work)
         {
-            Services.ServiceFixResult? result = null;
-            try { result = _fixes.Apply(fix); }
-            catch (Exception ex) { Show(InfoBarSeverity.Error, "Something went wrong: " + ex.Message); }
-
-            if (result is not null)
-                Show(result.Ok ? InfoBarSeverity.Success : InfoBarSeverity.Error, result.Message);
-
-            RefreshServiceFixes();
-            RefreshChanges();
-        }
-
-        private void RefreshSafeState()
-        {
-            bool armed = false;
-            try { armed = _recovery.IsSafeBootArmed(); } catch { }
-            SafeStateText.Text = armed
-                ? "Safe mode is currently armed: every restart uses safe mode."
-                : "Safe mode is not armed: Windows starts normally.";
+            Show(InfoBarSeverity.Informational, "Working…");
+            Task.Run(work).ContinueWith(t =>
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (t.IsFaulted)
+                        Show(InfoBarSeverity.Error, "Something went wrong: " + (t.Exception?.GetBaseException().Message ?? "unknown error."));
+                    else
+                        Show(t.Result.Ok ? InfoBarSeverity.Success : InfoBarSeverity.Error, t.Result.Message);
+                    RefreshFixStates();
+                });
+            });
         }
 
         private void Firmware_Click(object sender, RoutedEventArgs e) =>
@@ -94,70 +106,8 @@ namespace kaliteConfig.Pages
                         Show(InfoBarSeverity.Error, "Something went wrong: " + (t.Exception?.GetBaseException().Message ?? "unknown error."));
                     else
                         Show(t.Result.Ok ? InfoBarSeverity.Success : InfoBarSeverity.Error, t.Result.Message);
-                    RefreshSafeState();
                 });
             });
-        }
-
-        private void RefreshChanges_Click(object sender, RoutedEventArgs e) => RefreshChanges();
-
-        private void RefreshChanges()
-        {
-            _changes.Clear();
-            try
-            {
-                foreach (var record in Services.ChangeLog.ChangeLedger.Recent(60))
-                {
-                    _changes.Add(new ChangeRow
-                    {
-                        Id = record.Id,
-                        Title = record.Summary,
-                        Detail = string.Format(
-                            CultureInfo.CurrentCulture,
-                            "{0:g} | {1} | HKLM\\{2}\\{3} | {4} -> {5} | {6}",
-                            record.AtUtc.ToLocalTime(),
-                            record.Subsystem,
-                            record.KeyPath,
-                            record.ValueName,
-                            record.BeforeValue?.ToString(CultureInfo.InvariantCulture) ?? "absent",
-                            record.AfterValue?.ToString(CultureInfo.InvariantCulture) ?? "absent",
-                            record.Result),
-                        CanUndo = record.Result == Services.ChangeLog.ChangeResults.Verified,
-                    });
-                }
-            }
-            catch { }
-
-            NoChangesText.Visibility = _changes.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-            ChangesList.Visibility = _changes.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-        }
-
-        private void Undo_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not Button button || button.Tag is not string id) return;
-
-            string? error = null;
-            try { error = Services.ChangeLog.ChangeLedger.Revert(id); }
-            catch (Exception ex) { error = ex.Message; }
-
-            if (error is null) Show(InfoBarSeverity.Success, "Change reverted.");
-            else Show(InfoBarSeverity.Warning, error);
-            RefreshChanges();
-        }
-
-        private void UndoSession_Click(object sender, RoutedEventArgs e)
-        {
-            var result = Services.ChangeLog.ChangeLedger.RevertSession(Services.ChangeLog.ChangeLedger.CurrentSessionId);
-
-            if (result.Reverted == 0 && result.Skipped == 0)
-                Show(InfoBarSeverity.Informational, "This session has not recorded any change that can be undone.");
-            else if (result.Skipped == 0)
-                Show(InfoBarSeverity.Success, $"Reverted {result.Reverted} change(s) from this session.");
-            else
-                Show(InfoBarSeverity.Warning,
-                    $"Reverted {result.Reverted}, skipped {result.Skipped}: " + string.Join(" ", result.Messages));
-
-            RefreshChanges();
         }
 
         private void Show(InfoBarSeverity severity, string message)

@@ -146,50 +146,22 @@
 
     <Grid x:Name="RootGrid" UseLayoutRounding="True">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="13,11,13,0" Spacing="1">
-            <TextBlock Text="Apps" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="Install the essentials in one click. Removing apps lives on the Uninstaller page."
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        </StackPanel>
-
-        <Grid x:Name="InstallPanel" Grid.Row="1">
+        <Grid x:Name="InstallPanel" Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="13,7,13,3" ColumnSpacing="11">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <AutoSuggestBox x:Name="AppSearchBox"
-                                Width="280"
-                                QueryIcon="Find"
-                                PlaceholderText="Search apps"
-                                TextChanged="AppSearchBox_TextChanged" />
-
-                <TextBlock Grid.Column="1" VerticalAlignment="Center"
-                           Text="{x:Bind ViewModel.FilterSummary, Mode=OneWay}"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <TextBlock Text="Show installed apps" VerticalAlignment="Center"
-                               Style="{StaticResource BodyTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" IsOn="{x:Bind ViewModel.ShowInstalled, Mode=TwoWay}"
-                                  MinWidth="0"
-                                  ToolTipService.ToolTip="Reveal installed apps (with uninstall option)." />
-                </StackPanel>
-            </Grid>
+            <AutoSuggestBox x:Name="AppSearchBox"
+                            Width="280"
+                            Margin="13,7,13,3"
+                            HorizontalAlignment="Left"
+                            QueryIcon="Find"
+                            PlaceholderText="Search apps"
+                            TextChanged="AppSearchBox_TextChanged" />
 
             <ScrollViewer Grid.Row="1" Padding="13,3,13,17"
                           VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto"

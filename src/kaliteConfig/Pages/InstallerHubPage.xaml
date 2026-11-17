@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="kaliteConfig.Pages.InstallerHubPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" Background="Transparent" NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <Style x:Key="SegmentTabStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="UseSystemFocusVisuals" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root" CornerRadius="{TemplateBinding CornerRadius}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.92" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.8" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.4" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="Content"
+                                              Foreground="{TemplateBinding Foreground}"
+                                              Content="{TemplateBinding Content}"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Padding="13,11,13,0" Spacing="3">
+            <TextBlock Text="Apps" Style="{StaticResource TitleTextBlockStyle}" />
+        </StackPanel>
+
+        <Border Grid.Row="1" HorizontalAlignment="Left" Margin="13,9,13,3"
+                Padding="0" CornerRadius="8"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                Background="{ThemeResource ToggleSegmentIdleBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="0">
+                <Button x:Name="TabInstall" Style="{StaticResource SegmentTabStyle}"
+                        CornerRadius="8,0,0,8"
+                        Background="{ThemeResource ToggleSegmentFillBrush}"
+                        Foreground="White"
+                        Click="Tab_Click" AutomationProperties.Name="Installer">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon Glyph="&#xE719;" FontSize="13" />
+                        <TextBlock Text="Installer" FontSize="12" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="TabUninstall" Style="{StaticResource SegmentTabStyle}"
+                        CornerRadius="0,8,8,0"
+                        Background="Transparent"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Click="Tab_Click" AutomationProperties.Name="Uninstaller">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                        <TextBlock Text="Uninstaller" FontSize="12" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <Frame x:Name="ContentFrame" Grid.Row="2" CacheSize="0" />
+    </Grid>
+</Page>

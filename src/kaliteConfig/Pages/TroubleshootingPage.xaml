@@ -7,6 +7,53 @@
     NavigationCacheMode="Required"
     Loaded="OnLoaded">
 
+    <Page.Resources>
+        <Style x:Key="FixButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{ThemeResource ToggleSegmentFillBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="UseSystemFocusVisuals" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root" CornerRadius="{TemplateBinding CornerRadius}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.92" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.8" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.4" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="Content"
+                                              Foreground="{TemplateBinding Foreground}"
+                                              Content="{TemplateBinding Content}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
     <ScrollViewer HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Padding="13,11,13,14" Spacing="8">
 
@@ -21,108 +68,63 @@
             <InfoBar x:Name="StatusBar" IsOpen="False" IsClosable="True" />
 
             <Border Style="{StaticResource CardBorder}" Padding="8">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="UEFI firmware settings" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Restart to firmware now" Click="Firmware_Click"
+                            Style="{StaticResource FixButtonStyle}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}" Padding="8">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="UEFI firmware settings" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Text="Restart straight into the motherboard firmware (BIOS/UEFI) setup screen."
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
-                    <Button Content="Restart to firmware now" Click="Firmware_Click"
-                            Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Left" />
+                    <TextBlock Text="Fixes" Style="{StaticResource BodyStrongTextBlockStyle}" />
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Faceit Updates" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button x:Name="FaceitFixButton" Grid.Column="1" Content="Apply fix" Click="ApplyFaceitFix_Click"
+                                Style="{StaticResource FixButtonStyle}" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Remote Desktop" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button x:Name="RemoteDesktopFixButton" Grid.Column="1" Content="Apply fix" Click="ApplyRemoteDesktopFix_Click"
+                                Style="{StaticResource FixButtonStyle}" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Printer" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button x:Name="PrinterFixButton" Grid.Column="1" Content="Apply fix" Click="ApplyPrinterFix_Click"
+                                Style="{StaticResource FixButtonStyle}" VerticalAlignment="Center" />
+                    </Grid>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource CardBorder}" Padding="8">
                 <StackPanel Spacing="6">
                     <TextBlock Text="Safe mode" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Text="Restart Windows with only the essential drivers and services. Use it once to test — normal startup returns on the next boot — or keep it on every restart while you repair the PC."
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
-                    <TextBlock x:Name="SafeStateText"
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button Content="Restart in safe mode once" Click="SafeOnce_Click" />
-                        <Button Content="Use safe mode on every restart" Click="SafeAlways_Click" />
-                        <Button Content="Restore normal startup" Click="NormalStartup_Click" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource CardBorder}" Padding="8">
-                <StackPanel Spacing="7">
-                    <TextBlock Text="Service fixes" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Text="Repairs to Windows services that break capture or virtualization. Every value written is recorded, so Undo on Recent changes puts it back."
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
-
-                    <StackPanel Spacing="3">
-                        <TextBlock Text="OBS capture" FontWeight="SemiBold" />
-                        <TextBlock Text="Sets CaptureService back to Manual, which fixes black or missing capture sources in OBS after the service was disabled."
-                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock x:Name="ObsCaptureState"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" />
-                        <Button Content="Apply fix" Click="ApplyObsFix_Click" HorizontalAlignment="Left" />
-                    </StackPanel>
-
-                    <StackPanel Spacing="3">
-                        <TextBlock Text="Hyper-V and WSL" FontWeight="SemiBold" />
-                        <TextBlock Text="Restores the Hyper-V device services (vid, vdrvroot, umbus, CompositeBus, rdpbus, WSL) so Hyper-V, WSL2 and Windows Sandbox can start again. Needs a restart."
-                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock x:Name="HyperVState"
-                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" />
-                        <Button Content="Apply fix" Click="ApplyHyperVFix_Click" HorizontalAlignment="Left" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource CardBorder}" Padding="8">
-                <StackPanel Spacing="6">
-                    <TextBlock Text="Recent changes" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Text="Everything kaliteConfig wrote to this machine, newest first. Undo puts the value that was there before back."
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               TextWrapping="Wrap" />
-                    <TextBlock x:Name="NoChangesText" Text="No changes recorded yet."
-                               Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <ListView x:Name="ChangesList" MaxHeight="360" SelectionMode="None"
-                              Visibility="Collapsed">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid ColumnSpacing="8" Padding="0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Spacing="1">
-                                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
-                                        <TextBlock Text="{Binding Detail}"
-                                                   Style="{StaticResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                   TextWrapping="Wrap" />
-                                    </StackPanel>
-                                    <Button Grid.Column="1" Content="Undo" Tag="{Binding Id}"
-                                            Click="Undo_Click" VerticalAlignment="Center"
-                                            IsEnabled="{Binding CanUndo}" />
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button Content="Refresh" Click="RefreshChanges_Click" />
-                        <Button Content="Undo this session" Click="UndoSession_Click" />
+                        <Button Content="Restart in safe mode once" Click="SafeOnce_Click"
+                                Style="{StaticResource FixButtonStyle}" />
+                        <Button Content="Use safe mode on every restart" Click="SafeAlways_Click"
+                                Style="{StaticResource FixButtonStyle}" />
+                        <Button Content="Restore normal startup" Click="NormalStartup_Click"
+                                Style="{StaticResource FixButtonStyle}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

@@ -7,6 +7,51 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d" Background="Transparent" NavigationCacheMode="Required">
 
+    <Page.Resources>
+        <Style x:Key="SegmentTabStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="UseSystemFocusVisuals" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root" CornerRadius="{TemplateBinding CornerRadius}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.92" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.8" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.4" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="Content"
+                                              Foreground="{TemplateBinding Foreground}"
+                                              Content="{TemplateBinding Content}"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,22 +65,35 @@
                        Text="Drivers, GPU overclocking and display controls for this machine." />
         </StackPanel>
 
-        <SelectorBar x:Name="ViewSelector" Grid.Row="1" Margin="25,11,25,3"
-                     SelectionChanged="ViewSelector_SelectionChanged">
-            <SelectorBarItem Tag="Drivers" Text="Drivers" IsSelected="True" />
-            <SelectorBarItem Tag="Overclock" Text="Overclock" />
-        </SelectorBar>
+        <Border Grid.Row="1" HorizontalAlignment="Left" Margin="25,11,25,3"
+                Padding="0" CornerRadius="8"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                Background="{ThemeResource ToggleSegmentIdleBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="0">
+                <Button x:Name="TabDrivers" Style="{StaticResource SegmentTabStyle}"
+                        CornerRadius="8,0,0,8"
+                        Background="{ThemeResource ToggleSegmentFillBrush}"
+                        Foreground="White"
+                        Click="Tab_Click" AutomationProperties.Name="Drivers">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon Glyph="&#xE90F;" FontSize="13" />
+                        <TextBlock Text="Drivers" FontSize="12" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="TabOverclock" Style="{StaticResource SegmentTabStyle}"
+                        CornerRadius="0,8,8,0"
+                        Background="Transparent"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Click="Tab_Click" AutomationProperties.Name="Overclock">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <FontIcon Glyph="&#xEC4E;" FontSize="13" />
+                        <TextBlock Text="Overclock" FontSize="12" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
 
-        <Frame x:Name="ContentFrame" Grid.Row="2" CacheSize="0">
-            <Frame.ContentTransitions>
-                <TransitionCollection>
-                    <NavigationThemeTransition>
-                        <NavigationThemeTransition.DefaultNavigationTransitionInfo>
-                            <EntranceNavigationTransitionInfo />
-                        </NavigationThemeTransition.DefaultNavigationTransitionInfo>
-                    </NavigationThemeTransition>
-                </TransitionCollection>
-            </Frame.ContentTransitions>
-        </Frame>
+        <Frame x:Name="ContentFrame" Grid.Row="2" CacheSize="0" />
     </Grid>
 </Page>

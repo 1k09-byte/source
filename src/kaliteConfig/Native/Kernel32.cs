@@ -11,6 +11,11 @@ namespace kaliteConfig.Native
             IntPtr Buffer,
             ref uint ReturnedLength);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool GetLogicalProcessorInformation(
+            IntPtr Buffer,
+            ref uint ReturnedLength);
+
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         public static extern bool Wow64DisableWow64FsRedirection(ref IntPtr ptr);
         

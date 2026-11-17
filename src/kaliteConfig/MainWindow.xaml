@@ -90,7 +90,7 @@
 
                 <NavigationViewItemSeparator Style="{StaticResource RailNavSeparatorStyle}" />
 
-                <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Apps" Tag="AppsPage" AutomationProperties.Name="App Manager" Padding="0">
+                <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Apps" Tag="AppsPage" AutomationProperties.Name="Apps" Padding="0">
                     <ToolTipService.ToolTip>
                         <ToolTip Visibility="Collapsed" />
                     </ToolTipService.ToolTip>
@@ -139,15 +139,6 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 
-                <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Uninstaller" Tag="UninstallerPage" AutomationProperties.Name="Uninstaller" Padding="0">
-                    <ToolTipService.ToolTip>
-                        <ToolTip Visibility="Collapsed" />
-                    </ToolTipService.ToolTip>
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE74D;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-
                 <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Startup" Tag="StartupPage" AutomationProperties.Name="Startup" Padding="0">
                     <ToolTipService.ToolTip>
                         <ToolTip Visibility="Collapsed" />
@@ -159,7 +150,7 @@
 
                 <NavigationViewItemSeparator Style="{StaticResource RailNavSeparatorStyle}" />
 
-                <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="Windows" Tag="WindowsSettingsPage" AutomationProperties.Name="Windows Tuning" Padding="0">
+                <NavigationViewItem Style="{StaticResource RailNavItemStyle}" Content="System Settings" Tag="WindowsSettingsPage" AutomationProperties.Name="System Settings" Padding="0">
                     <ToolTipService.ToolTip>
                         <ToolTip Visibility="Collapsed" />
                     </ToolTipService.ToolTip>

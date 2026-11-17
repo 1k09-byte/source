@@ -11,17 +11,21 @@ namespace kaliteConfig.Pages
         private readonly Services.WindowsSettingsService _kernel = new();
         private readonly Services.HibernateSettingService _hibernate = new();
         private readonly Services.KernelDmaService _dma = new();
+        private readonly Services.SystemResponsivenessService _responsiveness = new();
+        private readonly Services.ExplorerUiService _explorerUi = new();
         private bool _loadingKernelToggles;
         private bool _loadingDma;
+        private bool _loadingResponsiveness;
         private bool _loadingSvcSplit;
         private bool _loadingHibernate;
         private bool _loadingPowerMode;
+        private bool _loadingExplorerUi;
         private readonly Services.PowerKernelModeService _powerMode = new();
 
         public WindowsSettingsHubPage()
         {
             this.InitializeComponent();
-            this.Loaded += (_, _) => { LoadKernelToggles(); LoadSvcSplit(); LoadDmaToggle(); LoadPowerMode(); };
+            this.Loaded += (_, _) => { LoadKernelToggles(); LoadSvcSplit(); LoadDmaToggle(); LoadResponsiveness(); LoadPowerMode(); LoadExplorerUi(); };
         }
 
         private void LoadKernelToggles()
@@ -78,6 +82,68 @@ namespace kaliteConfig.Pages
                 LoadDmaToggle();
                 App.Notify("Kernel DMA Protection", error ?? $"IOMMUFlags set to {(target ? 1 : 0)} and verified. Restart to apply.",
                     error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            });
+        }
+
+        private void LoadResponsiveness()
+        {
+            _loadingResponsiveness = true;
+            try
+            {
+                uint? value = _responsiveness.Read();
+                SystemResponsivenessToggle.IsOn = value == 10;
+                SystemResponsivenessCard.Description = value is null
+                    ? "Not set - Windows default (20). Turning this on writes 10. Needs administrator rights and a restart."
+                    : $"SystemResponsiveness is {value.Value}. Takes effect after a restart.";
+            }
+            finally { _loadingResponsiveness = false; }
+        }
+
+        private void SystemResponsiveness_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_loadingResponsiveness || sender is not ToggleSwitch toggle) return;
+            uint target = toggle.IsOn ? 10u : 20u;
+            string? error = _responsiveness.Write(target);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                LoadResponsiveness();
+                App.Notify("System Responsiveness", error ?? $"SystemResponsiveness set to {target} and verified. Restart to apply.",
+                    error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+            });
+        }
+
+        private void LoadExplorerUi()
+        {
+            _loadingExplorerUi = true;
+            try
+            {
+                bool old = _explorerUi.IsOld();
+                ExplorerUiToggle.IsOn = old;
+                ExplorerUiCard.Description = old
+                    ? "Old is applied. Switching to Default restores the stock Windows 11 Explorer. Explorer restarts to apply."
+                    : "Default - the stock Windows 11 Explorer is in place. Switching to Old applies the classic Explorer preset. Explorer restarts to apply.";
+            }
+            finally { _loadingExplorerUi = false; }
+        }
+
+        private void ExplorerUi_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_loadingExplorerUi || sender is not ToggleSwitch toggle) return;
+            bool targetOld = toggle.IsOn;
+
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                string? error = _explorerUi.Apply(targetOld);
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    LoadExplorerUi();
+                    App.Notify(
+                        "Explorer UI",
+                        error ?? (targetOld
+                            ? "Old Explorer UI applied. Explorer restarted."
+                            : "Default Explorer UI applied. Explorer restarted."),
+                        error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
+                });
             });
         }
 

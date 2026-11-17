@@ -59,6 +59,49 @@
             </Setter>
         </Style>
 
+        <Style x:Key="SegmentTabStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="UseSystemFocusVisuals" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root" CornerRadius="{TemplateBinding CornerRadius}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.92" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.8" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="Root.Opacity" Value="0.4" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="Content"
+                                              Foreground="{TemplateBinding Foreground}"
+                                              Content="{TemplateBinding Content}"
+                                              HorizontalAlignment="Left"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <GridLength x:Key="AffinityDeviceColumn">2.6*</GridLength>
         <GridLength x:Key="AffinityMsiColumn">1.0*</GridLength>
         <GridLength x:Key="AffinityLimitColumn">1.0*</GridLength>
@@ -392,6 +435,66 @@
                             </TransitionCollection>
                         </Frame.ContentTransitions>
                     </Frame>
+                </Expander>
+
+                <Expander Style="{StaticResource GalleryCardExpander}" IsExpanded="True">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Border Width="30" Height="30" CornerRadius="9"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE950;" FontSize="14"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Border>
+                            <TextBlock Text="Scheduling" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Spacing="8">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Small Processor Mask" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Text="Marks the logical processors Windows should treat as little/efficient cores."
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Border Grid.Column="1" VerticalAlignment="Center" Padding="0" CornerRadius="8"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                    Background="{ThemeResource ToggleSegmentIdleBrush}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="SpmDefaultButton" Style="{StaticResource SegmentTabStyle}"
+                                            CornerRadius="8,0,0,8"
+                                            Background="{ThemeResource ToggleSegmentFillBrush}"
+                                            Foreground="White"
+                                            Click="SpmMode_Click" AutomationProperties.Name="Default">
+                                        <TextBlock Text="Default" FontSize="12" FontWeight="SemiBold" />
+                                    </Button>
+                                    <Button x:Name="SpmOverrideButton" Style="{StaticResource SegmentTabStyle}"
+                                            CornerRadius="0,8,8,0"
+                                            Background="Transparent"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Click="SpmMode_Click" AutomationProperties.Name="Override">
+                                        <TextBlock Text="Override" FontSize="12" FontWeight="SemiBold" />
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Text="Select little/efficient logical processors" Style="{StaticResource BodyTextBlockStyle}" />
+
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="Cores" Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <StackPanel x:Name="SpmCoresHost" Spacing="2" />
+                        </StackPanel>
+
+                        <TextBlock x:Name="SpmMaskText" FontFamily="Consolas" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Windows default (no SmallProcessorMask set)" />
+                    </StackPanel>
                 </Expander>
 
                 <Expander Style="{StaticResource GalleryCardExpander}"
