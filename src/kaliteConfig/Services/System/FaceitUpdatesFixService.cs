@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using Microsoft.Win32;
-using kaliteConfig.Services.ChangeLog;
 
 namespace kaliteConfig.Services;
 
@@ -62,22 +61,18 @@ public sealed class FaceitUpdatesFixService
                 using var key = baseKey.OpenSubKey(keyPath, writable: true);
                 if (key is null)
                 {
-                    Record(keyPath, valueName, before, null, ChangeResults.Failed, "The key could not be opened.");
                     failed.Add(valueName);
                     continue;
                 }
 
                 key.DeleteValue(valueName, throwOnMissingValue: false);
                 int? after = ReadInt(keyPath, valueName);
-                Record(keyPath, valueName, before, after,
-                    after is null ? ChangeResults.Verified : ChangeResults.Failed, null);
 
                 if (after is null) removed.Add(valueName);
                 else failed.Add(valueName);
             }
-            catch (Exception ex)
+            catch
             {
-                Record(keyPath, valueName, before, null, ChangeResults.Failed, ex.Message);
                 failed.Add(valueName);
             }
         }
@@ -99,13 +94,10 @@ public sealed class FaceitUpdatesFixService
 
                 key.SetValue(AllowValueName, 1, RegistryValueKind.DWord);
                 int? after = ReadInt(AuSubKey, AllowValueName);
-                Record(AuSubKey, AllowValueName, allowBefore, after,
-                    after == 1 ? ChangeResults.Verified : ChangeResults.Failed, null);
                 allowOk = after == 1;
             }
-            catch (Exception ex)
+            catch
             {
-                Record(AuSubKey, AllowValueName, allowBefore, null, ChangeResults.Failed, ex.Message);
                 return new ServiceFixResult(false,
                     "Could not set AllowMUUpdateService. Run kaliteConfig as administrator.");
             }
@@ -132,19 +124,6 @@ public sealed class FaceitUpdatesFixService
                 .Append(" - try again as administrator.");
 
         return new ServiceFixResult(true, message.ToString());
-    }
-
-    private static void Record(string keyPath, string valueName, int? before, int? after, string result, string? detail)
-    {
-        ChangeLedger.RecordRegistryChange(
-            Subsystem,
-            $"{valueName} {before?.ToString() ?? "absent"} -> {after?.ToString() ?? "absent"}",
-            keyPath,
-            valueName,
-            before,
-            after,
-            result,
-            detail);
     }
 
     private static int? ReadInt(string keyPath, string valueName)

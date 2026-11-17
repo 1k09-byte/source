@@ -13,21 +13,7 @@ namespace kaliteConfig.Services
     {
         public string? LastExtractError { get; private set; }
 
-        private static string LogPath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "kaliteConfig", "Logs", "amd-driver.log");
-
-        private static void Log(Action<string> logCallback, string message)
-        {
-            try
-            {
-                string path = LogPath;
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                File.AppendAllText(path, $"{DateTime.Now:HH:mm:ss} {message}{Environment.NewLine}");
-            }
-            catch {  }
-            logCallback(message);
-        }
+        private static void Log(Action<string> logCallback, string message) => logCallback(message);
 
         private static IEnumerable<string> SevenZipCandidates()
         {
@@ -155,8 +141,7 @@ namespace kaliteConfig.Services
 
                 if (!AmdExtractGate.IsSuccess(process.ExitCode, manifestPresent))
                 {
-                    LastExtractError = AmdExtractGate.FailureMessage(process.ExitCode, manifestPresent)
-                                       + $" See {LogPath}.";
+                    LastExtractError = AmdExtractGate.FailureMessage(process.ExitCode, manifestPresent);
                     Log(logCallback, LastExtractError);
                     if (manifestPresent == false && Directory.Exists(extractDir))
                     {

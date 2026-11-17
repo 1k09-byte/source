@@ -86,14 +86,12 @@ public static class CpuObservationService
             uint err = CpuObsNative.StartTraceW(out _sessionHandle, CpuObsNative.KernelLoggerName, _propsBuffer);
             if (err == 183)
             {
-                Log("StartTraceW returned 183 (kernel logger already owned); stopping the existing session and retrying once.");
                 err = StopKernelSessionByName();
                 if (err == 0)
                     err = CpuObsNative.StartTraceW(out _sessionHandle, CpuObsNative.KernelLoggerName, _propsBuffer);
             }
             if (err != 0)
             {
-                Log($"StartTraceW failed: {err}{DescribeTraceError(err)}");
                 CleanupFailedStart();
                 return false;
             }
@@ -110,11 +108,9 @@ public static class CpuObservationService
             Marshal.FreeHGlobal(logfilePtr);
             if (_consumeHandle == CpuObsNative.INVALID_PROCESSTRACE_HANDLE)
             {
-                Log("OpenTraceW returned INVALID_PROCESSTRACE_HANDLE; stopping the just-started session so it cannot orphan the kernel logger.");
                 CleanupFailedStart();
                 return false;
             }
-            Log($"Kernel session started (handle 0x{_sessionHandle:X}, consume handle 0x{_consumeHandle:X}).");
 
             _pump = new System.Threading.Thread(() =>
             {
@@ -131,7 +127,6 @@ public static class CpuObservationService
         }
         catch (Exception ex)
         {
-            Log($"StartSession threw: {ex.GetType().Name}: {ex.Message}");
             try { CleanupFailedStart(); } catch { }
             return false;
         }
@@ -162,12 +157,10 @@ public static class CpuObservationService
             };
             Marshal.StructureToPtr(props, buf, false);
             uint err = CpuObsNative.ControlTraceW(0, CpuObsNative.KernelLoggerName, buf, CpuObsNative.EVENT_TRACE_CONTROL_STOP);
-            Log($"ControlTraceW(STOP) on existing kernel session: {err}");
             return err;
         }
         catch (Exception ex)
         {
-            Log($"StopKernelSessionByName threw: {ex.Message}");
             return 0xFFFFFFFF;
         }
         finally
@@ -184,19 +177,6 @@ public static class CpuObservationService
         87 => " (ERROR_INVALID_PARAMETER)",
         _ => ""
     };
-
-    private static void Log(string message)
-    {
-        try
-        {
-            string dir = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "kaliteConfig");
-            System.IO.Directory.CreateDirectory(dir);
-            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "cpu-obs.log"),
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}");
-        }
-        catch {  }
-    }
 
     private static void StopSession()
     {

@@ -14,6 +14,16 @@ public sealed class GameModeExecutor
     private readonly object _actionGate = new();
     private const uint PowerThrottlingVersion = 1;
 
+    /// <summary>
+    /// Optional guard evaluated inside <c>_actionGate</c> right before a change is
+    /// applied. The engine sets this so a release that starts while an apply is queued
+    /// behind the gate makes the apply bail out instead of re-tweaking a process that
+    /// was just restored.
+    /// </summary>
+    public Func<bool>? ApplyAllowed { get; set; }
+
+    private bool ApplyPermitted() => ApplyAllowed?.Invoke() != false;
+
     public GameModeExecutor(GameModeJournal journal, GameModeLog log)
     {
         _journal = journal;
@@ -38,6 +48,8 @@ public sealed class GameModeExecutor
 
         lock (_actionGate)
         {
+            if (!ApplyPermitted())
+                return decision with { Outcome = GameModeOutcome.SkippedSafety, Planned = BackgroundAction.None, Message = "Release started before the action ran" };
             if (planned == BackgroundAction.None)
                 return decision with { Outcome = GameModeOutcome.AlreadyInState, Message = "Left alone by its rule" };
 
@@ -139,10 +151,18 @@ public sealed class GameModeExecutor
         var boostTids = DisableThreadBoosts(fact.Pid);
         _journal.UpsertThreadState(fact.Pid, fact.CreationTicks, string.Join(',', boostTids), string.Empty);
 
+        // I/O priority follows the CPU priority: Idle goes to VeryLow, Below normal to Low.
+        uint ioTarget = targetClass == NativeMethods.Priority.Idle
+            ? NativeMethods.Ntdll.IoPriorityVeryLow
+            : NativeMethods.Ntdll.IoPriorityLow;
+        var (ioThreads, ioProcess) = ApplyIoPriority(fact, handle, ioTarget);
+
         string message = priorityOk ? label : "Priority boost off (priority change refused)";
         if (boostOff) message += ", boost off";
         if (ecoOn) message += ", efficiency mode";
         if (boostTids.Count > 0) message += $", {boostTids.Count} thread boost(s) off";
+        if (ioProcess) message += ioTarget == NativeMethods.Ntdll.IoPriorityVeryLow ? ", I/O very low" : ", I/O low";
+        if (ioThreads > 0) message += $", {ioThreads} thread I/O";
         message += ", verified";
         return decision with { Outcome = GameModeOutcome.AppliedVerified, Message = message };
     }
@@ -158,6 +178,8 @@ public sealed class GameModeExecutor
 
         lock (_actionGate)
         {
+            if (!ApplyPermitted())
+                return decision with { Outcome = GameModeOutcome.SkippedSafety, Planned = BackgroundAction.None, Message = "Release started before the action ran" };
             using var handle = NativeMethods.Handles.OpenProcess(
                 NativeMethods.ProcessAccess.QueryLimitedInformation
                 | NativeMethods.ProcessAccess.SetInformation,
@@ -209,6 +231,8 @@ public sealed class GameModeExecutor
 
         lock (_actionGate)
         {
+            if (!ApplyPermitted())
+                return decision with { Outcome = GameModeOutcome.SkippedSafety, Planned = BackgroundAction.None, Message = "Release started before the action ran" };
             using var handle = NativeMethods.Handles.OpenProcess(
                 NativeMethods.ProcessAccess.QueryLimitedInformation
                 | NativeMethods.ProcessAccess.SetInformation,
@@ -286,13 +310,23 @@ public sealed class GameModeExecutor
 
         lock (_actionGate)
         {
-            bool created = _journal.Find(fact.Pid, fact.CreationTicks) is null;
+            if (!ApplyPermitted())
+                return decision with { Outcome = GameModeOutcome.SkippedSafety, Planned = BackgroundAction.None, Message = "Release started before the action ran" };
+            var existing = _journal.Find(fact.Pid, fact.CreationTicks);
+            var alreadySuspended = existing is null
+                ? new HashSet<uint>()
+                : ParseTids(existing.SuspendedTids).ToHashSet();
+            bool created = existing is null;
             if (created) _journal.Add(NewEntry(fact, action, 0, 0, 0, 0));
 
             var suspended = new List<uint>();
             int leftAlone = 0;
             foreach (uint tid in ListProcessThreads(fact.Pid))
             {
+                // Threads already suspended by an earlier pass must not be suspended
+                // again: SuspendThread stacks the count and a single ResumeThread on
+                // release would leave them frozen forever.
+                if (alreadySuspended.Contains(tid)) continue;
                 try
                 {
                     using var thread = NativeMethods.Handles.OpenThread(NativeMethods.ThreadAccess.SuspendResume, false, tid);
@@ -317,7 +351,14 @@ public sealed class GameModeExecutor
             if (suspended.Count == 0)
             {
                 if (created) _journal.Remove(fact.Pid, fact.CreationTicks);
-                return decision with { Outcome = GameModeOutcome.Refused, Planned = BackgroundAction.None, Message = "Refused (no thread could be suspended)" };
+                return decision with
+                {
+                    Outcome = created ? GameModeOutcome.Refused : GameModeOutcome.AlreadyInState,
+                    Planned = created ? BackgroundAction.None : action,
+                    Message = created
+                        ? "Refused (no thread could be suspended)"
+                        : "Threads already suspended",
+                };
             }
 
             _journal.UpsertSuspendedTids(fact.Pid, fact.CreationTicks, string.Join(',', suspended));
@@ -338,6 +379,8 @@ public sealed class GameModeExecutor
 
         lock (_actionGate)
         {
+            if (!ApplyPermitted())
+                return decision with { Outcome = GameModeOutcome.SkippedSafety, Planned = BackgroundAction.None, Message = "Release started before the action ran" };
             using var handle = NativeMethods.Handles.OpenProcess(
                 NativeMethods.ProcessAccess.QueryLimitedInformation
                 | NativeMethods.ProcessAccess.SetInformation,
@@ -387,8 +430,11 @@ public sealed class GameModeExecutor
             if (lowered.Count > 0)
                 _journal.UpsertThreadState(fact.Pid, fact.CreationTicks, string.Empty, FormatThreadTweaks(lowered));
 
+            var (ioThreads, ioProcess) = ApplyIoPriority(fact, handle, NativeMethods.Ntdll.IoPriorityVeryLow);
+
             string message = priorityOk ? "Idle priority" : "Priority change refused";
             if (lowered.Count > 0) message += $", {lowered.Count} thread(s) at lowest priority";
+            if (ioProcess || ioThreads > 0) message += ", I/O very low";
             return decision with { Outcome = GameModeOutcome.AppliedVerified, Message = message };
         }
     }
@@ -404,7 +450,7 @@ public sealed class GameModeExecutor
             released++;
         }
         if (released > 0)
-            _log.Add("Game Mode", "Threads", "Restored and verified", $"{released} process(es) resumed: {reason}");
+            _log.Add("Gaming Mode", "Threads", "Restored and verified", $"{released} process(es) resumed: {reason}");
         return released;
     }
 
@@ -413,13 +459,23 @@ public sealed class GameModeExecutor
         int released = 0;
         foreach (var entry in _journal.Snapshot())
         {
-            if (string.IsNullOrEmpty(entry.ThreadPriorityTweaks)) continue;
-            RestoreThreadPriorities(ParseThreadTweaks(entry.ThreadPriorityTweaks));
-            _journal.ClearThreadTweaks(entry.Pid, entry.CreationTicks);
+            bool hadTweaks = !string.IsNullOrEmpty(entry.ThreadPriorityTweaks);
+            bool hadIo = !string.IsNullOrEmpty(entry.ThreadIoPriorityTweaks);
+            if (!hadTweaks && !hadIo) continue;
+            if (hadTweaks)
+            {
+                RestoreThreadPriorities(ParseThreadTweaks(entry.ThreadPriorityTweaks));
+                _journal.ClearThreadTweaks(entry.Pid, entry.CreationTicks);
+            }
+            if (hadIo)
+            {
+                RestoreThreadIoPriorities(ParseThreadIoTweaks(entry.ThreadIoPriorityTweaks));
+                _journal.ClearThreadIoTweaks(entry.Pid, entry.CreationTicks);
+            }
             released++;
         }
         if (released > 0)
-            _log.Add("Game Mode", "Threads", "Restored and verified", $"{released} process(es) left background mode: {reason}");
+            _log.Add("Gaming Mode", "Threads", "Restored and verified", $"{released} process(es) left background mode: {reason}");
         return released;
     }
 
@@ -427,17 +483,20 @@ public sealed class GameModeExecutor
     {
         int restored = 0;
         int failed = 0;
-        foreach (var entry in _journal.Snapshot())
+        lock (_actionGate)
         {
-            if (RestoreEntry(entry, out string message)) restored++;
-            else
+            foreach (var entry in _journal.Snapshot())
             {
-                failed++;
-                _log.Add(entry.Name, "Game Mode", "Restore", "Could not restore", message);
+                if (RestoreEntry(entry, out string message)) restored++;
+                else
+                {
+                    failed++;
+                    _log.Add(entry.Name, "Gaming Mode", "Restore", "Could not restore", message);
+                }
             }
         }
         if (restored > 0)
-            _log.Add("-", "Game Mode", "Restore", "Restored and verified", $"Restored {restored} process(es): {reason}");
+            _log.Add("-", "Gaming Mode", "Restore", "Restored and verified", $"Restored {restored} process(es): {reason}");
         return new GameModeRestoreSummary(restored, failed);
     }
 
@@ -511,6 +570,16 @@ public sealed class GameModeExecutor
             RestoreThreadBoosts(ParseTids(entry.BoostDisabledTids));
         if (!string.IsNullOrEmpty(entry.ThreadPriorityTweaks))
             RestoreThreadPriorities(ParseThreadTweaks(entry.ThreadPriorityTweaks));
+
+        if (entry.IoPriorityChanged)
+        {
+            bool ioOk = TrySetIoPriority(handle, entry.OriginalIoPriority)
+                && TryGetIoPriority(handle, out uint ioCheck)
+                && ioCheck == entry.OriginalIoPriority;
+            if (!ioOk) ok = false;
+        }
+        if (!string.IsNullOrEmpty(entry.ThreadIoPriorityTweaks))
+            RestoreThreadIoPriorities(ParseThreadIoTweaks(entry.ThreadIoPriorityTweaks));
 
         ok &= TryRestoreCpuSets(handle, entry);
 
@@ -697,9 +766,11 @@ public sealed class GameModeExecutor
         && entry.OriginalPriorityClass == 0
         && entry.ThrottlingVersion == 0
         && !entry.ProcessBoostChanged
+        && !entry.IoPriorityChanged
         && !entry.CpuSetsChanged
         && string.IsNullOrEmpty(entry.BoostDisabledTids)
-        && string.IsNullOrEmpty(entry.ThreadPriorityTweaks);
+        && string.IsNullOrEmpty(entry.ThreadPriorityTweaks)
+        && string.IsNullOrEmpty(entry.ThreadIoPriorityTweaks);
 
     private static void ResumeThreads(IEnumerable<uint> tids)
     {
@@ -709,7 +780,14 @@ public sealed class GameModeExecutor
             {
                 using var thread = NativeMethods.Handles.OpenThread(NativeMethods.ThreadAccess.SuspendResume, false, tid);
                 if (thread.IsInvalid) continue;
-                NativeMethods.Threads.ResumeThread(thread);
+                // SuspendThread stacks a count, and older sessions or other tools can
+                // leave it above 1. Drain it fully so the thread always ends up running;
+                // ResumeThread returns the count before decrementing, 0 once it is free.
+                for (int i = 0; i < 130; i++)
+                {
+                    uint previous = NativeMethods.Threads.ResumeThread(thread);
+                    if (previous == 0 || previous == uint.MaxValue) break;
+                }
             }
             catch
             {
@@ -726,6 +804,115 @@ public sealed class GameModeExecutor
                 using var thread = NativeMethods.Handles.OpenThread(NativeMethods.ThreadAccess.SetInformation, false, pair.Key);
                 if (thread.IsInvalid) continue;
                 NativeMethods.Priority.SetThreadPriority(thread, pair.Value);
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    // ---- I/O priority (ntdll ProcessIoPriority class 33 / ThreadIoPriority class 22) ----
+    // User mode can only set VeryLow(0), Low(1) or Normal(2). A process-level change
+    // only affects threads created afterwards, so existing threads are enumerated and
+    // demoted individually; their original values are journaled for restore.
+
+    private static bool TryGetIoPriority(SafeProcessHandle process, out uint current)
+    {
+        uint value = 0;
+        int status = NativeMethods.Ntdll.NtQueryInformationProcess(
+            process, NativeMethods.Ntdll.ProcessIoPriority, ref value, sizeof(uint), out _);
+        current = value;
+        return status == 0;
+    }
+
+    private static bool TrySetIoPriority(SafeProcessHandle process, uint target)
+    {
+        uint value = target;
+        return NativeMethods.Ntdll.NtSetInformationProcess(
+            process, NativeMethods.Ntdll.ProcessIoPriority, ref value, sizeof(uint)) == 0;
+    }
+
+    private static bool TryGetThreadIoPriority(SafeThreadHandle thread, out uint current)
+    {
+        uint value = 0;
+        int status = NativeMethods.Ntdll.NtQueryInformationThread(
+            thread, NativeMethods.Ntdll.ThreadIoPriority, ref value, sizeof(uint), out _);
+        current = value;
+        return status == 0;
+    }
+
+    private static bool TrySetThreadIoPriority(SafeThreadHandle thread, uint target)
+    {
+        uint value = target;
+        return NativeMethods.Ntdll.NtSetInformationThread(
+            thread, NativeMethods.Ntdll.ThreadIoPriority, ref value, sizeof(uint)) == 0;
+    }
+
+    /// <summary>
+    /// Demotes the process default I/O priority and every existing thread to <paramref name="target"/>,
+    /// journaling the original values. Failures are ignored - I/O priority is a best-effort demotion
+    /// that must never fail the surrounding priority action.
+    /// </summary>
+    private (int ThreadsLowered, bool ProcessLowered) ApplyIoPriority(ProcessFact fact, SafeProcessHandle handle, uint target)
+    {
+        bool processLowered = false;
+        try
+        {
+            if (TryGetIoPriority(handle, out uint current) && current > target && TrySetIoPriority(handle, target))
+            {
+                _journal.UpsertIoPriority(fact.Pid, fact.CreationTicks, current);
+                processLowered = true;
+            }
+        }
+        catch
+        {
+        }
+
+        int lowered = 0;
+        var tweaks = new List<string>();
+        foreach (uint tid in ListProcessThreads(fact.Pid))
+        {
+            try
+            {
+                using var thread = NativeMethods.Handles.OpenThread(
+                    NativeMethods.ThreadAccess.SetInformation | NativeMethods.ThreadAccess.QueryInformation, false, tid);
+                if (thread.IsInvalid) continue;
+                if (!TryGetThreadIoPriority(thread, out uint threadCurrent) || threadCurrent <= target) continue;
+                if (!TrySetThreadIoPriority(thread, target)) continue;
+                tweaks.Add(tid + ":" + threadCurrent);
+                lowered++;
+            }
+            catch
+            {
+            }
+        }
+        if (tweaks.Count > 0)
+            _journal.UpsertThreadIoTweaks(fact.Pid, fact.CreationTicks, string.Join(';', tweaks));
+        return (lowered, processLowered);
+    }
+
+    private static Dictionary<uint, uint> ParseThreadIoTweaks(string text)
+    {
+        var tweaks = new Dictionary<uint, uint>();
+        foreach (var part in text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var pair = part.Split(':');
+            if (pair.Length == 2 && uint.TryParse(pair[0], out uint tid) && uint.TryParse(pair[1], out uint priority))
+                tweaks[tid] = priority;
+        }
+        return tweaks;
+    }
+
+    private static void RestoreThreadIoPriorities(Dictionary<uint, uint> tweaks)
+    {
+        foreach (var pair in tweaks)
+        {
+            try
+            {
+                using var thread = NativeMethods.Handles.OpenThread(
+                    NativeMethods.ThreadAccess.SetInformation | NativeMethods.ThreadAccess.QueryInformation, false, pair.Key);
+                if (thread.IsInvalid) continue;
+                TrySetThreadIoPriority(thread, pair.Value);
             }
             catch
             {

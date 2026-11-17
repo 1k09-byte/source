@@ -118,7 +118,6 @@ namespace kaliteConfig.Pages
                 ulong? saved = _spm.Read();
                 SetSpmMode(saved.HasValue);
                 ApplySpmMaskToChecks(saved ?? 0);
-                UpdateSpmMaskText();
             }
             finally { _spmLoading = false; }
         }
@@ -150,14 +149,6 @@ namespace kaliteConfig.Pages
             return mask;
         }
 
-        private void UpdateSpmMaskText()
-        {
-            ulong? saved = _spm.Read();
-            SpmMaskText.Text = saved is null
-                ? "Windows default (no SmallProcessorMask set)"
-                : $"Mask: {saved.Value} (0x{saved.Value:X8})";
-        }
-
         private void SpmMode_Click(object sender, RoutedEventArgs e)
         {
             if (_spmLoading) return;
@@ -170,13 +161,11 @@ namespace kaliteConfig.Pages
             {
                 // Start from whatever is in the registry (nothing is written until a core is ticked).
                 ApplySpmMaskToChecks(_spm.Read() ?? 0);
-                UpdateSpmMaskText();
                 return;
             }
 
             ApplySpmMaskToChecks(0);
             string? error = _spm.Write(0);
-            UpdateSpmMaskText();
             kaliteConfig.App.Notify("Scheduling",
                 error ?? "SmallProcessorMask removed. Windows default scheduling is back in place. Restart to apply.",
                 error is null ? Services.Notifications.AppNoticeSeverity.Success : Services.Notifications.AppNoticeSeverity.Error);
@@ -188,7 +177,6 @@ namespace kaliteConfig.Pages
 
             ulong mask = CurrentSpmMask();
             string? error = _spm.Write(mask);
-            UpdateSpmMaskText();
             kaliteConfig.App.Notify("Scheduling",
                 error ?? (mask == 0
                     ? "SmallProcessorMask removed. Windows default scheduling is back in place. Restart to apply."

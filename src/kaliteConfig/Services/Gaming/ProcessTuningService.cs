@@ -564,6 +564,46 @@ public sealed class ProcessTuningService
         }).ConfigureAwait(false);
     }
 
+    public async Task<uint> GetIoPriorityAsync(int pid)
+    {
+        return await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.QueryLimitedInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            uint value = 0;
+            int status = NativeMethods.Ntdll.NtQueryInformationProcess(
+                process, NativeMethods.Ntdll.ProcessIoPriority, ref value, sizeof(uint), out _);
+            if (status != 0)
+            {
+                throw CpuSetService.Friendly(pid,
+                    new Win32Exception(status, $"Reading I/O priority for process {pid} failed (ntstatus 0x{status:X})."));
+            }
+
+            return value;
+        }).ConfigureAwait(false);
+    }
+
+    public async Task SetIoPriorityAsync(int pid, uint ioPriority)
+    {
+        // Clamp to the highest level the app offers; Critical is never requested.
+        ioPriority = Math.Min(ioPriority, NativeMethods.Ntdll.IoPriorityHigh);
+        await CpuSetService.RunNativeAsync(() =>
+        {
+            using var process = NativeMethods.Handles.OpenProcess(
+                NativeMethods.ProcessAccess.SetInformation, false, (uint)pid);
+            CpuSetService.ThrowIfInvalid(process, pid);
+            uint value = ioPriority;
+            int status = NativeMethods.Ntdll.NtSetInformationProcess(
+                process, NativeMethods.Ntdll.ProcessIoPriority, ref value, sizeof(uint));
+            if (status != 0)
+            {
+                throw CpuSetService.Friendly(pid,
+                    new Win32Exception(status, $"Setting I/O priority for process {pid} failed (ntstatus 0x{status:X})."));
+            }
+        }).ConfigureAwait(false);
+    }
+
     public async Task<bool> GetBoostAsync(int pid)
     {
         return await CpuSetService.RunNativeAsync(() =>

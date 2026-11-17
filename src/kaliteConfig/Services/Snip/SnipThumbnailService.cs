@@ -682,14 +682,6 @@ public static class SnipThumbnailService
     private static void RecordError(string? filePath, string message)
     {
         if (!string.IsNullOrWhiteSpace(filePath)) LastErrors[filePath] = message;
-        try
-        {
-            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "kaliteConfig");
-            Directory.CreateDirectory(dir);
-            File.AppendAllText(Path.Combine(dir, "snip-thumb.log"),
-                $"{DateTime.Now:HH:mm:ss.fff} [T{Environment.CurrentManagedThreadId}] thumb FAIL {Path.GetFileName(filePath ?? "?")}: {message}{Environment.NewLine}");
-        }
-        catch { }
     }
 
     private static SnipThumbnailResult Fail(string? filePath, string message) => new()

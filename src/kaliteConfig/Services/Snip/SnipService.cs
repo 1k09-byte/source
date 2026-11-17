@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -311,18 +311,6 @@ public sealed class SnipService : IDisposable
         return (false, HotkeyError);
     }
 
-    private static void Log(string message)
-    {
-        try
-        {
-            var dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "kaliteConfig");
-            System.IO.Directory.CreateDirectory(dir);
-            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "snip-capture.log"),
-                $"{DateTime.Now:HH:mm:ss.fff} {message}\n");
-        }
-        catch { }
-    }
-
     public void CloseOverlays()
     {
         if (_overlay != null)
@@ -377,10 +365,10 @@ public sealed class SnipService : IDisposable
             target.DispatcherQueue.TryEnqueue(() =>
             {
                 try { target.Activate(); target.ShowMonitorPicker(); }
-                catch (Exception ex) { Log("cursor-picker ERR " + ex.Message); }
+                catch { }
             });
         }
-        catch (Exception ex) { Log("cursor-picker ERR " + ex.Message); }
+        catch { }
     }
 
     public void SelectFullscreenOnCursorMonitor()
@@ -394,32 +382,25 @@ public sealed class SnipService : IDisposable
             target.DispatcherQueue.TryEnqueue(() =>
             {
                 try { target.Activate(); target.SelectFullscreen(); }
-                catch (Exception ex) { Log("cursor-fullscreen ERR " + ex.Message); }
+                catch { }
             });
         }
-        catch (Exception ex) { Log("cursor-fullscreen ERR " + ex.Message); }
+        catch { }
     }
     public void CaptureMonitorFullscreen(int index)
     {
         var ov = _overlays;
         if (ov is null || index < 0 || index >= ov.Count) return;
         try { ov[index].FullscreenCopy(); }
-        catch (Exception ex) { Log("monitor-fullscreen ERR " + ex.Message); }
+        catch { }
     }
 
     private void BeginCapture()
     {
 
         string foregroundApp = ForegroundAppName();
-        if (!string.IsNullOrEmpty(foregroundApp)) Log($"Foreground app at capture: {foregroundApp}");
 
         var areas = GetAreas();
-
-        Log($"Detected {areas.Count} monitors:");
-        for (int i = 0; i < areas.Count; i++)
-        {
-            Log($"  Monitor {i}: pos=({areas[i].X},{areas[i].Y}) size={areas[i].W}x{areas[i].H}");
-        }
 
         int cursorMonitorIndex = 0;
         if (GetCursorPos(out POINT cursor))
@@ -433,7 +414,6 @@ public sealed class SnipService : IDisposable
                     break;
                 }
             }
-            Log($"Cursor at ({cursor.X},{cursor.Y}) on monitor {cursorMonitorIndex}");
         }
         MonitorAreas = areas;
         CursorMonitorIndex = cursorMonitorIndex;
@@ -453,14 +433,11 @@ public sealed class SnipService : IDisposable
     {
         try
         {
-            Log($"Starting capture for {areas.Count} monitors");
             var pixelArrays = await System.Threading.Tasks.Task.WhenAll(captureTasks).ConfigureAwait(false);
-            Log($"Capture complete, creating {pixelArrays.Length} overlays");
 
             if (_dispatcherQueue is null)
             {
                 LastCaptureError = "Cannot open the snip overlay: the UI dispatcher queue is not available.";
-                Log("ERROR no dispatcher queue; cannot create overlays");
                 return;
             }
 
@@ -471,7 +448,6 @@ public sealed class SnipService : IDisposable
                 {
                         var (x, y, w, h) = areas[i];
                         var pixels = pixelArrays[i];
-                        Log($"Creating overlay {i}: pos=({x},{y}) size={w}x{h} pixels={pixels.Length}");
                         
                         var overlay = new kaliteConfig.Views.SnipOverlayWindow();
                         overlay.LoadBitmap(pixels, w, h);
@@ -481,7 +457,6 @@ public sealed class SnipService : IDisposable
                         overlay.Closed += (_, _) =>
                         {
                             _overlays?.Remove(overlay);
-                            Log($"Overlay {i} closed, remaining: {_overlays?.Count ?? 0}");
                             if (_overlays?.Count == 0)
                             {
                                 _overlays = null;
@@ -493,25 +468,20 @@ public sealed class SnipService : IDisposable
                         if (i == cursorMonitorIndex)
                         {
                             _overlay = overlay;
-                            Log($"Overlay {i} is cursor monitor");
                         }
                         overlay.Activate();
-                        Log($"Overlay {i} activated");
                     }
                     LastCaptureError = "";
-                    Log($"All {_overlays.Count} overlays created");
                 });
 
                 if (!queued)
                 {
                     LastCaptureError = "Cannot open the snip overlay: the UI thread did not accept the request.";
-                    Log("ERROR TryEnqueue rejected overlay creation");
                 }
             }
             catch (Exception ex)
             {
                 LastCaptureError = $"Multi-monitor capture failed: {ex.Message}";
-                Log($"Capture error: {ex}");
                 _dispatcherQueue?.TryEnqueue(() => CaptureFailed?.Invoke(LastCaptureError));
             }
     }

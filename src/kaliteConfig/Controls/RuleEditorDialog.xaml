@@ -123,10 +123,10 @@
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <CheckBox Grid.Column="0" Content="Protect process threads" VerticalAlignment="Center"
+                        <CheckBox Grid.Column="0" Content="Protect from Gaming Mode" VerticalAlignment="Center"
                                   IsChecked="{x:Bind Draft.ProtectThreads, Mode=TwoWay}"
-                                  ToolTipService.ToolTip="Prevents Global Optimize from stripping priority boosts off this process's threads." />
-                        <TextBlock Grid.Column="1" Text="Exclude this process from global priority boost stripping" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                  ToolTipService.ToolTip="Prevents Gaming Mode from changing this process's priorities, boosts, or thread settings." />
+                        <TextBlock Grid.Column="1" Text="Exclude this process from Gaming Mode changes" VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
                     </Grid>
                 </Border>
                 <Border Background="{ThemeResource LayerFillColorAltBrush}" BorderBrush="{ThemeResource DividerStrokeColorDefault}" BorderThickness="1" CornerRadius="{ThemeResource ControlCornerRadius}" Padding="8,6">
@@ -295,6 +295,18 @@
                                 <ComboBoxItem Content="Medium (3)" Tag="3" />
                                 <ComboBoxItem Content="Below normal (4)" Tag="4" />
                                 <ComboBoxItem Content="Normal (5)" Tag="5" />
+                            </ComboBox>
+
+                            <TextBlock Text="I/O priority" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBlock x:Name="RuleIoPriorityCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                            <ComboBox x:Name="RuleIoPriorityCombo" Width="220" HorizontalAlignment="Left" PlaceholderText="System default" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1"
+                                      SelectionChanged="RuleIoPriorityCombo_SelectionChanged"
+                                      ToolTipService.ToolTip="I/O priority for the matched threads. System default leaves it unchanged; High usually needs elevation and critical is never offered here.">
+                                <ComboBoxItem Content="System default" Tag="default" />
+                                <ComboBoxItem Content="Very low" Tag="0" />
+                                <ComboBoxItem Content="Low" Tag="1" />
+                                <ComboBoxItem Content="Normal" Tag="2" />
+                                <ComboBoxItem Content="High" Tag="3" />
                             </ComboBox>
 
                             <Grid ColumnSpacing="8">

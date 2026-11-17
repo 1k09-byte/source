@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.Win32;
-using kaliteConfig.Services.ChangeLog;
 
 namespace kaliteConfig.Services;
 
@@ -23,22 +22,19 @@ public sealed record ServiceFixResult(bool Ok, string Message);
 public sealed class ServiceStartFixService
 {
     public const string DefaultServicesRoot = @"SYSTEM\CurrentControlSet\Services";
-    private const string Subsystem = "service-fixes";
 
     private readonly RegistryHive _hive;
     private readonly string _servicesRoot;
-    private readonly bool _journal;
 
     public ServiceStartFixService()
-        : this(RegistryHive.LocalMachine, DefaultServicesRoot, journal: true)
+        : this(RegistryHive.LocalMachine, DefaultServicesRoot)
     {
     }
 
-    public ServiceStartFixService(RegistryHive hive, string servicesRoot, bool journal)
+    public ServiceStartFixService(RegistryHive hive, string servicesRoot)
     {
         _hive = hive;
         _servicesRoot = servicesRoot;
-        _journal = journal;
     }
 
     public static readonly ServiceFix ObsCapture = new(
@@ -105,13 +101,10 @@ public sealed class ServiceStartFixService
             if (!Write(target.ServiceName, target.Start))
             {
                 failed.Add(target.ServiceName);
-                Record(target.ServiceName, before, null, ChangeResults.Failed, "Access denied.");
                 continue;
             }
 
             int? after = Read(target.ServiceName);
-            Record(target.ServiceName, before, after,
-                after == target.Start ? ChangeResults.Verified : ChangeResults.Failed, null);
 
             if (after == target.Start) changed.Add($"{target.ServiceName} {before} -> {target.Start}");
             else failed.Add(target.ServiceName);
@@ -131,21 +124,6 @@ public sealed class ServiceStartFixService
             message.Append(" Restart Windows to apply it.");
 
         return new ServiceFixResult(true, message.ToString());
-    }
-
-    private void Record(string serviceName, int? before, int? after, string result, string? detail)
-    {
-        if (!_journal) return;
-
-        ChangeLedger.RecordRegistryChange(
-            Subsystem,
-            $"{serviceName} Start {before} -> {after?.ToString() ?? "?"}",
-            $@"{_servicesRoot}\{serviceName}",
-            "Start",
-            before,
-            after,
-            result,
-            detail);
     }
 
     private int? Read(string serviceName)

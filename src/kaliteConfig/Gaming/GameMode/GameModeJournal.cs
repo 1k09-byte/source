@@ -28,6 +28,9 @@ public sealed class GameModeJournalEntry
     public string ThreadPriorityTweaks { get; set; } = string.Empty;
     public bool ProcessBoostChanged { get; set; }
     public bool OriginalProcessBoostDisabled { get; set; }
+    public bool IoPriorityChanged { get; set; }
+    public uint OriginalIoPriority { get; set; }
+    public string ThreadIoPriorityTweaks { get; set; } = string.Empty;
 }
 
 public sealed class GameModeJournal
@@ -121,6 +124,40 @@ public sealed class GameModeJournal
             var existing = _entries.Find(e => e.Pid == pid && e.CreationTicks == ticks);
             if (existing is null) return;
             existing.ThreadPriorityTweaks = string.Empty;
+            SaveLocked();
+        }
+    }
+
+    public void UpsertIoPriority(int pid, long ticks, uint original)
+    {
+        lock (_gate)
+        {
+            var existing = _entries.Find(e => e.Pid == pid && e.CreationTicks == ticks);
+            if (existing is null || existing.IoPriorityChanged) return;
+            existing.IoPriorityChanged = true;
+            existing.OriginalIoPriority = original;
+            SaveLocked();
+        }
+    }
+
+    public void UpsertThreadIoTweaks(int pid, long ticks, string tweaks)
+    {
+        lock (_gate)
+        {
+            var existing = _entries.Find(e => e.Pid == pid && e.CreationTicks == ticks);
+            if (existing is null) return;
+            existing.ThreadIoPriorityTweaks = MergeTweaks(existing.ThreadIoPriorityTweaks, tweaks);
+            SaveLocked();
+        }
+    }
+
+    public void ClearThreadIoTweaks(int pid, long ticks)
+    {
+        lock (_gate)
+        {
+            var existing = _entries.Find(e => e.Pid == pid && e.CreationTicks == ticks);
+            if (existing is null) return;
+            existing.ThreadIoPriorityTweaks = string.Empty;
             SaveLocked();
         }
     }

@@ -206,6 +206,9 @@ public sealed partial class TunerThreadRule : ObservableObject
     [NotifyPropertyChangedFor(nameof(DetailText))]
     public partial uint? MemoryPriority { get; set; }
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailText))]
+    public partial uint? IoPriority { get; set; }
+    [ObservableProperty]
     public partial int TargetCount { get; set; }
 
     [JsonIgnore]
@@ -252,9 +255,19 @@ public sealed partial class TunerThreadRule : ObservableObject
             if (AffinityMask.HasValue) parts.Add($"Affinity 0x{AffinityMask.Value:X}");
             if (IdealGroup.HasValue && IdealIndex.HasValue) parts.Add($"Ideal G{IdealGroup.Value}:{IdealIndex.Value}");
             if (MemoryPriority.HasValue) parts.Add($"Mem {MemoryPriority.Value}");
+            if (IoPriority.HasValue) parts.Add($"I/O {IoPriorityName(IoPriority.Value)}");
             return string.Join(" · ", parts);
         }
     }
+
+    private static string IoPriorityName(uint level) => level switch
+    {
+        0 => "very low",
+        1 => "low",
+        2 => "normal",
+        3 => "high",
+        _ => level.ToString(),
+    };
 
     public TunerThreadRule Clone() => new()
     {
@@ -269,6 +282,7 @@ public sealed partial class TunerThreadRule : ObservableObject
         IdealGroup = IdealGroup,
         IdealIndex = IdealIndex,
         MemoryPriority = MemoryPriority,
+        IoPriority = IoPriority,
         TargetCount = TargetCount,
     };
 }

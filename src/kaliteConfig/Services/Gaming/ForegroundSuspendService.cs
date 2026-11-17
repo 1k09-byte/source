@@ -146,7 +146,7 @@ public sealed class ForegroundSuspendService : IDisposable
         string? game = gameExeHint != null ? NormalizeExe(gameExeHint) : ForegroundExe();
         if (game == null)
         {
-            StatusText = EngineHasGames ? "No game in foreground." : "No games listed — add your game in the Game Mode card.";
+            StatusText = EngineHasGames ? "No game in foreground." : "No games listed — add your game in the Gaming Mode card.";
             return 0;
         }
         var targets = BuildBackgroundList(game);
@@ -262,7 +262,7 @@ public sealed class ForegroundSuspendService : IDisposable
             else if (!listed && active != null)
             {
                 ResumeAllSync();
-                StatusText = EngineHasGames ? "No game in foreground." : "No games listed — add your game in the Game Mode card.";
+                StatusText = EngineHasGames ? "No game in foreground." : "No games listed — add your game in the Gaming Mode card.";
             }
         }
         catch { }

@@ -1417,20 +1417,6 @@ namespace kaliteConfig.GpuOverclock.ViewModels
             }
         }
 
-        [RelayCommand]
-        public void OpenChangeLogFile()
-        {
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = _module.ChangeLog.LogFilePath,
-                    UseShellExecute = true,
-                });
-            }
-            catch {  }
-        }
-
         public void Teardown()
         {
             _module.Telemetry.Update -= OnTelemetryUpdate;

@@ -7,11 +7,8 @@ public sealed class TrayIconService : IDisposable
 {
     public Action? OnOpen;
     public Action? OnExit;
-    public Action? OnPauseLive;
-    public Action? OnStopLive;
-    public Action? OnResumeGame;
-    public Func<(bool CanPause, bool CanStop)>? LiveStateQuery;
-    public Func<bool>? GameModeHeldQuery;
+    public Action? OnToggleGameMode;
+    public Func<bool>? GameModeEnabledQuery;
     public event Action<SnipMode>? OnTakeScreenshot;
 
     public enum SnipMode
@@ -42,30 +39,11 @@ public sealed class TrayIconService : IDisposable
     private const uint TPM_RIGHTBUTTON = 0x0002;
     private const uint TPM_NONOTIFY = 0x0080;
 
-    private const uint ID_VERSION = 99;
     private const uint ID_OPEN = 100;
     private const uint ID_TAKE_SNIP = 101;
-    private const uint ID_PAUSE_LIVE = 102;
-    private const uint ID_STOP_LIVE = 103;
-    private const uint ID_RESUME_GAME = 104;
+    private const uint ID_GAME_MODE = 104;
     private const uint ID_SEPARATOR1 = 107;
     private const uint ID_EXIT = 108;
-
-    public static string AppVersion
-    {
-        get
-        {
-            try
-            {
-                var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                if (v is null) return "unknown";
-                return v.Revision > 0
-                    ? $"{v.Major}.{v.Minor}.{v.Build}.{v.Revision}"
-                    : $"{v.Major}.{v.Minor}.{v.Build}";
-            }
-            catch { return "unknown"; }
-        }
-    }
 
     private static uint? _callbackMsg;
 
@@ -196,17 +174,6 @@ public sealed class TrayIconService : IDisposable
 
     public bool IsAdded => _added;
 
-    internal static void Tlog(string message)
-    {
-        try
-        {
-            System.IO.File.AppendAllText(
-                System.IO.Path.Combine(System.IO.Path.GetTempPath(), "kalite_tray.log"),
-                $"[{DateTime.Now:HH:mm:ss.fff}] {message}\n");
-        }
-        catch { }
-    }
-
     public bool Show(string iconPath, string tooltip)
     {
         try
@@ -227,7 +194,6 @@ public sealed class TrayIconService : IDisposable
                 };
                 if (RegisterClassExW(ref cls) == 0 && Marshal.GetLastWin32Error() != 1410)
                 {
-                    Tlog($"RegisterClassEx failed err={Marshal.GetLastWin32Error()}");
                     return false;
                 }
                 const uint WS_POPUP = 0x80000000;
@@ -237,7 +203,6 @@ public sealed class TrayIconService : IDisposable
                     IntPtr.Zero, IntPtr.Zero, GetModuleHandleW(null), IntPtr.Zero);
                 if (_hwnd == IntPtr.Zero)
                 {
-                    Tlog($"CreateWindowEx failed err={Marshal.GetLastWin32Error()}");
                     return false;
                 }
                 ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
@@ -245,11 +210,10 @@ public sealed class TrayIconService : IDisposable
 
             if (_icon == IntPtr.Zero)
                 _icon = LoadImageW(IntPtr.Zero, iconPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
-            Tlog($"hwnd=0x{_hwnd.ToInt64():X} icon=0x{_icon.ToInt64():X} iconPathExists={System.IO.File.Exists(iconPath)}");
             _added = AddIcon(_tooltip);
             return _added;
         }
-        catch (Exception ex) { Tlog("Show EX: " + ex.Message); return false; }
+        catch { return false; }
     }
 
     private bool AddIcon(string tooltip)
@@ -265,13 +229,11 @@ public sealed class TrayIconService : IDisposable
             szTip = tooltip.Length > 127 ? tooltip.Substring(0, 127) : tooltip,
         };
         bool ok = Shell_NotifyIconW(NIM_ADD, ref data);
-        int addError = Marshal.GetLastWin32Error();
         if (!ok)
         {
             data.uFlags = NIF_MESSAGE | NIF_TIP | NIF_ICON;
             ok = Shell_NotifyIconW(NIM_MODIFY, ref data);
         }
-        Tlog($"Shell_NotifyIcon ADD={ok} err={addError} msg=0x{CallbackMsg:X}");
         return ok;
     }
 
@@ -302,7 +264,6 @@ public sealed class TrayIconService : IDisposable
                 if (_hwnd != IntPtr.Zero && !_disposed)
                 {
                     _added = AddIcon(_tooltip);
-                    Tlog($"TaskbarCreated re-add={_added}");
                 }
                 return IntPtr.Zero;
             }
@@ -315,7 +276,6 @@ public sealed class TrayIconService : IDisposable
                 {
                     try
                     {
-                        if (mouse != 0x0200) Tlog($"callback mouse=0x{mouse:X}");
                         if (mouse == WM_LBUTTONDBLCLK || mouse == WM_LBUTTONUP)
                             OnOpen?.Invoke();
                         else if (mouse == WM_RBUTTONUP)
@@ -335,41 +295,29 @@ public sealed class TrayIconService : IDisposable
 
     private void ShowMenu()
     {
-        Tlog("ShowMenu enter");
         IntPtr menu = CreatePopupMenu();
         if (menu == IntPtr.Zero) return;
         try
         {
-            AppendMenuW(menu, MF_STRING | MF_GRAYED, ID_VERSION, "kaliteConfig v" + AppVersion);
-            AppendMenuW(menu, MF_SEPARATOR, ID_SEPARATOR1, null);
-
             AppendMenuW(menu, MF_STRING, ID_OPEN, "Open kaliteConfig");
 
             AppendMenuW(menu, MF_STRING, ID_TAKE_SNIP, "Take Screenshot");
 
-            bool canPause = false;
-            bool canStop = false;
-            try
-            {
-                if (LiveStateQuery is { } query) (canPause, canStop) = query();
-            }
-            catch { }
-            AppendMenuW(menu, canPause ? MF_STRING : MF_STRING | MF_GRAYED, ID_PAUSE_LIVE, "Pause live wallpaper");
-            AppendMenuW(menu, canStop ? MF_STRING : MF_STRING | MF_GRAYED, ID_STOP_LIVE, "Stop live wallpaper");
+            AppendMenuW(menu, MF_SEPARATOR, ID_SEPARATOR1, null);
 
-            bool gameModeHeld = false;
+            bool gameModeEnabled = false;
             try
             {
-                if (GameModeHeldQuery is { } held) gameModeHeld = held();
+                if (GameModeEnabledQuery is { } query) gameModeEnabled = query();
             }
             catch { }
-            AppendMenuW(menu, gameModeHeld ? MF_STRING : MF_STRING | MF_GRAYED, ID_RESUME_GAME, "Resume Game Mode changes");
+            AppendMenuW(menu, MF_STRING, ID_GAME_MODE, gameModeEnabled ? "Pause Gaming Mode" : "Resume Gaming Mode");
 
             AppendMenuW(menu, MF_SEPARATOR, ID_SEPARATOR1, null);
 
             AppendMenuW(menu, MF_STRING, ID_EXIT, "Exit");
 
-            if (!GetCursorPos(out POINT pt)) { Tlog("GetCursorPos failed"); return; }
+            if (!GetCursorPos(out POINT pt)) return;
             IntPtr fg = GetForegroundWindow();
             uint fgThread = fg != IntPtr.Zero ? GetWindowThreadProcessId(fg, IntPtr.Zero) : 0;
             uint myThread = GetCurrentThreadId();
@@ -379,7 +327,6 @@ public sealed class TrayIconService : IDisposable
                 SetForegroundWindow(_hwnd);
                 uint picked = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NONOTIFY, pt.X, pt.Y, 0, _hwnd);
                 PostMessageW(_hwnd, WM_NULL, IntPtr.Zero, IntPtr.Zero);
-                Tlog($"picked={picked} attached={attached}");
                 HandleMenuSelection(picked);
                 if (picked == 0) SetForegroundWindow(_hwnd);
             }
@@ -401,14 +348,8 @@ public sealed class TrayIconService : IDisposable
             case ID_TAKE_SNIP:
                 OnTakeScreenshot?.Invoke(SnipMode.Region);
                 break;
-            case ID_PAUSE_LIVE:
-                OnPauseLive?.Invoke();
-                break;
-            case ID_STOP_LIVE:
-                OnStopLive?.Invoke();
-                break;
-            case ID_RESUME_GAME:
-                OnResumeGame?.Invoke();
+            case ID_GAME_MODE:
+                OnToggleGameMode?.Invoke();
                 break;
             case ID_EXIT:
                 OnExit?.Invoke();

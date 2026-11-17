@@ -207,21 +207,6 @@ namespace kaliteConfig
             }
 
             InitializeComponent();
-            this.UnhandledException += (_, e) =>
-            {
-                try
-                {
-                    var dir = System.IO.Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "kaliteConfig", "logs");
-                    System.IO.Directory.CreateDirectory(dir);
-                    System.IO.File.AppendAllText(
-                        System.IO.Path.Combine(dir, "crash.log"),
-                        $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] UNHANDLED: {e.Exception}\n" +
-                        new string('-', 80) + "\n");
-                }
-                catch {  }
-            };
 
             _ = InitializeWatcherAsync();
         }
@@ -447,21 +432,6 @@ namespace kaliteConfig
             }
         }
 
-        internal static void ShutdownTrace(string step)
-        {
-            try
-            {
-                var dir = System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "kaliteConfig", "logs");
-                System.IO.Directory.CreateDirectory(dir);
-                System.IO.File.AppendAllText(
-                    System.IO.Path.Combine(dir, "shutdown.log"),
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {step}{Environment.NewLine}");
-            }
-            catch {  }
-        }
-
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             using (var currentProcess = System.Diagnostics.Process.GetCurrentProcess())
@@ -513,12 +483,9 @@ namespace kaliteConfig
 
             _window.Closed += (_, _) =>
             {
-                ShutdownTrace("closed.begin");
                 if (_window is MainWindow closingWindow) { try { closingWindow.ShutdownTray(); } catch { } }
-                ShutdownTrace("closed.tray-gone");
                 try { GpuOverclock.GpuOverclockModule.Instance.Dispose(); }
                 catch { }
-                ShutdownTrace("closed.gpu-done");
 
                 try { LegacyGamingMode.ReleaseAll(); }
                 catch { }
@@ -530,7 +497,6 @@ namespace kaliteConfig
                     live?.StopAndRestore();
                 }
                 catch { }
-                ShutdownTrace("closed.end");
             };
 
             ThemeService = new ThemeService()
@@ -545,6 +511,13 @@ namespace kaliteConfig
             if (StartedToTray)
             {
                 _window.AppWindow.Hide();
+                // Launching straight to the tray leaves a lot of one-time startup
+                // garbage behind; give the window a moment to settle, then trim.
+                _ = Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(
+                    _ =>
+                    {
+                        try { (_window as MainWindow)?.TrimMemoryAfterHide(); } catch { }
+                    }, TaskScheduler.Default);
             }
             else
             {

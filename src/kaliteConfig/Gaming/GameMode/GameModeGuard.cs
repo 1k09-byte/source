@@ -150,8 +150,8 @@ public sealed class GameModeGuard
         return false;
     }
 
-    public GuardVerdict Evaluate(ProcessFact fact, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths, GameModeSettings settings)
-        => Decide(fact, gamePids, gamePaths, settings);
+    public GuardVerdict Evaluate(ProcessFact fact, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths, GameModeSettings settings, IReadOnlySet<string>? lockedRules = null)
+        => Decide(fact, gamePids, gamePaths, settings, lockedRules);
 
     public GuardVerdict EvaluateBoost(ProcessFact fact, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths, GameModeSettings settings, IReadOnlySet<string> lockedRules)
     {
@@ -188,7 +188,7 @@ public sealed class GameModeGuard
         return new GuardVerdict(true, "Not the game, dwm or a connectivity service");
     }
 
-    private GuardVerdict Decide(ProcessFact fact, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths, GameModeSettings settings)
+    private GuardVerdict Decide(ProcessFact fact, IReadOnlySet<int> gamePids, IReadOnlySet<string> gamePaths, GameModeSettings settings, IReadOnlySet<string>? lockedRules = null)
     {
         if (fact.Pid <= 4) return new GuardVerdict(false, "System process");
         if (fact.Pid == _selfPid) return new GuardVerdict(false, "kaliteConfig itself");
@@ -228,6 +228,9 @@ public sealed class GameModeGuard
         if (settings.NeverTouch.Any(n => MatchesName(n, image)))
             return new GuardVerdict(false, "On your Never touch list");
 
+        if (lockedRules is { Count: > 0 } && MatchesLockedRule(lockedRules, image))
+            return new GuardVerdict(false, "Locked by one of your thread rules");
+
         if (isService)
         {
             foreach (var service in services)
@@ -257,7 +260,7 @@ public sealed class GameModeGuard
         return new GuardVerdict(true, "Background app");
     }
 
-    private static bool MatchesLockedRule(IReadOnlySet<string> lockedRules, string imageName)
+    internal static bool MatchesLockedRule(IReadOnlySet<string> lockedRules, string imageName)
     {
         var stem = imageName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? imageName[..^4] : imageName;
         foreach (var rule in lockedRules)

@@ -659,12 +659,9 @@ public sealed class SnipViewModel : ObservableObject
 		}
 		if (string.Equals(await SnipGalleryService.GetSnipSignatureAsync().ConfigureAwait(continueOnCapturedContext: true), _snipFolderSignature, StringComparison.Ordinal))
 		{
-			SnipThumbnailItem.ThumbLog("quiet: folder unchanged");
 			return false;
 		}
-		SnipThumbnailItem.ThumbLog($"quiet: folder changed, {_allEntries.Count} entries cached, {GallerySnips.Count} in gallery");
 		await RefreshCoreAsync(refreshFilters: false).ConfigureAwait(continueOnCapturedContext: true);
-		SnipThumbnailItem.ThumbLog($"quiet: merged to {GallerySnips.Count} gallery / {RecentSnips.Count} recent");
 		return true;
 	}
 

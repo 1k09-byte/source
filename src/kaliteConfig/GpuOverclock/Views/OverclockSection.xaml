@@ -90,14 +90,6 @@
                         <TextBlock Text="{x:Bind Vm.GpuTitle, Mode=OneWay}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="13" />
                     </StackPanel>
-                    <Button Grid.Column="1" Command="{x:Bind Vm.OpenChangeLogFileCommand}"
-                            VerticalAlignment="Center"
-                            ToolTipService.ToolTip="See exactly what this app changed on your GPU">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE81C;" FontSize="14" />
-                            <TextBlock Text="Change log" />
-                        </StackPanel>
-                    </Button>
                 </Grid>
 
                 <ItemsRepeater ItemsSource="{x:Bind Vm.TelemetryTiles, Mode=OneWay}"

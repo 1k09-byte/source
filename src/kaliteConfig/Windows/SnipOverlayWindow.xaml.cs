@@ -196,18 +196,6 @@ public sealed partial class SnipOverlayWindow : Window
     [StructLayout(LayoutKind.Sequential)]
     private struct WinRect { public int Left; public int Top; public int Right; public int Bottom; }
 
-    private static void OverlayLog(string message)
-    {
-        try
-        {
-            var dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "kaliteConfig");
-            System.IO.Directory.CreateDirectory(dir);
-            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "snip-overlay.log"),
-                $"{DateTime.Now:HH:mm:ss.fff} {message}\n");
-        }
-        catch { }
-    }
-
     private static bool KeyDownLive(Windows.System.VirtualKey key) =>
         (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down)
         == Windows.UI.Core.CoreVirtualKeyStates.Down;
@@ -276,7 +264,6 @@ public sealed partial class SnipOverlayWindow : Window
         {
             kaliteConfig.Services.Snip.SnipEscapeHook.Install(() =>
             {
-                OverlayLog("hook Esc -> close");
                 ((App)Microsoft.UI.Xaml.Application.Current).Sniper.CloseOverlays();
             });
         }
@@ -288,14 +275,10 @@ public sealed partial class SnipOverlayWindow : Window
         try
         {
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            if (!SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE))
-                OverlayLog("WARN SetWindowDisplayAffinity failed");
             bool fg = GetForegroundWindow() == hwnd;
-            OverlayLog($"show mon=({_monX},{_monY} {_monW}x{_monH}) dpi={_dpiScale} fg={fg} " +
-                $"preheld(shift,ctrl,alt)=({_mods.ShiftPreheld},{_mods.CtrlPreheld},{_mods.AltPreheld})");
             if (!fg) this.Activate();
         }
-        catch (Exception ex) { OverlayLog("show ERR " + ex.Message); }
+        catch { }
         try { RootGrid.Focus(FocusState.Programmatic); } catch { }
         try { DrawCanvas?.Focus(FocusState.Programmatic); } catch { }
         ApplySavedSettings();
@@ -317,7 +300,6 @@ public sealed partial class SnipOverlayWindow : Window
         }
         catch (Exception ex)
         {
-            OverlayLog("entrance anim WARN " + ex.GetType().Name);
             try { RootGrid.Opacity = 1; } catch { }
         }
     }
@@ -355,7 +337,7 @@ public sealed partial class SnipOverlayWindow : Window
                 | System.Reflection.BindingFlags.NonPublic,
                 null, RootGrid, new object[] { cursor });
         }
-        catch (Exception ex) { OverlayLog("cursor WARN " + ex.GetType().Name); }
+        catch { }
     }
 
     private void StickerFlyout_Opened(object sender, object e)
@@ -371,10 +353,7 @@ public sealed partial class SnipOverlayWindow : Window
                 .Select(s => s.FilePath)
                 .ToList();
         }
-        catch (Exception ex)
-        {
-            OverlayLog("Error loading stickers: " + ex.Message);
-        }
+        catch { }
     }
 
     private async void BtnImportSticker_Click(object sender, RoutedEventArgs e)
@@ -398,10 +377,7 @@ public sealed partial class SnipOverlayWindow : Window
                 RefreshStickerGrid();
             }
         }
-        catch (Exception ex)
-        {
-            OverlayLog("Import sticker error: " + ex.Message);
-        }
+        catch { }
     }
 
     private async void StickerGridView_ItemClick(object sender, ItemClickEventArgs e)
@@ -420,7 +396,6 @@ public sealed partial class SnipOverlayWindow : Window
                     Windows.Graphics.Imaging.ExifOrientationMode.RespectExifOrientation,
                     Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
                 _activeSticker = (data.DetachPixelData(), (int)decoder.PixelWidth, (int)decoder.PixelHeight);
-                OverlayLog($"sticker selected {System.IO.Path.GetFileName(path)} {_activeSticker.Value.W}x{_activeSticker.Value.H}");
 
                 double scx = (_startPoint.X + _endPoint.X) / 2, scy = (_startPoint.Y + _endPoint.Y) / 2;
                 var stamp = CreateStickerAt(new Point(scx, scy));
@@ -431,7 +406,6 @@ public sealed partial class SnipOverlayWindow : Window
                     _annotations.Add(stamp);
                     _redoStack.Clear();
                     DrawCanvas.Invalidate();
-                    OverlayLog($"sticker stamped total={_annotations.Count}");
                 }
                 foreach (var btn in ToolButtons)
                 {
@@ -441,10 +415,7 @@ public sealed partial class SnipOverlayWindow : Window
                 _currentTool = ActiveTool.Sticker;
                 BtnToolSticker.Flyout.Hide();
             }
-            catch (Exception ex)
-            {
-                OverlayLog("Error loading sticker bitmap: " + ex.Message);
-            }
+            catch { }
         }
     }
 
@@ -553,14 +524,12 @@ public sealed partial class SnipOverlayWindow : Window
             _hudVisible = !_hudVisible;
             if (HudPanel != null) HudPanel.Visibility = _hudVisible ? Visibility.Visible : Visibility.Collapsed;
             UpdateHud("F12");
-            OverlayLog("HUD " + (_hudVisible ? "on" : "off"));
             e.Handled = true;
             return;
         }
         if (e.Key == Windows.System.VirtualKey.Escape)
         {
             _state = Services.SnipCaptureState.Closed;
-            OverlayLog("key Esc -> close");
             ((App)Microsoft.UI.Xaml.Application.Current).Sniper.CloseOverlays();
             return;
         }
@@ -828,7 +797,6 @@ public sealed partial class SnipOverlayWindow : Window
         if (raw.Properties.IsRightButtonPressed)
         {
             _state = Services.SnipCaptureState.Closed;
-            OverlayLog("press right-click -> close");
             this.Close();
             e.Handled = true;
             return;
@@ -862,7 +830,6 @@ public sealed partial class SnipOverlayWindow : Window
             {
                 if (_currentAnnotation is Models.SnipNumber) _nextNumber++;
                 _annotations.Add(_currentAnnotation);
-                OverlayLog($"ann-add {_currentAnnotation.GetType().Name} total={_annotations.Count}");
                 _redoStack.Clear();
                 _isDragging = true;
                 try { RootGrid.CapturePointer(e.Pointer); } catch { }
@@ -907,7 +874,6 @@ public sealed partial class SnipOverlayWindow : Window
         if (_dragMode == DragMode.NewSelection) _state = Services.SnipCaptureState.Selecting;
         try { RootGrid.CapturePointer(e.Pointer); } catch { }
         DrawCanvas.Invalidate();
-        OverlayLog($"press dip=({raw.Position.X:0},{raw.Position.Y:0}) px=({pt.X:0},{pt.Y:0}) mode={_dragMode} tool={_currentTool}");
         UpdateHud("press");
     }
 
@@ -973,7 +939,7 @@ public sealed partial class SnipOverlayWindow : Window
         Canvas.SetLeft(_textEditor, Math.Max(8, Math.Min(pt.X / _dpiScale, _imgWidth / _dpiScale - 270)));
         Canvas.SetTop(_textEditor, Math.Max(8, Math.Min(pt.Y / _dpiScale, _imgHeight / _dpiScale - 44)));
         var host = ToolbarHost?.Parent as Canvas;
-        if (host == null) { OverlayLog("texteditor ERR no canvas host"); HideTextEditor(); return; }
+        if (host == null) { HideTextEditor(); return; }
         host.Children.Add(_textEditor);
         _textEditor.Focus(FocusState.Programmatic);
     }
@@ -1253,12 +1219,10 @@ public sealed partial class SnipOverlayWindow : Window
                 Services.SnipService.LastRegion = (rx, ry,
                     (int)Math.Abs(_endPoint.X - _startPoint.X),
                     (int)Math.Abs(_endPoint.Y - _startPoint.Y));
-                OverlayLog($"selection committed: {rx},{ry} {Math.Abs(_endPoint.X - _startPoint.X)}x{Math.Abs(_endPoint.Y - _startPoint.Y)}");
             }
 
             DrawCanvas.Invalidate();
             PositionToolbar();
-            OverlayLog($"release px=({_endPoint.X:0},{_endPoint.Y:0}) state={_state} mode={_dragMode}");
             UpdateHud("release");
 
             if (_state == Services.SnipCaptureState.Selected)
@@ -1268,7 +1232,6 @@ public sealed partial class SnipOverlayWindow : Window
 
             if (_state == Services.SnipCaptureState.Selected && BtnInstantMode.IsChecked == true && Math.Abs(_endPoint.X - _startPoint.X) > 10 && Math.Abs(_endPoint.Y - _startPoint.Y) > 10)
             {
-                OverlayLog("instant-copy firing");
                 _ = CopySelectionToClipboardAsync().ContinueWith(t =>
                 {
                     try { DispatcherQueue.TryEnqueue(() => this.Close()); } catch { }
@@ -1293,11 +1256,10 @@ public sealed partial class SnipOverlayWindow : Window
                 _startPoint = new Point(sel.X, sel.Y);
                 _endPoint = new Point(sel.X + sel.W, sel.Y + sel.H);
                 _state = Services.SnipCaptureState.Selected;
-                OverlayLog($"click-snap window=({r.Left},{r.Top} {r.Width}x{r.Height})");
                 return true;
             }
         }
-        catch (Exception ex) { OverlayLog("snap ERR " + ex.Message); }
+        catch { }
         return false;
     }
 
@@ -1348,7 +1310,6 @@ public sealed partial class SnipOverlayWindow : Window
         }
         catch (Exception ex)
         {
-            OverlayLog("pin ERR " + ex.GetType().Name + ": " + ex.Message);
             ShowToast("Pin failed", ex.Message);
         }
     }
@@ -1364,7 +1325,6 @@ public sealed partial class SnipOverlayWindow : Window
         try
         {
             byte[] cropped = GetCroppedPixels(out int w, out int h);
-            OverlayLog($"copy sel={w}x{h} ann={_annotations.Count}");
             if (w == 0 || h == 0) return false;
 
             var win2device = Microsoft.Graphics.Canvas.CanvasDevice.GetSharedDevice();
@@ -1383,23 +1343,20 @@ public sealed partial class SnipOverlayWindow : Window
                 dibStream.Seek(0);
                 dp.SetData("DeviceIndependentBitmap", dibStream);
             }
-            catch (Exception ex) { OverlayLog("DIB WARN " + ex.Message); }
+            catch { }
             Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
 
             try
             {
                 var saved = await SnipGalleryService.SaveSnipAsync(cropped, w, h, SourceApp);
-                OverlayLog($"copy gallery-saved {saved.Path}");
                 Services.SnipService.NotifyGalleryChanged();
             }
-            catch (Exception ex) { OverlayLog("copy gallery-save WARN " + ex.Message); }
+            catch { }
 
-            OverlayLog($"copy done bytes={cropped.Length}");
             return true;
         }
         catch (Exception ex)
         {
-            OverlayLog("copy ERR " + ex.GetType().Name + ": " + ex.Message);
             ShowToast("Copy failed", ex.Message);
             return false;
         }
@@ -1419,9 +1376,8 @@ public sealed partial class SnipOverlayWindow : Window
             kaliteConfig.Native.DwmApi.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(int));
             int noBorder = DWMWA_COLOR_NONE;
             kaliteConfig.Native.DwmApi.DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref noBorder, sizeof(int));
-            OverlayLog($"borderless hwnd=0x{hwnd.ToInt64():X} style=0x{style:X}");
         }
-        catch (Exception ex) { OverlayLog("borderless ERR " + ex.Message); }
+        catch { }
     }
 
     private void FitClientToMonitor(int x, int y, int width, int height)
@@ -1438,30 +1394,26 @@ public sealed partial class SnipOverlayWindow : Window
             int offsetY = origin.Y - outer.Top;
             if (extraW == 0 && extraH == 0 && offsetX == 0 && offsetY == 0) return;
             SetWindowPos(hwnd, IntPtr.Zero, x - offsetX, y - offsetY, width + extraW, height + extraH, SWP_NOZORDER | SWP_NOACTIVATE);
-            OverlayLog($"client fit extra={extraW}x{extraH} offset={offsetX},{offsetY}");
         }
-        catch (Exception ex) { OverlayLog("client fit ERR " + ex.Message); }
+        catch { }
     }
 
     public void PlaceOnMonitor(int x, int y, int width, int height)
     {
         _monX = x; _monY = y; _monW = width; _monH = height;
-        OverlayLog($"PlaceOnMonitor called: x={x} y={y} w={width} h={height}");
         try
         {
             if (width > 100 && height > 100)
             {
                 _appWindow.MoveAndResize(new Windows.Graphics.RectInt32(x, y, width, height));
                 FitClientToMonitor(x, y, width, height);
-                OverlayLog($"Window moved/resized to ({x},{y}) {width}x{height}");
             }
             else
             {
-                OverlayLog($"Skipping move/resized: dimensions too small (w={width} h={height})");
                 _appWindow.Move(new Windows.Graphics.PointInt32(x, y));
             }
         }
-        catch (Exception ex) { OverlayLog($"PlaceOnMonitor ERR: {ex.Message}"); }
+        catch { }
     }
 
     public int MonitorIndex { get; set; }
@@ -1494,7 +1446,6 @@ public sealed partial class SnipOverlayWindow : Window
         try
         {
             var result = await SnipGalleryService.SaveSnipAsync(cropped, w, h, SourceApp);
-            OverlayLog($"save ok {result.Path} uniform={result.IsUniform}");
             Services.SnipService.NotifyGalleryChanged();
             if (result.IsUniform)
                 ShowToast("Snip saved",
@@ -1510,7 +1461,6 @@ public sealed partial class SnipOverlayWindow : Window
 
     private void ShowToast(string title, string content)
     {
-        OverlayLog($"toast-suppressed [{title}] {content}");
     }
 
     private void BtnTool_Click(object sender, RoutedEventArgs e)
@@ -1638,9 +1588,8 @@ public sealed partial class SnipOverlayWindow : Window
             }
             DrawCanvas.Invalidate();
             UpdateHud("ann-resize");
-            OverlayLog($"ann-resize {target.GetType().Name} -> {reqW:0}x{reqH:0}");
         }
-        catch (Exception ex) { OverlayLog("ann-resize ERR " + ex.Message); }
+        catch { }
     }
 
     private static Rect CenteredRect(double cx, double cy, double w, double h) =>

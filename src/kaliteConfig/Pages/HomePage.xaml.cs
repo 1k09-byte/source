@@ -121,10 +121,9 @@ namespace kaliteConfig.Pages
             {
                 await _update.CheckForUpdateAsync();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 UpdateStatusText.Text = "Update check failed";
-                Services.UpdateCheckService.LogDiag("home: update check threw - " + ex.Message);
             }
             finally
             {

@@ -30,7 +30,6 @@ public sealed class ProfileWatcherService : IDisposable
     private readonly object _lock = new();
     private ManagementEventWatcher? _watcher;
     private string _profilePath;
-    private string _logPath;
 
     private readonly HashSet<int> _gamingModePids = new();
     private readonly object _gamingLock = new();
@@ -55,30 +54,6 @@ public sealed class ProfileWatcherService : IDisposable
         }
         _profilePath = profilePath
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "kaliteConfig", "threadtuner-profiles.json");
-        _logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "kaliteConfig", "rules-debug.log");
-    }
-
-    internal void Log(string message)
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_logPath)!);
-            try
-            {
-                if (new FileInfo(_logPath).Length > 200 * 1024)
-                {
-                    File.Delete(_logPath);
-                }
-            }
-            catch
-            {
-            }
-            File.AppendAllText(_logPath,
-                $"{DateTime.Now:HH:mm:ss.fff} [pid={Environment.ProcessId}] {message}\r\n");
-        }
-        catch
-        {
-        }
     }
 
     public async Task LoadProfilesAsync()
@@ -88,9 +63,7 @@ public sealed class ProfileWatcherService : IDisposable
             if (File.Exists(_profilePath))
             {
                 var text = await File.ReadAllTextAsync(_profilePath);
-                Log($"load: {text.Length} bytes from {_profilePath}");
                 var loaded = JsonSerializer.Deserialize<List<TunerProfile>>(text);
-                Log($"load: deserialized {(loaded == null ? "null" : loaded.Count.ToString())} profiles");
                 if (loaded != null)
                 {
                     lock (_lock)
@@ -105,7 +78,6 @@ public sealed class ProfileWatcherService : IDisposable
             }
             else
             {
-                Log("load: no file yet, generating built-in defaults");
                 lock (_lock)
                 {
                     ActiveProfiles = CreateBuiltInDefaults();
@@ -113,10 +85,7 @@ public sealed class ProfileWatcherService : IDisposable
                 _ = SaveProfilesAsync();
             }
         }
-        catch (Exception ex)
-        {
-            Log("load FAILED: " + ex.GetType().Name + ": " + ex.Message);
-        }
+        catch { }
         await EnsureBuiltInDefaultsAsync();
         RaiseChanged();
     }
@@ -150,13 +119,11 @@ public sealed class ProfileWatcherService : IDisposable
             {
                 if (IsRetiredBuiltInRule(ActiveProfiles[i]))
                 {
-                    Log($"defaults: removed retired built-in '{ActiveProfiles[i].Name}'");
                     ActiveProfiles.RemoveAt(i);
                     changed = true;
                 }
                 else if (ActiveProfiles[i].Name == "DWM & Master Input" && IsOldDwmMasterInputShipment(ActiveProfiles[i]))
                 {
-                    Log($"defaults: removed retired built-in 'DWM & Master Input'");
                     ActiveProfiles.RemoveAt(i);
                     changed = true;
                 }
@@ -167,7 +134,6 @@ public sealed class ProfileWatcherService : IDisposable
                         ActiveProfiles[i].Enabled = false;
                         ActiveProfiles[i].LastResult = ProtectedRuleResult;
                         ActiveProfiles[i].RefreshSummaries();
-                        Log($"defaults: disabled profile that targets a protected system process ([{ActiveProfiles[i].Name}]) - kept in the list");
                         changed = true;
                     }
                 }
@@ -179,12 +145,10 @@ public sealed class ProfileWatcherService : IDisposable
                 if (existing == null)
                 {
                     ActiveProfiles.Add(def);
-                    Log($"defaults: added missing built-in '{def.Name}'");
                     changed = true;
                 }
                 else if (def.Name == "kaliteConfig (this app)" && IsOursToRefreshSelfRule(existing))
                 {
-                    Log($"defaults: refreshed built-in '{def.Name}' to Idle / no boost / Efficiency mode");
                     existing.Pattern = def.Pattern;
                     existing.PriorityClass = def.PriorityClass;
                     existing.BoostEnabled = def.BoostEnabled;
@@ -198,13 +162,10 @@ public sealed class ProfileWatcherService : IDisposable
                     existing.PriorityClass = def.PriorityClass;
                     existing.AutoApply = def.AutoApply;
                     existing.ThreadRules = def.ThreadRules;
-                    Log($"defaults: refreshed built-in '{def.Name}' to highest-priority content");
                     changed = true;
                 }
                 else if (RulePatternGuard.RepairPattern(existing.Pattern, existing.Name, def.Pattern) is { } repaired)
                 {
-                    Log($"defaults: repaired pattern for built-in '{existing.Name}' " +
-                        $"([{existing.Pattern}] → [{repaired}])");
                     existing.Pattern = repaired;
                     changed = true;
                 }
@@ -303,7 +264,8 @@ public sealed class ProfileWatcherService : IDisposable
                 && r.Priority == (int)ThreadPriorityLevel.Highest
                 && string.IsNullOrWhiteSpace(r.Description) && r.StartAddress == string.Empty
                 && r.EfficiencyMode == null && r.BoostEnabled == null
-                && r.AffinityMask == null && r.IdealGroup == null && r.MemoryPriority == null;
+                && r.AffinityMask == null && r.IdealGroup == null && r.MemoryPriority == null
+                && r.IoPriority == null;
         }
         return false;
     }
@@ -364,6 +326,7 @@ public sealed class ProfileWatcherService : IDisposable
                 existing.IdealGroup ??= incoming.IdealGroup;
                 existing.IdealIndex ??= incoming.IdealIndex;
                 existing.MemoryPriority ??= incoming.MemoryPriority;
+                existing.IoPriority ??= incoming.IoPriority;
                 if (incoming.TargetCount > existing.TargetCount) existing.TargetCount = incoming.TargetCount;
             }
         }
@@ -407,7 +370,6 @@ public sealed class ProfileWatcherService : IDisposable
         }
         if (merged > 0)
         {
-            Log($"merge: {merged} rule(s) folded into the row of the process they target");
         }
         return merged;
     }
@@ -449,12 +411,10 @@ public sealed class ProfileWatcherService : IDisposable
                 _saveLock.Release();
             }
 
-            Log($"save ok: {snapshot.Count} profiles, {text.Length} bytes");
             return true;
         }
         catch (Exception ex)
         {
-            Log("save FAILED: " + ex.GetType().Name + ": " + ex.Message);
             return false;
         }
     }
@@ -583,10 +543,7 @@ public sealed class ProfileWatcherService : IDisposable
                 await ApplyProfileNowAsync(rule, quiet: true);
                 applied++;
             }
-            catch (Exception ex)
-            {
-                Log($"import: apply [{rule.Name}] failed: {ex.Message}");
-            }
+            catch { }
         }
 
         string message = $"Imported {added + updated} rule(s): {added} new, {updated} updated"
@@ -617,7 +574,6 @@ public sealed class ProfileWatcherService : IDisposable
                 ActiveProfiles.Add(profile);
             }
         }
-        Log($"add: pattern=[{profile.Pattern}] actions={profile.ProcessActionCount} threadrules={profile.ThreadRules?.Count ?? 0}");
         if (!profile.Enabled) await ClearBoostPreferencesAsync(profile);
         bool saved = await SaveProfilesAsync();
         RaiseChanged();
@@ -632,7 +588,6 @@ public sealed class ProfileWatcherService : IDisposable
         {
             ActiveProfiles.Remove(profile);
         }
-        Log($"remove: pattern=[{profile.Pattern}]");
         await ClearBoostPreferencesAsync(profile);
         bool saved = await SaveProfilesAsync();
         RaiseChanged();
@@ -767,7 +722,6 @@ public sealed class ProfileWatcherService : IDisposable
             pids = pids.Where(pid => !IsProtectedProcess(pid)).ToList();
             blockedByProtection = beforeFilter > 0 && pids.Count == 0;
         }
-        Log($"apply-now: pattern=[{profile.Pattern}] pids=[{string.Join(",", pids)}]{(quiet ? " (keeper)" : "")}");
         if (pids.Count == 0)
         {
             string waiting = blockedByProtection
@@ -830,7 +784,6 @@ public sealed class ProfileWatcherService : IDisposable
         }
         else
         {
-            Log($"apply-now: pattern=[{profile.Pattern}] not in store, save skipped");
         }
         RaiseChanged();
         return new RuleApplyResult
@@ -923,6 +876,19 @@ public sealed class ProfileWatcherService : IDisposable
                 try
                 {
                     await _threads.SetMemoryPriorityAsync(tid, rule.MemoryPriority.Value);
+                    succeeded++;
+                }
+                catch
+                {
+                }
+            }
+
+            if (rule.IoPriority.HasValue)
+            {
+                attempted++;
+                try
+                {
+                    await _threads.SetThreadIoPriorityAsync(tid, rule.IoPriority.Value);
                     succeeded++;
                 }
                 catch
@@ -1068,7 +1034,6 @@ public sealed class ProfileWatcherService : IDisposable
                 StartGamingModeLivenessMonitor();
                 await App.Current.LegacyGamingMode.AcquireAsync(
                     GameModeOwner.Rule, pid, armed, $"automatic gaming mode rule matched {name}");
-                Log($"gaming-mode: rule hold taken for [{name}] pid={pid}, protected={armed.Count}");
             }
 
             if (matched.Count == 0)
@@ -1172,10 +1137,7 @@ public sealed class ProfileWatcherService : IDisposable
             {
                 await ApplyProfileNowAsync(profile, quiet: true);
             }
-            catch (Exception ex)
-            {
-                Log($"startup-sweep: [{profile.Name}] failed: {ex.Message}");
-            }
+            catch { }
         }
     }
 
@@ -1191,7 +1153,6 @@ public sealed class ProfileWatcherService : IDisposable
 
         _keeperTimer ??= new System.Threading.Timer(_ => _ = KeepAppliedAsync(), null, 1000, (int)period.TotalMilliseconds);
         _keeperTimer.Change(1000, (int)period.TotalMilliseconds);
-        Log($"keeper: sweeping every {period.TotalSeconds:0} s");
     }
 
     public void StopKeeper()
@@ -1209,10 +1170,7 @@ public sealed class ProfileWatcherService : IDisposable
                 static () => ProcessBoostPreferenceService.Instance.ApplyToRunningProcessesAsync(),
                 static () => BoostPreferenceService.Instance.ApplyToRunningProcessesAsync());
         }
-        catch (Exception ex)
-        {
-            Log("keeper FAILED: " + ex.GetType().Name + ": " + ex.Message);
-        }
+        catch { }
         finally
         {
             System.Threading.Interlocked.Exchange(ref _keeperRunning, 0);
@@ -1260,19 +1218,14 @@ public sealed class ProfileWatcherService : IDisposable
                 StartGamingModeExitWatcher();
                 StartGamingModeLivenessMonitor();
                 _ = App.Current.LegacyGamingMode.AcquireAsync(
-                        GameModeOwner.Rule, armed[0], armed, "automatic gaming mode rule")
-                    .ContinueWith(_ => Log($"gaming-mode: evaluated, armed pids=[{string.Join(",", armed)}]"));
+                        GameModeOwner.Rule, armed[0], armed, "automatic gaming mode rule");
             }
             else if (App.Current.LegacyGamingMode.IsHeldBy(GameModeOwner.Rule))
             {
-                Log("gaming-mode: no armed processes remain (rules changed), releasing the rule's hold");
                 App.Current.LegacyGamingMode.Release(GameModeOwner.Rule);
             }
         }
-        catch (Exception ex)
-        {
-            Log("gaming-mode evaluate FAILED: " + ex.GetType().Name + ": " + ex.Message);
-        }
+        catch { }
     }
 
     private ManagementEventWatcher? _exitWatcher;
@@ -1315,7 +1268,6 @@ public sealed class ProfileWatcherService : IDisposable
 
             if (hasArmed && !anyAlive && App.Current.LegacyGamingMode.IsHeldBy(GameModeOwner.Rule))
             {
-                Log("gaming-mode: liveness monitor found no armed game processes, releasing the rule's hold");
                 App.Current.LegacyGamingMode.Release(GameModeOwner.Rule);
                 _gamingLivenessTimer?.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
             }
@@ -1324,7 +1276,6 @@ public sealed class ProfileWatcherService : IDisposable
                 int? target = App.Current.LegacyGamingMode.SessionTargetPid;
                 if (target.HasValue && !IsPidAlive(target.Value))
                 {
-                    Log("gaming-mode: session target exited while other armed games run - handing over");
                     EvaluateGamingModeRules();
                 }
             }
@@ -1391,13 +1342,11 @@ public sealed class ProfileWatcherService : IDisposable
 
             if (wasLast && App.Current.LegacyGamingMode.IsHeldBy(GameModeOwner.Rule))
             {
-                Log("gaming-mode: last armed process exited, releasing the rule's hold");
                 App.Current.LegacyGamingMode.Release(GameModeOwner.Rule);
                 _gamingLivenessTimer?.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
             }
             else if (wasLast)
             {
-                Log("gaming-mode: armed processes gone; manual Gaming mode session left untouched");
             }
         }
         catch

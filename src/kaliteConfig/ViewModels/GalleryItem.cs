@@ -276,12 +276,9 @@ public class GalleryItem : ObservableObject
 					OnPropertyChanged("ResolutionText");
 				}
 			}
-			SnipThumbnailItem.ThumbLog($"gallery '{Path.GetFileName(Entry.FilePath)}' exists={File.Exists(Entry.FilePath)} -> {(((object)Card.Image == null) ? Card.ShortErrorText : "ok")}");
 		}
-		catch (Exception ex)
+		catch
 		{
-			Exception ex2 = ex;
-			SnipThumbnailItem.ThumbLog($"gallery '{Path.GetFileName(Entry.FilePath)}' EX: {ex2.GetType().Name}: {ex2.Message}");
 		}
 		finally
 		{

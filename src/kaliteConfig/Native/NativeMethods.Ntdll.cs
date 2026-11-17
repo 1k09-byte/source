@@ -15,6 +15,16 @@ internal static partial class NativeMethods
         internal const int StatusInfoLengthMismatch = unchecked((int)0xC0000004);
 
         internal const int ProcessIoPriority = 33;
+        // ThreadIoPriority is information class 22; 33 on a thread handle is
+        // ThreadIdealProcessorEx and returns a processor number, not an I/O hint.
+        internal const int ThreadIoPriority = 22;
+
+        // IO_PRIORITY_HINT values. VeryLow/Low/Normal are always settable; High
+        // usually needs elevation and Critical is never offered by the app.
+        internal const uint IoPriorityVeryLow = 0;
+        internal const uint IoPriorityLow = 1;
+        internal const uint IoPriorityNormal = 2;
+        internal const uint IoPriorityHigh = 3;
 
         [LibraryImport("ntdll.dll")]
         internal static partial int NtSetInformationProcess(
@@ -22,6 +32,21 @@ internal static partial class NativeMethods
             int processInformationClass,
             ref uint processInformation,
             uint processInformationLength);
+
+        [LibraryImport("ntdll.dll")]
+        internal static partial int NtSetInformationThread(
+            SafeThreadHandle threadHandle,
+            int threadInformationClass,
+            ref uint threadInformation,
+            uint threadInformationLength);
+
+        [LibraryImport("ntdll.dll")]
+        internal static partial int NtQueryInformationThread(
+            SafeThreadHandle threadHandle,
+            int threadInformationClass,
+            ref uint threadInformation,
+            uint threadInformationLength,
+            out uint returnLength);
 
         [LibraryImport("ntdll.dll")]
         internal static partial int NtQueryInformationProcess(

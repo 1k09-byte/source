@@ -164,11 +164,11 @@
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                         <Button x:Name="PageGamingModeButton" Content="Enable Gaming mode" Style="{StaticResource AccentButtonStyle}" Click="Page_ToggleGamingMode"
-                                ToolTipService.ToolTip="Turns the Game Mode session engine on or off. No process needs to be selected." />
+                                ToolTipService.ToolTip="Turns the Gaming Mode session engine on or off. No process needs to be selected." />
                         <Border Style="{StaticResource CommandCluster}">
                             <StackPanel Orientation="Horizontal">
-                                <Button x:Name="PageGameModeDialogButton" Content="Game Mode…" Style="{StaticResource ClusterButton}" CornerRadius="8,0,0,8" Click="GameModeOpen_Click"
-                                        ToolTipService.ToolTip="Opens Game Mode in its own window: preview, settings, game list and activity log" />
+                                <Button x:Name="PageGameModeDialogButton" Content="Gaming Mode…" Style="{StaticResource ClusterButton}" CornerRadius="8,0,0,8" Click="GameModeOpen_Click"
+                                        ToolTipService.ToolTip="Opens Gaming Mode in its own window: preview, settings, game list and activity log" />
                                 <Border Style="{StaticResource ClusterSeparator}" />
                                 <Button x:Name="PageRestoreButton" Content="Restore changes" Style="{StaticResource ClusterButton}" CornerRadius="0,8,8,0" Click="Page_RestorePriorities" IsEnabled="False"
                                         ToolTipService.ToolTip="Revert every priority kaliteConfig changed." />
@@ -225,7 +225,7 @@
                             <TextBlock Grid.Column="1" Text="CPU %" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <TextBlock Grid.Column="2" Text="Memory" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <TextBlock Grid.Column="3" Text="Threads" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <TextBlock Grid.Column="4" Text="Priority" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <TextBlock Grid.Column="4" Text="CPU Priority" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <TextBlock Grid.Column="5" Text="CPU" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                        ToolTipService.ToolTip="The CPU the process is running on right now, from kernel context-switch events. Needs the CPU observer (administrator)." />
                             <TextBlock Grid.Column="6" Text="State" FontWeight="SemiBold" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
@@ -255,7 +255,7 @@
                                             <MenuFlyoutItem Text="Suspend" Click="Action_Suspend" />
                                             <MenuFlyoutItem Text="Resume" Click="Action_Resume" />
                                             <MenuFlyoutSeparator />
-                                            <MenuFlyoutSubItem Text="Priority   >">
+                                            <MenuFlyoutSubItem Text="CPU priority   >">
                                                 <MenuFlyoutItem Text="Real time" Click="Action_Priority" Tag="Realtime" />
                                                 <MenuFlyoutItem Text="High" Click="Action_Priority" Tag="High" />
                                                 <MenuFlyoutItem Text="Above normal" Click="Action_Priority" Tag="AboveNormal" />
@@ -271,6 +271,12 @@
                                             <MenuFlyoutSubItem Text="Efficiency mode   >">
                                                 <MenuFlyoutItem Text="Enabled" Click="Action_Eco" Tag="Enabled" />
                                                 <MenuFlyoutItem Text="Disabled" Click="Action_Eco" Tag="Disabled" />
+                                            </MenuFlyoutSubItem>
+                                            <MenuFlyoutSubItem Text="I/O priority   >">
+                                                <MenuFlyoutItem Text="Very low" Click="Action_IoPriority" Tag="VeryLow" />
+                                                <MenuFlyoutItem Text="Low" Click="Action_IoPriority" Tag="Low" />
+                                                <MenuFlyoutItem Text="Normal" Click="Action_IoPriority" Tag="Normal" />
+                                                <MenuFlyoutItem Text="High" Click="Action_IoPriority" Tag="High" />
                                             </MenuFlyoutSubItem>
                                             <MenuFlyoutSeparator />
                                             <MenuFlyoutItem Text="Create rule..." Click="Action_CreateRule" />

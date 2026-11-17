@@ -137,10 +137,6 @@ public sealed partial class UpdateViewModel : ObservableObject
             LastAttemptFailed = failed;
             SuppressStartupOffer = failed && pending!.Reported;
 
-            string? failureReason = failed
-                ? UpdateCheckService.ReadInstallerLogSummary(pending!.LogPath)
-                : null;
-
             if (failed && PendingInstallerPath is not null)
             {
                 bool isMsixCache = PendingInstallerPath.EndsWith(".msix", StringComparison.OrdinalIgnoreCase);
@@ -148,7 +144,7 @@ public sealed partial class UpdateViewModel : ObservableObject
                 {
                     var cachedVersion = UpdateCheckService.TryReadExeVersion(PendingInstallerPath);
                     var cachedMatches = string.Equals(cachedVersion, pending!.Version, StringComparison.OrdinalIgnoreCase);
-                    if (!cachedMatches || string.IsNullOrWhiteSpace(failureReason))
+                    if (!cachedMatches)
                     {
                         try { File.Delete(PendingInstallerPath); } catch { }
                         PendingInstallerPath = null;
@@ -165,10 +161,6 @@ public sealed partial class UpdateViewModel : ObservableObject
             {
                 Notes += $"\n\nThe update to {pending!.Version} did not complete - this copy still reports " +
                          $"v{running ?? "the previous version"}.";
-                if (!string.IsNullOrWhiteSpace(failureReason))
-                    Notes += $"\nInstaller reported: {failureReason}";
-                if (!string.IsNullOrWhiteSpace(pending!.LogPath) && File.Exists(pending.LogPath))
-                    Notes += $"\nFull installer log: {pending.LogPath}";
                 Notes += CanOpenInstaller
                     ? "\nChoose Open installer to run it again with its own window, so any error stays on screen."
                     : "\nChoose Update now to download a fresh copy and try again.";
@@ -196,7 +188,6 @@ public sealed partial class UpdateViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusText = "Update check failed: " + ex.Message;
-            UpdateCheckService.LogDiag("check: UI failure - " + ex.Message);
         }
     }
 
@@ -253,14 +244,11 @@ public sealed partial class UpdateViewModel : ObservableObject
             var progress = new Progress<double>(p => DownloadPercent = p);
             string installerPath = await _service.DownloadAsync(_pending, progress, _cts.Token);
             lastInstallerPath = installerPath;
-            var info = new FileInfo(installerPath);
-            UpdateCheckService.LogDiag($"update: downloaded {info.Name} ({info.Length} bytes) for version {_pending.Version}");
 
             if (_pending.IsMsix)
             {
                 StatusText = "Opening MSIX installer…";
-                UpdateCheckService.WritePendingUpdate(_pending.Version, installerPath, null);
-                UpdateCheckService.LogDiag($"update: launching {info.Name} for version {_pending.Version} via AppInstaller");
+                UpdateCheckService.WritePendingUpdate(_pending.Version, installerPath);
                 try
                 {
                     if (App.MainWindow is MainWindow mainWindow)
@@ -283,16 +271,14 @@ public sealed partial class UpdateViewModel : ObservableObject
             if (!string.Equals(downloadedVersion, _pending.Version, StringComparison.OrdinalIgnoreCase))
             {
                 try { File.Delete(installerPath); } catch { }
-                UpdateCheckService.LogDiag($"update: downloaded setup reports {downloadedVersion ?? "?"} but release version is {_pending.Version} - not launching");
                 StatusText = $"The downloaded installer was built as {downloadedVersion ?? "an unknown version"} instead of {_pending.Version}. Nothing was installed; download the release again.";
                 return;
             }
 
             StatusText = "Launching installer…";
-            var logPath = UpdateCheckService.SetupLogPath(_pending.Version);
-            UpdateCheckService.WritePendingUpdate(_pending.Version, installerPath, logPath);
+            UpdateCheckService.WritePendingUpdate(_pending.Version, installerPath);
             var installDir = UpdateCheckService.GetRegisteredInstallDirectory();
-            var installArgs = UpdateCheckService.BuildSilentInstallerArguments(installDir, logPath);
+            var installArgs = UpdateCheckService.BuildSilentInstallerArguments(installDir);
             var psi = new ProcessStartInfo
             {
                 FileName = installerPath,
@@ -301,8 +287,6 @@ public sealed partial class UpdateViewModel : ObservableObject
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
             };
-            UpdateCheckService.LogDiag(
-                $"update: launching {info.Name} for version {_pending.Version} args={installArgs}");
             try
             {
                 if (App.MainWindow is MainWindow mainWindow)
@@ -317,7 +301,6 @@ public sealed partial class UpdateViewModel : ObservableObject
 
                 if (setup.WaitForExit(2500) && setup.ExitCode != 0)
                 {
-                    UpdateCheckService.LogDiag($"update: setup exited early with {setup.ExitCode}");
                     LastAttemptFailed = true;
                     PendingInstallerPath = installerPath;
                     OnPropertyChanged(nameof(CanOpenInstaller));
@@ -328,7 +311,7 @@ public sealed partial class UpdateViewModel : ObservableObject
 
                     UpdateCheckService.ClearPendingUpdate();
                     StatusText = $"Setup exited with code {setup.ExitCode}. " +
-                                 $"The update did not install; check {logPath} or run the release installer manually.";
+                                 "The update did not install; run the release installer manually.";
                     return;
                 }
             }
@@ -365,7 +348,6 @@ public sealed partial class UpdateViewModel : ObservableObject
         if (!versionOk) return false;
 
         UpdateCheckService.MarkAutoRetried(_pending.Version);
-        UpdateCheckService.LogDiag($"update: retrying once after {reason} for {_pending.Version}");
         StatusText = "Update failed; retrying once by opening the installer…";
         OpenInstallerVisibly(installerPath);
         return true;
@@ -379,13 +361,11 @@ public sealed partial class UpdateViewModel : ObservableObject
         if (CanOpenInstaller && PendingInstallerPath is not null)
         {
             UpdateCheckService.MarkAutoRetried(_pending.Version);
-            UpdateCheckService.LogDiag($"startup: retrying {_pending.Version} once by opening the cached installer");
             OpenInstallerVisibly(PendingInstallerPath);
             return;
         }
 
         UpdateCheckService.MarkAutoRetried(_pending.Version);
-        UpdateCheckService.LogDiag($"startup: retrying {_pending.Version} once with the normal download method");
         await UpdateNowAsync();
     }
 
@@ -393,7 +373,6 @@ public sealed partial class UpdateViewModel : ObservableObject
     {
         try
         {
-            UpdateCheckService.LogDiag($"update: re-running installer visibly {installerPath}");
             var psi = new ProcessStartInfo
             {
                 FileName = installerPath,
@@ -411,7 +390,6 @@ public sealed partial class UpdateViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            UpdateCheckService.LogDiag($"update: visible installer run failed - {ex.Message}");
             StatusText = $"Could not start the installer: {ex.Message}";
         }
     }

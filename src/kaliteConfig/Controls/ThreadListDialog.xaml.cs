@@ -80,6 +80,7 @@ public sealed partial class ThreadListDialog : ContentDialog
     private bool _boostReadable = true;
     private bool _ecoReadable = true;
     private bool _memoryReadable = true;
+    private bool _ioReadable = true;
     private bool _idealUserPicked;
     private int _idealCpu = -1;
     private const int CpuBoxColumns = 8;
@@ -366,6 +367,19 @@ public sealed partial class ThreadListDialog : ContentDialog
                 MemoryCombo.SelectedItem = null;
                 MemoryCurrent.Text = "Current: unreadable (" + Short(ex) + ")";
             }
+            _ioReadable = true;
+            try
+            {
+                uint io = await Tuner.GetThreadIoPriorityAsync((uint)row.Tid);
+                SelectComboByTag(IoPriorityCombo, (int)io);
+                IoPriorityCurrent.Text = "Current: " + DescribeIoPriority(io);
+            }
+            catch (Exception ex)
+            {
+                _ioReadable = false;
+                IoPriorityCombo.SelectedItem = null;
+                IoPriorityCurrent.Text = "Current: unreadable (" + Short(ex) + ")";
+            }
             _boostReadable = true;
             _ecoReadable = true;
             try { row.BoostAllowed = await Tuner.GetBoostAsync((uint)row.Tid); }
@@ -411,6 +425,7 @@ public sealed partial class ThreadListDialog : ContentDialog
             bool editable = row.CanEdit;
             PriorityCombo.IsEnabled = editable;
             MemoryCombo.IsEnabled = editable && _memoryReadable;
+            IoPriorityCombo.IsEnabled = editable && _ioReadable;
             EcoToggle.IsEnabled = editable && _ecoReadable;
             AffinityCpuGrid.Opacity = editable ? 1 : 0.5;
             IdealCpuGrid.Opacity = editable ? 1 : 0.5;
@@ -549,6 +564,35 @@ public sealed partial class ThreadListDialog : ContentDialog
         catch (Exception ex) { EditorStatus($"Memory priority: {Short(ex)}", true); }
     }
 
+    private uint? ComboIoLevel()
+    {
+        int? level = ComboLevel(IoPriorityCombo);
+        return level is >= 0 and <= 3 ? (uint)level.Value : null;
+    }
+
+    private static string DescribeIoPriority(uint level) => level switch
+    {
+        0 => "Very low",
+        1 => "Low",
+        2 => "Normal",
+        3 => "High",
+        _ => $"Level {level}",
+    };
+
+    private async void IoPriorityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingEditor || _selected == null) return;
+        uint? level = ComboIoLevel();
+        if (level is null) return;
+        try
+        {
+            await Tuner.SetThreadIoPriorityAsync((uint)_selected.Tid, level!.Value);
+            IoPriorityCurrent.Text = "Current: " + DescribeIoPriority(level.Value);
+            EditorStatus(null, false);
+        }
+        catch (Exception ex) { EditorStatus($"I/O priority: {Short(ex)}", true); }
+    }
+
     private async void PriorityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_loadingEditor || _selected == null) return;
@@ -593,6 +637,7 @@ public sealed partial class ThreadListDialog : ContentDialog
                 BoostEnabled = _boostReadable ? row.BoostAllowed : null,
                 EfficiencyMode = _ecoReadable ? EcoToggle.IsOn : null,
                 MemoryPriority = _memoryReadable ? ComboMemoryLevel() : null,
+                IoPriority = _ioReadable ? ComboIoLevel() : null,
             };
             ulong uiMask = ReadAffinityMask();
             if (uiMask != 0)

@@ -209,26 +209,36 @@ namespace kaliteConfig
             _tray = null;
         }
 
+        /// <summary>
+        /// Drops the working set after the window hides: collect dead .NET objects
+        /// first so they stop pinning pages, then ask the kernel to trim everything
+        /// that is pageable. Pages return on demand, so this is safe on every hide.
+        /// </summary>
+        public void TrimMemoryAfterHide()
+        {
+            try
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+            catch { }
+            Native.NativeMethods.WorkingSet.TrimCurrentProcess();
+        }
+
         public void AllowExitAndClose()
         {
-            App.ShutdownTrace("settings-exit.begin");
             PrepareForUpdateShutdown();
-            App.ShutdownTrace("settings-exit.prepared");
             this.Close();
-            App.ShutdownTrace("settings-exit.closed-returned");
         }
 
         public void PrepareForUpdateShutdown()
         {
-            App.ShutdownTrace("prepare.begin");
             _allowExit = true;
             try { (Application.Current as App)?.LegacyGamingMode.ReleaseAll(); } catch { }
-            App.ShutdownTrace("prepare.gaming-released");
             try { (Application.Current as App)?.ForegroundSuspend.ResumeAllSync(); } catch { }
-            App.ShutdownTrace("prepare.foreground-resumed");
             try { _tray?.Dispose(); } catch { }
             _tray = null;
-            App.ShutdownTrace("prepare.end");
         }
 
         public MainWindow()
@@ -283,49 +293,18 @@ namespace kaliteConfig
             {
                 DispatcherQueue.TryEnqueue(ShowMainWindow);
             };
-            _tray.LiveStateQuery = () =>
+            _tray.GameModeEnabledQuery = () =>
             {
-                try
-                {
-                    var live = App.Services?.GetService(typeof(kaliteConfig.Services.LiveWallpaper.ILiveWallpaperEngine)) as kaliteConfig.Services.LiveWallpaper.ILiveWallpaperEngine;
-                    if (live is null) return (false, false);
-                    bool active = live.State == kaliteConfig.Services.LiveWallpaper.LiveState.Playing || live.State == kaliteConfig.Services.LiveWallpaper.LiveState.Paused;
-                    return (active, active);
-                }
-                catch { return (false, false); }
+                try { return (Application.Current as App)?.GameMode.Settings.Enabled ?? false; } catch { return false; }
             };
-            _tray.OnPauseLive += () =>
+            _tray.OnToggleGameMode += () =>
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     try
                     {
-                        var live = App.Services?.GetService(typeof(kaliteConfig.Services.LiveWallpaper.ILiveWallpaperEngine)) as kaliteConfig.Services.LiveWallpaper.ILiveWallpaperEngine;
-                        if (live?.State == kaliteConfig.Services.LiveWallpaper.LiveState.Playing) live.Pause();
-                        else if (live?.State == kaliteConfig.Services.LiveWallpaper.LiveState.Paused) live.Resume();
-                    }
-                    catch { }
-                });
-            };
-            _tray.GameModeHeldQuery = () =>
-            {
-                try { return (Application.Current as App)?.GameMode.PendingJournalCount > 0; } catch { return false; }
-            };
-            _tray.OnResumeGame += () =>
-            {
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    try { (Application.Current as App)?.GameMode.ResumeEverything(); } catch { }
-                });
-            };
-            _tray.OnStopLive += () =>
-            {
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    try
-                    {
-                        var live = App.Services?.GetService(typeof(kaliteConfig.Services.LiveWallpaper.ILiveWallpaperEngine)) as kaliteConfig.Services.LiveWallpaper.ILiveWallpaperEngine;
-                        live?.StopAndRestore();
+                        var engine = (Application.Current as App)?.GameMode;
+                        if (engine != null) engine.ToggleEnabled();
                     }
                     catch { }
                 });
@@ -334,17 +313,12 @@ namespace kaliteConfig
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    App.ShutdownTrace("tray-exit.dequeued");
                     _allowExit = true;
                     try { (Application.Current as App)?.LegacyGamingMode.ReleaseAll(); } catch { }
-                    App.ShutdownTrace("tray-exit.gaming-released");
                     try { (Application.Current as App)?.ForegroundSuspend.ResumeAllSync(); } catch { }
-                    App.ShutdownTrace("tray-exit.foreground-resumed");
                     try { _tray?.Dispose(); } catch { }
                     _tray = null;
-                    App.ShutdownTrace("tray-exit.tray-disposed");
                     this.Close();
-                    App.ShutdownTrace("tray-exit.close-returned");
                 });
             };
             int liveResumeAttempts = 0;
@@ -433,6 +407,7 @@ namespace kaliteConfig
             if (_allowExit) return;
             args.Cancel = true;
             try { AppWindow.Hide(); } catch { }
+            TrimMemoryAfterHide();
             EnsureTrayShown();
             if (!_trayShown) ScheduleTrayRetry();
         };
@@ -445,7 +420,11 @@ namespace kaliteConfig
                         && overlapped.State == OverlappedPresenterState.Minimized)
                     {
                         EnsureTrayShown();
-                        if (_trayShown) AppWindow.Hide();
+                        if (_trayShown)
+                        {
+                            AppWindow.Hide();
+                            TrimMemoryAfterHide();
+                        }
                     }
                 }
                 catch { }

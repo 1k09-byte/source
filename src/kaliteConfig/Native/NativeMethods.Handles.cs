@@ -128,4 +128,20 @@ internal static partial class NativeMethods
         internal const int InvalidParameter = 87;
         internal const int PartialCopy = 299;
     }
+
+    internal static partial class WorkingSet
+    {
+        // Empties the working set of the current process (pseudo-handle -1): all
+        // pageable memory is trimmed, which is what Task Manager reports. Pages
+        // come back on demand, so this is safe to call whenever the window hides.
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool EmptyWorkingSet(IntPtr process);
+
+        internal static bool TrimCurrentProcess()
+        {
+            try { return EmptyWorkingSet((IntPtr)(-1)); }
+            catch { return false; }
+        }
+    }
 }

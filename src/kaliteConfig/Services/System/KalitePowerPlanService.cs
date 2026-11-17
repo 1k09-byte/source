@@ -13,7 +13,6 @@ public sealed class KalitePowerPlanService
     public enum Vendor { Unknown, Amd, Intel }
 
     private const string PlanDescription = "0 Dihlay + 999fps";
-    private const string LogFolderName = "kaliteConfig";
 
     private static readonly Guid ProcessorGroup = new("54533251-82be-4824-96c1-47b60b740d00");
     private static readonly Guid DiskGroup = new("0012ee47-9041-4b5d-9b77-535fba8b1442");
@@ -85,7 +84,6 @@ public sealed class KalitePowerPlanService
             _ => "KalitePlan",
         };
 
-        Log($"apply: cpu=\"{cpu}\" vendor={vendor} cores={topology.PhysicalCores} hybrid={hybrid} x3d={x3d}");
 
         Guid scheme = FindOrCreatePlan(planName, out bool created);
         int applied = 0, failed = 0;
@@ -108,12 +106,10 @@ public sealed class KalitePowerPlanService
                 string label = _power.GetSettingFriendlyName(write.Subgroup, write.Setting);
                 if (string.IsNullOrWhiteSpace(label)) label = write.Setting.ToString();
                 failedSettings.Add($"{label} ({result})");
-                Log($"write failed: {label} {write.Setting} -> 0x{result:X}");
             }
         }
 
         _power.SetActiveScheme(scheme);
-        Log($"apply: {planName} {(created ? "created" : "updated")}, {applied} applied, {failed} skipped");
         return new Outcome(planName, vendor, created, applied, failed, failedSettings);
     }
 
@@ -275,19 +271,5 @@ public sealed class KalitePowerPlanService
         catch { }
 
         return string.Empty;
-    }
-
-    private static void Log(string message)
-    {
-        try
-        {
-            string dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                LogFolderName, "logs");
-            Directory.CreateDirectory(dir);
-            File.AppendAllText(Path.Combine(dir, "power-plan.log"),
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}");
-        }
-        catch { }
     }
 }
