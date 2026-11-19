@@ -30,7 +30,7 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="CPU and power tuning" Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="10,3,0,0" />
-                        <toolkit:SettingsCard x:Name="PowerModeCard" Header="Kernel/Power settings">
+                        <toolkit:SettingsCard x:Name="PowerModeCard" Header="Kernel/ Power Level Aggressiveness" Description="It is strongly recommended to test between both">
                             <ToggleSwitch Style="{StaticResource KaliteToggleSwitchStyle}" x:Name="PowerModeToggle" OffContent="Balanced" OnContent="Aggressive" Toggled="PowerMode_Toggled" />
                         </toolkit:SettingsCard>
                     </StackPanel>

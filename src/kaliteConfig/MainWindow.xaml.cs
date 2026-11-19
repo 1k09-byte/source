@@ -1,4 +1,5 @@
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -24,6 +25,13 @@ namespace kaliteConfig
         private kaliteConfig.Services.TrayIconService? _tray;
         private bool _allowExit;
         private bool _trayShown;
+
+        private DispatcherQueueTimer? _idleTrimTimer;
+        private DateTime _lastActiveUtc = DateTime.UtcNow;
+        private bool _windowActive = true;
+        private bool _idleTrimmed;
+        private static readonly TimeSpan IdleTrimDelay = TimeSpan.FromMinutes(2);
+        private static readonly TimeSpan IdleTrimInterval = TimeSpan.FromSeconds(30);
 
         public void ShowMainWindow()
         {
@@ -245,6 +253,19 @@ namespace kaliteConfig
         {
             InitializeComponent();
 
+            try
+            {
+                foreach (var item in NavView.MenuItems.OfType<NavigationViewItem>())
+                {
+                    if (item.Tag as string == "WindowsSettingsPage")
+                    {
+                        item.Icon = Services.NavIcons.Create(null, Services.NavIcons.SystemSettingsPath, false);
+                        break;
+                    }
+                }
+            }
+            catch { }
+
             _titleFadeBrush.StartPoint = new Windows.Foundation.Point(0, 0);
             _titleFadeBrush.EndPoint = new Windows.Foundation.Point(0, 1);
             _titleFadeBrush.GradientStops.Add(new GradientStop { Color = Microsoft.UI.Colors.Transparent, Offset = 0 });
@@ -431,9 +452,33 @@ namespace kaliteConfig
             };
             WatchMaterialChanges();
             HookNotifications();
-            this.Activated += (_, _) => GuardedActivation(() => WatchMaterialChanges());
+            this.Activated += (_, args) =>
+            {
+                try
+                {
+                    _windowActive = args.WindowActivationState != WindowActivationState.Deactivated;
+                    if (_windowActive)
+                    {
+                        _lastActiveUtc = DateTime.UtcNow;
+                        _idleTrimmed = false;
+                    }
+                }
+                catch { }
+                GuardedActivation(() => WatchMaterialChanges());
+            };
             this.Activated += (_, _) => { try { ApplyTitleBarColors(); } catch { } };
             this.Activated += (_, _) => { try { Services.Discord.DiscordPresence.ReassertActivity(); } catch { } };
+
+            _idleTrimTimer = DispatcherQueue.CreateTimer();
+            _idleTrimTimer.Interval = IdleTrimInterval;
+            _idleTrimTimer.Tick += (_, _) =>
+            {
+                if (_allowExit || _windowActive || _idleTrimmed) return;
+                if (DateTime.UtcNow - _lastActiveUtc < IdleTrimDelay) return;
+                _idleTrimmed = true;
+                _ = Task.Run(() => TrimMemoryAfterHide());
+            };
+            _idleTrimTimer.Start();
 
             NavShell.LayoutUpdated += (_, _) => UpdateNavPill();
 
@@ -1396,7 +1441,7 @@ namespace kaliteConfig
             new(PageKey.ThreadTuner, "ThreadTunerPage", "Tuning", null, Services.NavIcons.TuningPath, false),
             new(PageKey.Drivers, "DriversPage", "Drivers", "\uE90F", null, false),
             new(PageKey.Startup, "StartupPage", "Startup", "\uE7E8", null, false),
-            new(PageKey.WindowsSettings, "WindowsSettingsPage", "System Settings", "\uE713", null, false),
+            new(PageKey.WindowsSettings, "WindowsSettingsPage", "System Settings", null, Services.NavIcons.SystemSettingsPath, false),
             new(PageKey.PowerPlans, "PowerPlansPage", "Power", "\uE945", null, false),
             new(PageKey.Input, "InputPage", "Input", "\uE962", null, true),
             new(PageKey.BiosManager, "BiosManagerPage", "BIOS", "\uE9D9", null, false),

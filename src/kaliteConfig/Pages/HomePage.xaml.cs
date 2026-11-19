@@ -74,22 +74,17 @@ namespace kaliteConfig.Pages
 
         private static FrameworkElement ShortcutIcon(MainWindow.DockEntry entry)
         {
-            if (!string.IsNullOrWhiteSpace(entry.Path))
+            try
             {
-                try
-                {
-                    if (XamlBindingHelper.ConvertValue(typeof(Geometry), entry.Path) is Geometry geometry)
-                        return new PathIcon { Data = geometry };
-                }
-                catch { }
+                var icon = Services.NavIcons.Create(entry.Glyph, entry.Path, entry.SymbolFont);
+                if (icon is PathIcon pathIcon) { pathIcon.Width = 20; pathIcon.Height = 20; }
+                else if (icon is FontIcon fontIcon) { fontIcon.FontSize = 20; }
+                return icon;
             }
-            var icon = new FontIcon { Glyph = string.IsNullOrWhiteSpace(entry.Glyph) ? "\uE8A1" : entry.Glyph };
-            if (entry.SymbolFont)
+            catch
             {
-                try { icon.FontFamily = (FontFamily)Application.Current.Resources["SymbolThemeFontFamily"]; }
-                catch { icon.FontFamily = new FontFamily("Segoe Fluent Icons"); }
+                return new FontIcon { Glyph = "\uE8A1", FontSize = 20 };
             }
-            return icon;
         }
 
         private void Shortcut_Click(object sender, RoutedEventArgs e)

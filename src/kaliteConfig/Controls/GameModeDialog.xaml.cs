@@ -31,9 +31,9 @@ public sealed partial class GameModeDialog : ContentDialog
 
     private void AddGame_Click(object sender, RoutedEventArgs e)
     {
-        if (_game.AddKindIndex == 1 || !string.IsNullOrWhiteSpace(_game.GamePathInput))
+        if (!string.IsNullOrWhiteSpace(_game.GamePathInput))
         {
-            _game.AddListEntry();
+            _game.AddGamePath();
             return;
         }
 
@@ -56,6 +56,37 @@ public sealed partial class GameModeDialog : ContentDialog
     private void AddFocused_Click(object sender, RoutedEventArgs e) => _game.AddFocusedApp();
 
     private void AddPopularGames_Click(object sender, RoutedEventArgs e) => _game.AddPopularGames();
+
+    private void AddIgnored_Click(object sender, RoutedEventArgs e) => _game.AddIgnoredApp();
+
+    private void RemoveIgnored_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: GameModeListRow row }) _game.RemoveIgnoredApp(row);
+    }
+
+    private void IgnoredBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != Windows.System.VirtualKey.Enter) return;
+        e.Handled = true;
+        _game.AddIgnoredApp();
+    }
+
+    private void BrowseIgnored_Click(object sender, RoutedEventArgs e)
+    {
+        var window = App.MainWindow;
+        if (window is null) return;
+        string? file = Services.Win32FilePicker.PickOpenFile(
+            WinRT.Interop.WindowNative.GetWindowHandle(window),
+            new[]
+            {
+                ("Applications (*.exe)", "*.exe"),
+                ("All files (*.*)", "*.*"),
+            },
+            "Choose an executable to ignore");
+        if (string.IsNullOrWhiteSpace(file)) return;
+        _game.IgnoredAppInput = file;
+        _game.AddIgnoredApp();
+    }
 
     private void PathBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {

@@ -166,7 +166,11 @@ public sealed class ThreadQueryService
                         row.Description = ThreadNaming.Describe(
                             NativeSnapshotService.QueryThreadDescription(h), row.StartAddress);
 
-                        row.PriorityLevel = NativeMethods.Priority.GetThreadPriority(h);
+                        int level = NativeMethods.Priority.GetThreadPriority(h);
+                        // THREAD_PRIORITY_ERROR_RETURN (0x7FFFFFFF) means the read
+                        // failed. Leave the value empty instead of showing a bogus
+                        // level, so the UI can say the thread priority is unknown.
+                        if (level != int.MaxValue) row.PriorityLevel = level;
                         try
                         {
                             if (NativeMethods.Priority.GetThreadPriorityBoost(h, out bool boostDisabled))

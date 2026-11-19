@@ -182,7 +182,7 @@ public sealed partial class ThreadListDialog : ContentDialog
                         row.CurrentLevel = level;
                         row.CurrentText = DescribePriority(level);
                     }
-                    else row.CurrentText = "-";
+                    else row.CurrentText = "Priority unavailable";
 
                     row.BoostAllowed = t.BoostAllowed;
                     if (suppressed.IsSuppressed(_processName, t.Tid, t.Description, t.StartAddress, liveTids))

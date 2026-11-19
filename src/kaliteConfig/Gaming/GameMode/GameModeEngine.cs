@@ -47,9 +47,7 @@ public sealed class GameModeEngine : IDisposable
         _store = store;
         _log = log;
         Settings = store.Load();
-        int removedDuplicates = RemoveNeverTouchDuplicates();
         SeedPopularGames();
-        if (removedDuplicates > 0) _store.Save(Settings);
         _journal = new GameModeJournal(GameModeSettingsStore.JournalPath);
         _executor = new GameModeExecutor(_journal, log)
         {
@@ -137,8 +135,16 @@ public sealed class GameModeEngine : IDisposable
     {
         if (_started) return;
         _started = true;
-        _watcher.Start();
-        Recover();
+        try
+        {
+            _watcher.Start();
+        }
+        catch
+        {
+            // Allow a later enable/tray toggle to retry the foreground watcher.
+            _started = false;
+        }
+        try { Recover(); } catch { }
         _log.Add("-", "Gaming Mode", "Start", "Applied and verified", "Foreground monitoring started");
         if (Settings.Enabled) Raise();
     }
@@ -175,6 +181,9 @@ public sealed class GameModeEngine : IDisposable
             _store.Save(Settings);
             if (enabled)
             {
+                // Monitoring must be live even when the app is sitting in the
+                // tray and an earlier start attempt failed.
+                if (!_started) Start();
                 _log.Add("-", "Gaming Mode", "Enable", "Applied and verified", "Gaming Mode turned on");
                 var hwnd = NativeMethods.GameMode.GetForegroundWindow();
                 if (hwnd != IntPtr.Zero) OnForegroundChanged(hwnd);
@@ -356,10 +365,6 @@ public sealed class GameModeEngine : IDisposable
             $"Popular games added on first run: {addedGames} game(s)");
     }
 
-    private int RemoveNeverTouchDuplicates()
-        => Settings.NeverTouch.RemoveAll(n => Settings.Games.Any(
-            g => string.Equals(g.Name, n, StringComparison.OrdinalIgnoreCase)));
-
     public GameModeEditResult AddPopularGames()
     {
         int addedGames = MergePopularGames();
@@ -519,31 +524,53 @@ public sealed class GameModeEngine : IDisposable
     public GameModeEditResult AddNeverTouch(string input)
     {
         var text = NormalizeInput(input);
-        if (text.Length == 0) return GameModeEditResult.Fail("Type an image name or pattern first.");
+        if (text.Length == 0)
+            return GameModeEditResult.Fail("Type an executable name, a full path or a pattern first.");
 
-        if (text.Contains('\\') || text.Contains('/')) text = Path.GetFileName(text);
-        bool isPattern = text.Contains('*') || text.Contains('?');
-        if (!isPattern && !text.Contains('.')) text += ".exe";
-        if (text.Length == 0) return GameModeEditResult.Fail("Type an image name or pattern first.");
+        bool looksLikePath = text.Contains('\\') || text.Contains('/') || Path.IsPathRooted(text);
+        if (looksLikePath)
+        {
+            // Keep the full path so an ignored app is matched precisely instead of
+            // matching every process that happens to share its image name.
+            var resolved = ResolveExecutable(text);
+            if (resolved is null)
+            {
+                _log.Add(text, "Ignored apps", "Add", "Refused", "No executable at that path");
+                return GameModeEditResult.Fail(
+                    $"No executable at {text}. Check the path, or type just the image name (for example notepad.exe) to match by name.");
+            }
+            if (!resolved.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                _log.Add(text, "Ignored apps", "Add", "Refused", "Not an executable");
+                return GameModeEditResult.Fail(
+                    $"{resolved} is not an .exe. Choose the executable itself, not a shortcut.");
+            }
+            text = resolved;
+        }
+        else
+        {
+            bool isPattern = text.Contains('*') || text.Contains('?');
+            if (!isPattern && !text.Contains('.')) text += ".exe";
+        }
 
         if (Settings.NeverTouch.Any(n => n.Equals(text, StringComparison.OrdinalIgnoreCase)))
         {
-            _log.Add(text, "Never touch", "Add", "Already in that state", "Already on the Never touch list");
-            return GameModeEditResult.Fail($"{text} is already on the Never touch list.");
+            _log.Add(text, "Ignored apps", "Add", "Already in that state", "Already on the ignored apps list");
+            return GameModeEditResult.Fail($"{text} is already on the ignored apps list.");
         }
 
         Settings.NeverTouch.Add(text);
         _store.Save(Settings);
-        _log.Add(text, "Never touch", "Add", "Applied and verified", "Added to the Never touch list");
+        _log.Add(text, "Ignored apps", "Add", "Applied and verified", "Added to the ignored apps list");
         Raise();
-        return GameModeEditResult.Ok($"Added {text} to Never touch.");
+        return GameModeEditResult.Ok($"Added {text} to the ignored apps list.");
     }
 
     public void RemoveNeverTouch(string pattern)
     {
         if (Settings.NeverTouch.RemoveAll(n => n.Equals(pattern, StringComparison.OrdinalIgnoreCase)) == 0) return;
         _store.Save(Settings);
-        _log.Add(pattern, "Never touch", "Remove", "Applied and verified", "Removed from the Never touch list");
+        _log.Add(pattern, "Ignored apps", "Remove", "Applied and verified", "Removed from the ignored apps list");
         Raise();
     }
 
@@ -621,6 +648,7 @@ public sealed class GameModeEngine : IDisposable
             foreach (var fact in BuildGameFacts(descendants))
             {
                 if (GameModeGuard.IsUnsafeGameTarget(fact)) continue;
+                if (GameModeGuard.IsIgnored(Settings, fact.Name, fact.ImagePath)) continue;
                 rows.Add(new GameModeAffectedRow(fact.Name, fact.Pid, "Game", "Game boost", "Ready", "Planned", fact.CreationTicks));
             }
         }
@@ -1340,6 +1368,13 @@ public sealed class GameModeEngine : IDisposable
                 bool first;
                 lock (_gate) first = _loggedSkips.Add("game:" + fact.Pid + ":" + fact.CreationTicks);
                 if (first) _log.Add(fact.Name, "Skip", "Skipped (protected)", "Game tree process is protected and was left alone");
+                continue;
+            }
+            if (GameModeGuard.IsIgnored(Settings, fact.Name, fact.ImagePath))
+            {
+                bool first;
+                lock (_gate) first = _loggedSkips.Add("ignored:" + fact.Pid + ":" + fact.CreationTicks);
+                if (first) _log.Add(fact.Name, "Skip", "Skipped (protected)", "On your ignored apps list");
                 continue;
             }
             var decision = _executor.ApplyGame(fact);

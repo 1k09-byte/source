@@ -113,8 +113,8 @@
                     <TextBlock Text="Thread priority" Style="{StaticResource CaptionTextBlockStyle}" />
                     <TextBlock x:Name="PriorityCurrent" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     <ComboBox x:Name="PriorityCombo" Width="240" HorizontalAlignment="Left" PlaceholderText="Select priority…" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" SelectionChanged="PriorityCombo_SelectionChanged"
-                              ToolTipService.ToolTip="Thread priority. Auto restores the system default: Normal priority with boost on.">
-                        <ComboBoxItem Content="Auto - system default" Tag="auto" />
+                              ToolTipService.ToolTip="Pick the priority this thread should run at. Reset restores Normal priority with boost on.">
+                        <ComboBoxItem Content="Reset to Normal (0)" Tag="auto" />
                         <ComboBoxItem Content="Time critical (15)" Tag="15" />
                         <ComboBoxItem Content="Highest (2)" Tag="2" />
                         <ComboBoxItem Content="Above normal (1)" Tag="1" />
