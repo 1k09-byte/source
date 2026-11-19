@@ -451,6 +451,9 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <TextBlock Text="Small Processor Mask" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Text="Makes windows treat these as E Cores by moving Low Priority tasks towards these cores."
+                                           FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                             <Border Grid.Column="1" VerticalAlignment="Center" Padding="0" CornerRadius="8"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
@@ -475,7 +478,7 @@
                         </Grid>
 
                         <StackPanel Spacing="0">
-                            <TextBlock Text="Cores" Style="{StaticResource CaptionTextBlockStyle}"
+                            <TextBlock Text="" Style="{StaticResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <StackPanel x:Name="SpmCoresHost" Spacing="0" />
                         </StackPanel>

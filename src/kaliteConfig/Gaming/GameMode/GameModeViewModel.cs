@@ -25,8 +25,7 @@ public sealed partial class GameModeViewModel : ObservableObject
         StatusText = string.Empty;
         StatusSeverity = InfoBarSeverity.Informational;
         GamePathInput = string.Empty;
-        AddKindIndex = 0;
-        JournalText = string.Empty;
+        IgnoredAppInput = string.Empty;
         EnableButtonText = "Enable Gaming Mode";
         PreviewSummary = string.Empty;
         ListFeedback = string.Empty;
@@ -38,6 +37,7 @@ public sealed partial class GameModeViewModel : ObservableObject
     public ObservableCollection<GameModeAffectedRow> Affected { get; } = new();
     public ObservableCollection<GameModeLogRow> LogRows { get; } = new();
     public ObservableCollection<GameModeListRow> ListItems { get; } = new();
+    public ObservableCollection<GameModeListRow> IgnoredApps { get; } = new();
 
     public bool HasGames => _engine.Games.Count > 0;
     public IReadOnlyList<string> LogFilters { get; } = new[] { "All results", "Applied", "Skipped or refused", "Downgraded", "Could not restore" };
@@ -73,18 +73,7 @@ public sealed partial class GameModeViewModel : ObservableObject
     public partial string GamePathInput { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AddButtonText))]
-    [NotifyPropertyChangedFor(nameof(InputPlaceholder))]
-    public partial int AddKindIndex { get; set; }
-
-    public string AddButtonText => AddKindIndex == 1 ? "Add to Never touch" : "Add game";
-
-    public string InputPlaceholder => AddKindIndex == 1
-        ? "Image name or pattern"
-        : "Full path, or an image name such as notepad.exe";
-
-    [ObservableProperty]
-    public partial string JournalText { get; set; }
+    public partial string IgnoredAppInput { get; set; }
 
     [ObservableProperty]
     public partial bool IsActive { get; set; }
@@ -164,9 +153,6 @@ public sealed partial class GameModeViewModel : ObservableObject
             SuspendBackgroundWake = _engine.Settings.SuspendBackgroundWake;
             SuspendBackgroundInput = _engine.Settings.SuspendBackgroundInput;
             BackgroundMode = _engine.Settings.BackgroundMode;
-            JournalText = _engine.PendingJournalCount == 0
-                ? "Nothing is held by Gaming Mode."
-                : $"{_engine.PendingJournalCount} journal entr(ies) held; restore happens on release.";
             Replace(Affected, _engine.Affected);
             RefreshListItems();
             ApplyLogFilter();
@@ -197,13 +183,15 @@ public sealed partial class GameModeViewModel : ObservableObject
             });
         }
 
+        IgnoredApps.Clear();
         foreach (var pattern in _engine.NeverTouch)
         {
-            ListItems.Add(new GameModeListRow
+            bool byPath = pattern.Contains('\\') || pattern.Contains('/');
+            IgnoredApps.Add(new GameModeListRow
             {
-                Name = pattern,
-                Detail = "Excluded from every Gaming Mode change",
-                Kind = "Never touch",
+                Name = byPath ? System.IO.Path.GetFileName(pattern) : pattern,
+                Detail = byPath ? pattern : "Matched by image name",
+                Kind = "Ignored app",
                 IsNeverTouch = true,
                 Pattern = pattern,
             });
@@ -298,18 +286,21 @@ public sealed partial class GameModeViewModel : ObservableObject
         Refresh();
     }
 
-    public void AddListEntry()
-    {
-        if (AddKindIndex == 1)
-        {
-            var result = _engine.AddNeverTouch(GamePathInput);
-            if (result.Success) GamePathInput = string.Empty;
-            ShowListFeedback(result);
-            Refresh();
-            return;
-        }
+    public void AddListEntry() => AddGamePath();
 
-        AddGamePath();
+    public void AddIgnoredApp()
+    {
+        var result = _engine.AddNeverTouch(IgnoredAppInput);
+        if (result.Success) IgnoredAppInput = string.Empty;
+        ShowListFeedback(result);
+        Refresh();
+    }
+
+    public void RemoveIgnoredApp(GameModeListRow row)
+    {
+        if (row.Pattern is null) return;
+        _engine.RemoveNeverTouch(row.Pattern);
+        Refresh();
     }
 
     public void ClearListFeedback() => ListFeedback = string.Empty;

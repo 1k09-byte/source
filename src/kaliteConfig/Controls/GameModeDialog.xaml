@@ -32,7 +32,7 @@
 
                     <TextBlock Text="{Binding PreviewSummary}" Style="{StaticResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-                    <TextBlock Text="Every process and service that is not important is demoted to Low or Below normal with efficiency mode (EcoQoS), and every process in the system except the game tree, dwm and the internet, Wi-Fi, WWAN and Bluetooth services has its priority boost turned off, including anti-cheat. The shell, audio, security and GPU driver services are still demoted but keep enough boost to stay responsive, and your Never touch list and rules marked Protected are left alone. Inside the game process only useless threads (telemetry, crash reporting and embedded-browser helpers) get boost disabled and Low priority; gameplay threads and the game's own priority stay untouched."
+                    <TextBlock Text="Every process and service that is not important is demoted to Low or Below normal with efficiency mode (EcoQoS), and every process in the system except the game tree, dwm and the internet, Wi-Fi, WWAN and Bluetooth services has its priority boost turned off, including anti-cheat. The shell, audio, security and GPU driver services are still demoted but keep enough boost to stay responsive, and your ignored apps and rules marked Protected are left alone. Inside the game process only useless threads (telemetry, crash reporting and embedded-browser helpers) get boost disabled and Low priority; gameplay threads and the game's own priority stay untouched."
                                Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
 
                     <Grid ColumnSpacing="8" Margin="0,3,0,0">
@@ -145,11 +145,6 @@
                                    SpinButtonPlacementMode="Inline" Value="{Binding DebounceMs, Mode=OneWay}"
                                    ValueChanged="Debounce_ValueChanged"
                                    ToolTipService.ToolTip="How long a listed game must stay in the foreground before Gaming Mode activates." />
-                        <TextBlock Text="Gaming Mode starts when a listed game comes to the foreground and restores every change when it exits. The three options above are off by default and only add to the normal plan; when two are on, suspension wins over Background Mode. Shell, audio, security, service and game processes are never touched."
-                                   Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding JournalText}" Style="{StaticResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -166,15 +161,11 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Content="Add focused app" Click="AddFocused_Click" ToolTipService.ToolTip="Adds the app you used just before kaliteConfig" />
-                        <ComboBox MinWidth="150" CornerRadius="{ThemeResource ControlCornerRadius}" BorderThickness="1" SelectedIndex="{Binding AddKindIndex, Mode=TwoWay}" AutomationProperties.Name="Entry type">
-                            <ComboBoxItem Content="Game" />
-                            <ComboBoxItem Content="Never touch" />
-                        </ComboBox>
                         <TextBox Text="{Binding GamePathInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="340"
-                                 PlaceholderText="{Binding InputPlaceholder}" AutomationProperties.Name="Entry to add"
+                                 PlaceholderText="Full path, or an image name such as notepad.exe" AutomationProperties.Name="Game to add"
                                  KeyDown="PathBox_KeyDown" />
-                        <Button Content="{Binding AddButtonText}" Click="AddGame_Click"
-                                ToolTipService.ToolTip="Adds the entry in the box, or opens a file picker when it is empty; Enter works too" />
+                        <Button Content="Add game" Click="AddGame_Click"
+                                ToolTipService.ToolTip="Adds the game in the box, or opens a file picker when it is empty; Enter works too" />
                     </StackPanel>
                     <ListView ItemsSource="{Binding ListItems}" SelectionMode="None" MaxHeight="320"
                               Background="Transparent" BorderThickness="0">
@@ -200,10 +191,49 @@
                                     <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="4" Padding="6,1"
                                             Visibility="{x:Bind NeverTouchPillVis}"
                                             Background="{ThemeResource SubtleFillColorSecondaryBrush}">
-                                        <TextBlock Text="Never touch" Style="{StaticResource CaptionTextBlockStyle}"
+                                        <TextBlock Text="Ignored" Style="{StaticResource CaptionTextBlockStyle}"
                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </Border>
                                     <Button Grid.Column="2" Content="Remove" Click="RemoveItem_Click" Tag="{x:Bind}" AutomationProperties.Name="Remove entry" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Expander>
+
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Header="Ignore Apps">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Gaming Mode ignores these processes"
+                               Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap" />
+                    <InfoBar IsOpen="{Binding HasListFeedback}" Severity="{Binding ListFeedbackSeverity}"
+                             Message="{Binding ListFeedback}" CloseButtonClick="ListFeedback_Close" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBox Text="{Binding IgnoredAppInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="340"
+                                 PlaceholderText="EXE name/ full path" AutomationProperties.Name="Ignored app to add"
+                                 KeyDown="IgnoredBox_KeyDown" />
+                        <Button Content="Add" Click="AddIgnored_Click"
+                                ToolTipService.ToolTip="Adds the executable in the box to the ignored apps list" />
+                        <Button Content="Browse" Click="BrowseIgnored_Click"
+                                ToolTipService.ToolTip="Pick an executable to ignore" />
+                    </StackPanel>
+                    <ListView ItemsSource="{Binding IgnoredApps}" SelectionMode="None" MaxHeight="280"
+                              Background="Transparent" BorderThickness="0">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="gamemode:GameModeListRow">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Bind Detail}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="Remove" Click="RemoveIgnored_Click" Tag="{x:Bind}"
+                                            AutomationProperties.Name="Remove ignored app" />
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>

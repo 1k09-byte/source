@@ -167,6 +167,9 @@ public sealed class GameModeGuard
             || image.Equals("Memory Compression", StringComparison.OrdinalIgnoreCase))
             return new GuardVerdict(false, "System process");
 
+        if (IsIgnored(settings, image, fact.ImagePath))
+            return new GuardVerdict(false, "On your ignored apps list");
+
         if (gamePids.Contains(fact.Pid))
             return new GuardVerdict(false, "The game, its launcher or its children");
         if (!string.IsNullOrEmpty(fact.ImagePath) && gamePaths.Contains(fact.ImagePath))
@@ -178,9 +181,6 @@ public sealed class GameModeGuard
         foreach (var service in ServicesFor(fact.Pid))
             if (IsConnectivityService(service))
                 return new GuardVerdict(false, $"Hosts {service}, an internet or Bluetooth service");
-
-        if (settings.NeverTouch.Any(n => MatchesName(n, image)))
-            return new GuardVerdict(false, "On your Never touch list");
 
         if (lockedRules.Count > 0 && MatchesLockedRule(lockedRules, image))
             return new GuardVerdict(false, "Locked by one of your thread rules");
@@ -205,6 +205,9 @@ public sealed class GameModeGuard
             || image.Equals("Idle", StringComparison.OrdinalIgnoreCase))
             return new GuardVerdict(false, "System process");
 
+        if (IsIgnored(settings, image, fact.ImagePath))
+            return new GuardVerdict(false, "On your ignored apps list");
+
         if (IsAntiCheatName(image))
         {
             var antiCheatDetail = Inspect(NativeMethods.Handles.OpenProcess(
@@ -224,9 +227,6 @@ public sealed class GameModeGuard
 
         if (IsConnectivityImage(image))
             return new GuardVerdict(false, "Wi-Fi, Bluetooth, network or VPN process, left alone");
-
-        if (settings.NeverTouch.Any(n => MatchesName(n, image)))
-            return new GuardVerdict(false, "On your Never touch list");
 
         if (lockedRules is { Count: > 0 } && MatchesLockedRule(lockedRules, image))
             return new GuardVerdict(false, "Locked by one of your thread rules");
@@ -374,6 +374,31 @@ public sealed class GameModeGuard
         }
         return set;
     }
+
+    /// <summary>
+    /// True when the process is on the user's ignored apps (Never touch) list.
+    /// Entries containing a directory separator are matched against the full
+    /// image path; any other entry is matched as an image name or wildcard.
+    /// </summary>
+    public static bool IsIgnored(GameModeSettings settings, string? imageName, string? imagePath)
+    {
+        foreach (var entry in settings.NeverTouch)
+        {
+            if (string.IsNullOrWhiteSpace(entry)) continue;
+            if (IsPathEntry(entry))
+            {
+                if (!string.IsNullOrEmpty(imagePath)
+                    && string.Equals(entry, imagePath, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                continue;
+            }
+            if (!string.IsNullOrEmpty(imageName) && MatchesName(entry, imageName)) return true;
+        }
+        return false;
+    }
+
+    private static bool IsPathEntry(string entry)
+        => entry.Contains('\\') || entry.Contains('/') || Path.IsPathRooted(entry);
 
     public static bool MatchesName(string pattern, string imageName)
     {

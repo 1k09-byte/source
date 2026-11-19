@@ -14,6 +14,8 @@ public sealed class ForegroundWatcher : IDisposable
     private IntPtr _window;
     private volatile bool _running;
     private NativeMethods.GameMode.WinEventProc? _callback;
+    private IntPtr _lastForeground;
+    private long _lastPollTimestamp;
 
     public event Action<IntPtr>? ForegroundChanged;
     public event Action<string>? Diagnostic;
@@ -24,6 +26,13 @@ public sealed class ForegroundWatcher : IDisposable
         _running = true;
         _thread = new Thread(Loop) { IsBackground = true, Name = "GameModeForeground" };
         _thread.SetApartmentState(ApartmentState.STA);
+        // kaliteConfig runs itself at Idle priority. A normal-priority watcher
+        // can be starved for long stretches while a game saturates the CPU,
+        // which is what made Gaming Mode feel like it needed the app window
+        // open. Highest buys this thread as much time as the process class
+        // allows, and the polling loop below removes the dependence on a
+        // promptly delivered WinEvent.
+        try { _thread.Priority = ThreadPriority.Highest; } catch { }
         _thread.Start();
     }
 
@@ -60,10 +69,26 @@ public sealed class ForegroundWatcher : IDisposable
 
         while (_running)
         {
-            int result = NativeMethods.GameMode.GetMessage(out var message, IntPtr.Zero, 0, 0);
-            if (result == 0 || result == -1) break;
-            NativeMethods.GameMode.TranslateMessage(ref message);
-            NativeMethods.GameMode.DispatchMessage(ref message);
+            bool quit = false;
+            while (NativeMethods.GameMode.PeekMessage(out var message, IntPtr.Zero, 0, 0, 1))
+            {
+                if (message.Message == 0x0012) // WM_QUIT
+                {
+                    quit = true;
+                    break;
+                }
+                NativeMethods.GameMode.TranslateMessage(ref message);
+                NativeMethods.GameMode.DispatchMessage(ref message);
+            }
+            if (quit) break;
+
+            PollForeground();
+
+            // Wake as soon as a hook event arrives, otherwise check again in a
+            // second. This keeps working when WinEvent delivery is delayed or
+            // dropped, including while the app is hidden in the tray.
+            NativeMethods.GameMode.MsgWaitForMultipleObjectsEx(
+                0, IntPtr.Zero, 1000, NativeMethods.GameMode.QsAllInput, NativeMethods.GameMode.MwmoInputAvailable);
         }
 
         if (_hook != IntPtr.Zero)
@@ -84,7 +109,30 @@ public sealed class ForegroundWatcher : IDisposable
     {
         try { Diagnostic?.Invoke("event " + eventType + " hwnd=" + hwnd); } catch { }
         if (eventType != NativeMethods.GameMode.EventSystemForeground || hwnd == IntPtr.Zero) return;
+        _lastForeground = hwnd;
+        _lastPollTimestamp = Environment.TickCount64;
         try { ForegroundChanged?.Invoke(hwnd); } catch { }
+    }
+
+    private void PollForeground()
+    {
+        try
+        {
+            IntPtr hwnd = NativeMethods.GameMode.GetForegroundWindow();
+            if (hwnd == IntPtr.Zero) return;
+
+            long now = Environment.TickCount64;
+            bool changed = hwnd != _lastForeground;
+            // Re-evaluate every few seconds even when the window is unchanged:
+            // this catches a game that was already focused when the app was
+            // hidden or when Gaming Mode was switched on from the tray.
+            if (!changed && now - _lastPollTimestamp < 5000) return;
+
+            _lastForeground = hwnd;
+            _lastPollTimestamp = now;
+            try { ForegroundChanged?.Invoke(hwnd); } catch { }
+        }
+        catch { }
     }
 
     public static bool TryResolveForeground(IntPtr hwnd, out int pid, out string processName, out string? imagePath)

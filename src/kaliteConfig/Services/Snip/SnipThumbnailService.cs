@@ -52,7 +52,7 @@ public static class SnipThumbnailService
     public const int DefaultTier = 512;
     public const int LargeTier = 1024;
 
-    private const long MemoryBudgetBytes = 128L * 1024 * 1024;
+    private const long MemoryBudgetBytes = 48L * 1024 * 1024;
     private const int IoRetries = 4;
     private const int IoRetryDelayMs = 60;
 

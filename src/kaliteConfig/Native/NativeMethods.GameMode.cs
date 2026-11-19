@@ -66,6 +66,13 @@ internal static partial class NativeMethods
         [DllImport("user32.dll")]
         internal static extern IntPtr GetForegroundWindow();
 
+        internal const uint QsAllInput = 0x04FF;
+        internal const uint MwmoInputAvailable = 0x0004;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern uint MsgWaitForMultipleObjectsEx(
+            uint count, IntPtr handles, uint milliseconds, uint wakeMask, uint flags);
+
         [DllImport("user32.dll")]
         internal static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
 

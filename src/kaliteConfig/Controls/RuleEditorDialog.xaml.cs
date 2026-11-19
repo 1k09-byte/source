@@ -111,6 +111,11 @@ public sealed partial class RuleEditorDialog : ContentDialog, INotifyPropertyCha
 
     private TunerThreadRule? _selectedRule;
     private bool _loadingRuleEditor = true;
+    // Process-setting combos fire SelectionChanged while LoadFrom pushes the
+    // saved values into the bindings. This flag is cleared once the dialog is
+    // actually open, so a user picking a priority (without touching a thread
+    // rule first) enables that process setting instead of being ignored.
+    private bool _suppressProcessComboEvents = true;
     private const int LiveThreadLimit = 400;
     private const int MaxTargetProcesses = 12;
     private int _liveThreadLoadToken;
@@ -141,7 +146,13 @@ public sealed partial class RuleEditorDialog : ContentDialog, INotifyPropertyCha
             RefreshThreadRulesView();
         };
         UpdateSummary();
-        Opened += (_, _) => ApplyCompactCommandButtons();
+        Opened += (_, _) =>
+        {
+            // Bindings have pushed the saved rule values into the combos by now;
+            // from this point on a combo change means the user chose that setting.
+            _suppressProcessComboEvents = false;
+            ApplyCompactCommandButtons();
+        };
     }
 
     public Task<ContentDialogResult> ShowRuleEditorAsync()
@@ -203,6 +214,7 @@ public sealed partial class RuleEditorDialog : ContentDialog, INotifyPropertyCha
     public void LoadFrom(TunerProfile source, bool isNew)
     {
         Title = isNew ? "New rule" : "Edit rule";
+        _suppressProcessComboEvents = true;
         Draft.CopyFrom(source);
         PriorityEnabled = Draft.PriorityClass.HasValue;
         PriorityName = Draft.PriorityClass.HasValue ? PriorityClassToName(Draft.PriorityClass.Value) : "Normal";
@@ -730,7 +742,7 @@ public sealed partial class RuleEditorDialog : ContentDialog, INotifyPropertyCha
 
     private void ProcessRowCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_loadingRuleEditor) return;
+        if (_suppressProcessComboEvents) return;
         if (ReferenceEquals(sender, ProcessPriorityCombo)) PriorityEnabled = true;
         else if (ReferenceEquals(sender, ProcessBoostCombo)) BoostEnabled = true;
         else if (ReferenceEquals(sender, ProcessEfficiencyCombo)) EfficiencyEnabled = true;
